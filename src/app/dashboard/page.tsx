@@ -574,7 +574,7 @@ export default function DashboardPage() {
                 {/* BÖLÜM 4: Dikkat Gerektiren İşlemler */}
                 <Card style={{ marginBottom: 'var(--space-2)' }}>
                     <CardHeader
-                        title="🔔 Dikkat Gerektiren İşlemler"
+                        title="Dikkat Gerektiren İşlemler"
                         description="Sistem tarafından engellenen veya bekleyen işlemler"
                     />
                     <CardContent>
