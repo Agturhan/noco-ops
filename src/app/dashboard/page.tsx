@@ -143,30 +143,94 @@ export default function DashboardPage() {
             userName = user.name || '';
         }
 
-        // Dashboard verilerini DB'den çek
+        // Dashboard verilerini yükle
         const loadDashboardData = async () => {
             try {
-                // Görevleri DB'den çek
-                const [dbTasks, dbDeadlines] = await Promise.all([
-                    getUserTodayTasks(userId),
-                    getUserWeekDeadlines(userId),
-                ]);
-
-                // Kullanıcıya atanan görevleri filtrele (assigneeId ile eşleştir)
-                // Not: Şu an görevlerde assigneeId yerine assignee ismi kullanılıyor
-                // Tüm görevleri göster ama kullanıcının kendi görevlerini öne al
-                const userTasks = (dbTasks || []).filter((t: any) => {
-                    // Eğer assigneeId varsa ve kullanıcının ID'si veya ismiyle eşleşiyorsa
-                    if (t.assigneeId) {
-                        return t.assigneeId === userId;
+                // Önce localStorage'dan görevleri al (Kanban ile senkron)
+                const savedTasks = localStorage.getItem('noco_kanban_tasks');
+                let localTasks: any[] = [];
+                if (savedTasks) {
+                    try {
+                        localTasks = JSON.parse(savedTasks);
+                    } catch (e) {
+                        console.error('localStorage görevleri ayrıştırılamadı');
                     }
-                    // assigneeId yoksa tüm görevleri göster (genel görevler)
-                    return true;
-                });
+                }
 
-                // Görevleri set et
-                setTodayTasks(userTasks);
-                setWeekDeadlines(dbDeadlines || []);
+                // Kullanıcıya atanan görevleri filtrele
+                const filterByUser = (tasks: any[]) => {
+                    return tasks.filter((t: any) => {
+                        const assignee = (t.assignee || t.assigneeId || '').toLowerCase();
+
+                        // Eğer assignee boşsa, genel görev - göster
+                        if (!assignee) return true;
+
+                        // Kullanıcının ismiyle karşılaştır
+                        const userFirstName = userName.toLowerCase().split(' ')[0];
+                        const userFullName = userName.toLowerCase();
+
+                        const matchesName = assignee.includes(userFirstName) || assignee === userFullName;
+
+                        return matchesName;
+                    });
+                };
+
+                // localStorage'dan kullanıcıya atanan görevler
+                let userTasks = filterByUser(localTasks);
+
+                // localStorage'da görev yoksa veya kullanıcıya atanan yoksa, DB'den çek
+                if (localTasks.length === 0) {
+                    const [dbTasks, dbDeadlines] = await Promise.all([
+                        getUserTodayTasks(userId),
+                        getUserWeekDeadlines(userId),
+                    ]);
+
+                    userTasks = filterByUser(dbTasks || []);
+
+                    // Hala boşsa, tüm DB görevlerini göster
+                    if (userTasks.length === 0 && dbTasks && dbTasks.length > 0) {
+                        userTasks = dbTasks;
+                    }
+
+                    setWeekDeadlines(dbDeadlines || []);
+                } else {
+                    // localStorage'dan tüm görevleri göster (eğer kullanıcıya atanan yoksa)
+                    if (userTasks.length === 0 && localTasks.length > 0) {
+                        userTasks = localTasks.slice(0, 10); // ilk 10
+                    }
+
+                    // Deadline'ları hesapla
+                    const today = new Date();
+                    const weekLater = new Date(today);
+                    weekLater.setDate(weekLater.getDate() + 7);
+
+                    const deadlines = localTasks.filter((t: any) => {
+                        if (!t.dueDate) return false;
+                        const due = new Date(t.dueDate);
+                        return due >= today && due <= weekLater && t.status !== 'DONE';
+                    }).map((t: any) => ({
+                        id: t.id,
+                        title: t.title,
+                        date: t.dueDate,
+                        brand: t.project || 'Genel',
+                        daysLeft: Math.ceil((new Date(t.dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                    })).slice(0, 5);
+
+                    setWeekDeadlines(deadlines);
+                }
+
+                // Görevleri formatla ve set et
+                const formattedTasks = userTasks.map((t: any) => ({
+                    id: t.id,
+                    title: t.title,
+                    brand: t.project || t.brand || 'Genel',
+                    priority: t.priority,
+                    deadline: t.dueDate ? new Date(t.dueDate).toLocaleDateString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : 'Belirsiz',
+                    completed: t.status === 'DONE',
+                    assignee: t.assignee || t.assigneeId || ''
+                })).slice(0, 10);
+
+                setTodayTasks(formattedTasks);
 
                 // Diğer dashboard verileri
                 const [stats, pendingActions] = await Promise.all([
