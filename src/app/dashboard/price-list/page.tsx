@@ -65,7 +65,7 @@ const unitPrices = {
     reklam: [
         { id: 'reklam-50k', name: 'Reklam Yönetimi (≤50K)', description: 'Aylık bütçe 50.000₺ ve altı', price: 7500, unit: 'ay' },
         { id: 'reklam-50k+', name: 'Reklam Yönetimi (>50K)', description: 'Bütçenin %15\'i', price: 0, unit: 'ay', note: '%15 komisyon' },
-        { id: 'demo', name: 'Ajans Demo Çalışma', description: '1 Video + 1 Ay Reklam Yönetimi', price: 29500, unit: 'paket' },
+        { id: 'demo', name: 'Ajans Demo Çalışma', description: '1 Video + 1 Ay Reklam Yönetimi', price: 27400, unit: 'paket', note: '19.900 + 7.500' },
     ],
     podcast: [
         { id: 'podcast-studio', name: 'Stüdyo (Podcast)', description: 'Ekipman + Mekan', price: 2600, unit: 'saat' },
@@ -194,20 +194,23 @@ export default function PriceListPage() {
                                             </li>
                                         ))}
                                     </ul>
-
-                                    <div style={{
-                                        marginTop: 'var(--space-2)',
-                                        padding: 'var(--space-1)',
-                                        background: 'var(--color-surface)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        fontSize: '12px',
-                                        color: 'var(--color-muted)'
-                                    }}>
-                                        <strong>Video başına:</strong> ~{formatCurrency(Math.round(pkg.price / pkg.videoCount))}
-                                    </div>
                                 </CardContent>
                             </Card>
                         ))}
+
+                        {/* 3 Ay Anlaşma İbaresi */}
+                        <div style={{
+                            gridColumn: '1 / -1',
+                            padding: 'var(--space-2)',
+                            background: 'var(--color-surface-2)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px dashed var(--color-border)',
+                            textAlign: 'center'
+                        }}>
+                            <p style={{ color: 'var(--color-sub-ink)', fontWeight: 500 }}>
+                                📌 Sosyal Medya Paketleri <strong>en az 3 ay anlaşıldığı takdirde</strong> geçerlidir.
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -266,7 +269,6 @@ export default function PriceListPage() {
                                             <th>Video Sayısı</th>
                                             <th style={{ textAlign: 'right' }}>Paket Fiyatı</th>
                                             <th style={{ textAlign: 'right' }}>Video Başına</th>
-                                            <th style={{ textAlign: 'right' }}>Saat Başına</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -277,7 +279,6 @@ export default function PriceListPage() {
                                                 <td>{pkg.videos} video</td>
                                                 <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(pkg.price)}</td>
                                                 <td style={{ textAlign: 'right', color: 'var(--color-success)' }}>{formatCurrency(pkg.perVideo)}</td>
-                                                <td style={{ textAlign: 'right', color: 'var(--color-muted)' }}>{formatCurrency(Math.round(pkg.price / pkg.hours))}</td>
                                             </tr>
                                         ))}
                                     </tbody>
