@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Modal, Button, Input, Select, Textarea } from '@/components/ui';
@@ -8,6 +9,10 @@ import { createFeedback } from '@/lib/actions/feedback';
 
 interface SidebarProps {
     userRole?: 'OWNER' | 'OPS' | 'STUDIO' | 'DIGITAL' | 'CLIENT';
+    isOpen?: boolean;
+    onClose?: () => void;
+    onToggleTheme?: () => void;
+    isDark?: boolean;
 }
 
 interface NavItem {
@@ -31,7 +36,6 @@ const navItems: NavItem[] = [
     { href: '/dashboard/clients', label: 'Müşteriler', icon: '👥', roles: ['OWNER', 'OPS'] },
     { href: '/dashboard/retainers', label: 'Retainer', icon: '⏱️', roles: ['OWNER', 'OPS'] },
     { href: '/dashboard/notifications', label: 'Bildirimler', icon: '🔔' },
-    // Yönetim Paneli - Alt menü
     {
         href: '#',
         label: 'Yönetim Paneli',
@@ -50,7 +54,7 @@ const navItems: NavItem[] = [
     { href: '/dashboard/settings', label: 'Ayarlar', icon: '⚙️', roles: ['OWNER'] },
 ];
 
-export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
+export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleTheme, isDark = false }: SidebarProps) {
     const pathname = usePathname();
     const [user, setUser] = useState<any>(null);
     const [showFeedback, setShowFeedback] = useState(false);
@@ -102,24 +106,51 @@ export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
 
     return (
         <>
-            <aside className="sidebar">
+            {/* Mobil overlay */}
+            {isOpen && (
+                <div
+                    className="sidebar-overlay"
+                    onClick={onClose}
+                />
+            )}
+
+            <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
-                    <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                        <h1 style={{
-                            fontSize: '24px',
-                            fontWeight: 700,
-                            color: 'var(--color-primary)',
-                            fontFamily: 'var(--font-heading)'
-                        }}>
-                            NOCO Ops
-                        </h1>
-                        <span style={{
-                            fontSize: 'var(--text-caption)',
-                            color: 'var(--color-muted)'
-                        }}>
-                            Creative Operations System
-                        </span>
+                    <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Image
+                            src="/noco-logo-icon.jpg"
+                            alt="NOCO"
+                            width={40}
+                            height={40}
+                            style={{ borderRadius: '8px' }}
+                        />
+                        <div>
+                            <h1 style={{
+                                fontSize: '20px',
+                                fontWeight: 700,
+                                color: 'var(--color-primary)',
+                                fontFamily: 'var(--font-heading)',
+                                margin: 0
+                            }}>
+                                NOCO Ops
+                            </h1>
+                            <span style={{
+                                fontSize: 'var(--text-caption)',
+                                color: 'var(--color-muted)'
+                            }}>
+                                Creative Operations
+                            </span>
+                        </div>
                     </Link>
+
+                    {/* Mobilde kapatma butonu */}
+                    <button
+                        className="sidebar-close"
+                        onClick={onClose}
+                        aria-label="Close menu"
+                    >
+                        ✕
+                    </button>
                 </div>
 
                 <nav className="sidebar-nav">
@@ -127,7 +158,6 @@ export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                         const isSubmenuActive = item.submenuItems?.some(sub => pathname === sub.href || pathname.startsWith(sub.href + '/'));
 
-                        // Submenu item
                         if (item.isSubmenu) {
                             return (
                                 <div key={item.label}>
@@ -154,6 +184,7 @@ export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
                                                     href={sub.href}
                                                     className={`sidebar-link ${subActive ? 'active' : ''}`}
                                                     style={{ fontSize: '13px', padding: '8px 12px' }}
+                                                    onClick={onClose}
                                                 >
                                                     <span>{sub.icon}</span>
                                                     <span>{sub.label}</span>
@@ -165,12 +196,12 @@ export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
                             );
                         }
 
-                        // Normal item
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 className={`sidebar-link ${isActive ? 'active' : ''}`}
+                                onClick={onClose}
                             >
                                 <span>{item.icon}</span>
                                 <span>{item.label}</span>
@@ -184,12 +215,21 @@ export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
                     borderTop: '1px solid var(--color-border)',
                     marginTop: 'auto'
                 }}>
+                    {/* Theme Toggle */}
+                    <Button
+                        variant="ghost"
+                        style={{ width: '100%', marginBottom: '8px', justifyContent: 'flex-start', color: 'var(--color-muted)' }}
+                        onClick={onToggleTheme}
+                    >
+                        {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                    </Button>
+
                     <Button
                         variant="ghost"
                         style={{ width: '100%', marginBottom: '12px', justifyContent: 'flex-start', color: 'var(--color-muted)' }}
                         onClick={() => setShowFeedback(true)}
                     >
-                        💬 Geri Bildirim / Hata Bildir
+                        💬 Geri Bildirim
                     </Button>
 
                     <div style={{
@@ -198,20 +238,13 @@ export function Sidebar({ userRole = 'OPS' }: SidebarProps) {
                         gap: 'var(--space-1)',
                         padding: '10px 12px'
                     }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--color-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontWeight: 600,
-                            fontSize: 'var(--text-body-sm)'
-                        }}>
-                            N
-                        </div>
+                        <Image
+                            src="/noco-logo-icon.jpg"
+                            alt="NOCO"
+                            width={32}
+                            height={32}
+                            style={{ borderRadius: '50%' }}
+                        />
                         <div>
                             <div style={{ fontWeight: 500, fontSize: 'var(--text-body-sm)' }}>
                                 NOCO Digital
