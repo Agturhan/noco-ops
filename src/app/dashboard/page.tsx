@@ -9,7 +9,7 @@ import { brands, getBrandName, getBrandColor } from '@/lib/data';
 import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib/actions/dashboard';
 import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
 import { getTodayTasks as getSharedTasks, getWeekDeadlines as getSharedDeadlines } from '@/lib/sharedTasks';
-import { Clapperboard, TrendingDown, TrendingUp, Camera, Plus, LogOut, FolderOpen, ListChecks, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { Clapperboard, TrendingDown, TrendingUp, Camera, Plus, LogOut, FolderOpen, ListChecks, AlertTriangle, Clock, CheckCircle, Check } from 'lucide-react';
 
 // ===== GELİŞMİŞ DASHBOARD (Blueprint Uyumlu) =====
 // - Düzenli (Retainer) vs Düzensiz (Proje) Gelir Ayrımı
@@ -417,7 +417,7 @@ export default function DashboardPage() {
                                                     color: 'white',
                                                     transition: 'all 0.2s'
                                                 }}>
-                                                    {task.completed && '✓'}
+                                                    {task.completed && <Check size={12} strokeWidth={3} />}
                                                 </div>
                                                 <div>
                                                     <p style={{
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                                             <div style={{ textAlign: 'right' }}>
                                                 {!task.completed && (
                                                     <Badge variant={task.priority === 'high' || task.priority === 'urgent' ? 'error' : task.priority === 'medium' ? 'warning' : 'info'}>
-                                                        ⏰ {task.deadline}
+                                                        {task.deadline}
                                                     </Badge>
                                                 )}
                                                 {task.completed && (
