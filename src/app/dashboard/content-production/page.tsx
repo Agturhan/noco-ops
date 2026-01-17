@@ -410,6 +410,19 @@ export default function ContentProductionPage() {
                                             <select value={content.status} onClick={(e) => e.stopPropagation()} onChange={(e) => updateStatus(content.id, e.target.value as ContentStatus)} style={{ padding: '4px', fontSize: 11, borderRadius: 4, border: '1px solid var(--color-border)' }}>
                                                 {Object.entries(contentStatuses).map(([k, v]) => <option key={k} value={k}>{v.icon}</option>)}
                                             </select>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); openModal(content); }}
+                                                title="Düzenle"
+                                                style={{
+                                                    padding: '4px 8px',
+                                                    backgroundColor: 'transparent',
+                                                    border: '1px solid var(--color-border)',
+                                                    borderRadius: 4,
+                                                    cursor: 'pointer',
+                                                    fontSize: 12,
+                                                    color: 'var(--color-muted)'
+                                                }}
+                                            >✏️</button>
                                         </div>
                                     </div>
                                 );
@@ -754,6 +767,57 @@ export default function ContentProductionPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Eklenen Markalar Listesi */}
+                    {customBrands.filter(b => b.active).length > 0 && (
+                        <div style={{ marginTop: 'var(--space-2)' }}>
+                            <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: '8px' }}>
+                                📋 Eklediğiniz Markalar
+                            </label>
+                            <div style={{
+                                backgroundColor: 'var(--color-surface)',
+                                borderRadius: 'var(--radius-sm)',
+                                padding: 'var(--space-1)',
+                                maxHeight: '150px',
+                                overflowY: 'auto'
+                            }}>
+                                {customBrands.filter(b => b.active).map(brand => (
+                                    <div key={brand.id} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '8px',
+                                        borderBottom: '1px solid var(--color-border)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{
+                                                width: 16,
+                                                height: 16,
+                                                borderRadius: '50%',
+                                                backgroundColor: brand.color,
+                                                display: 'inline-block'
+                                            }} />
+                                            <span style={{ fontSize: 'var(--text-body-sm)' }}>{brand.name}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => archiveBrand(brand.id)}
+                                            title="Markayı Kaldır"
+                                            style={{
+                                                padding: '4px 8px',
+                                                backgroundColor: 'rgba(255, 66, 66, 0.1)',
+                                                color: '#FF4242',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '11px'
+                                            }}
+                                        >🗑️ Kaldır</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginTop: 'var(--space-1)' }}>
                         💡 Eklediğiniz markalar içerik seçiminde görünecektir.
                     </p>

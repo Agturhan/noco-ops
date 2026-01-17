@@ -278,7 +278,8 @@ export async function getUserTodayTasks(userId: string) {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Tüm görevleri al (TODO, IN_PROGRESS, DONE dahil)
-    const { data, error } = await supabaseAdmin
+    // Not: assigneeId olmayan veya kullanıcıya atanan görevleri getir
+    let query = supabaseAdmin
         .from('Task')
         .select(`
             id, 
@@ -288,6 +289,7 @@ export async function getUserTodayTasks(userId: string) {
             priority, 
             dueDate,
             projectId,
+            assigneeId,
             project:Project (
                 id,
                 name,
@@ -305,6 +307,8 @@ export async function getUserTodayTasks(userId: string) {
         .order('priority', { ascending: false })
         .order('dueDate', { ascending: true })
         .limit(10);
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error fetching today tasks:', error);
@@ -326,6 +330,7 @@ export async function getUserTodayTasks(userId: string) {
         priority: t.priority,
         dueDate: t.dueDate,
         projectId: t.projectId,
+        assigneeId: t.assigneeId,
         brand: t.project?.contract?.client?.name || 'Genel',
         completed: t.status === 'DONE',
     }));

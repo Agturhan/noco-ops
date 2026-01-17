@@ -57,7 +57,7 @@ const priorityConfig = {
     URGENT: { label: 'Acil', color: '#FF4242' },
 };
 
-const teamMembers = ['Ahmet', 'Mehmet', 'Ali', 'Zeynep', 'Ayşe', 'Şeyma Bora', 'Fatih Ustaosmanoğlu', 'Ayşegül Güler', 'Ahmet Gürkan Turhan'];
+const teamMembers = ['Şeyma Bora', 'Fatih Ustaosmanoğlu', 'Ayşegül Güler', 'Ahmet Gürkan Turhan'];
 
 export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
