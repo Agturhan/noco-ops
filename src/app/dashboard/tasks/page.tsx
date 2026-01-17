@@ -154,19 +154,25 @@ export default function TasksPage() {
     const handleDrop = async (e: React.DragEvent, targetStatus: Task['status']) => {
         e.preventDefault();
         if (draggedTask && draggedTask.status !== targetStatus) {
+            // Store previous state for rollback
+            const previousTasks = [...tasks];
+            const previousStatus = draggedTask.status;
+
             // Optimistic update
             setTasks(tasks.map(t =>
                 t.id === draggedTask.id
                     ? { ...t, status: targetStatus, updatedAt: new Date().toISOString().split('T')[0] }
                     : t
             ));
+
             // Persist to database
             try {
                 await updateTaskStatus(draggedTask.id, targetStatus);
             } catch (error) {
                 console.error('Durum güncellenirken hata:', error);
-                // Rollback on error
-                setTasks(tasks);
+                // Rollback on error - restore previous state
+                setTasks(previousTasks);
+                alert('Görev durumu güncellenirken hata oluştu. Lütfen tekrar deneyin.');
             }
         }
     };
