@@ -8,3 +8,4 @@ export { Skeleton, SkeletonText, SkeletonCard, SkeletonTable, SkeletonStats, Ske
 export { ToastProvider, useToast } from './Toast';
 export { ErrorBoundary, ErrorPage } from './ErrorBoundary';
 export { FileUpload } from './FileUpload';
+export { MiniCalendar } from './MiniCalendar';

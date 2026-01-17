@@ -27,11 +27,10 @@ interface NavItem {
 // Ana navigasyon öğeleri
 const navItems: NavItem[] = [
     { href: '/dashboard', label: 'Gösterge Paneli', icon: '📊' },
-    { href: '/dashboard/projects', label: 'Projeler', icon: '📁' },
-    { href: '/dashboard/deliverables', label: 'Teslimatlar', icon: '📦' },
+    { href: '/dashboard/content-production', label: 'İş Yönetimi', icon: '🎬', roles: ['OWNER', 'OPS', 'DIGITAL'] },
+    { href: '/dashboard/deliverables', label: 'Görsel Teslimatlar', icon: '📷' },
     { href: '/dashboard/tasks', label: 'Görevler', icon: '✅' },
     { href: '/dashboard/calendar', label: 'Takvim', icon: '📅' },
-    { href: '/dashboard/content-production', label: 'İçerik Prodüksiyon', icon: '🎬', roles: ['OWNER', 'OPS', 'DIGITAL'] },
     { href: '/dashboard/studio', label: 'Stüdyo', icon: '📸', roles: ['OWNER', 'OPS', 'STUDIO'] },
     { href: '/dashboard/clients', label: 'Müşteriler', icon: '👥', roles: ['OWNER', 'OPS'] },
     { href: '/dashboard/retainers', label: 'Retainer', icon: '⏱️', roles: ['OWNER', 'OPS'] },

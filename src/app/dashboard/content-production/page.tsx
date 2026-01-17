@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar } from '@/components/ui';
 import { brands, teamMembers, getBrandColor, getBrandName, getActiveTeamMembers, contentStatuses, contentTypes, ContentStatus, ContentType } from '@/lib/data';
 
 // ===== TİPLER =====
@@ -147,10 +147,16 @@ export default function ContentProductionPage() {
     const [contents, setContents] = useState<ContentItem[]>(initialContents);
     const [activities] = useState<ActivityLog[]>(initialActivities);
     const [showModal, setShowModal] = useState(false);
+    const [showBrandModal, setShowBrandModal] = useState(false);
     const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'team'>('list');
+
+    // Marka yönetimi
+    const [customBrands, setCustomBrands] = useState<typeof brands>([]);
+    const [newBrandName, setNewBrandName] = useState('');
+    const [newBrandColor, setNewBrandColor] = useState('#329FF5');
 
     // Form states
     const [formTitle, setFormTitle] = useState('');
@@ -165,6 +171,57 @@ export default function ContentProductionPage() {
     // Inline editing states
     const [editingNotes, setEditingNotes] = useState('');
     const [noteHistory, setNoteHistory] = useState<NoteHistoryEntry[]>([]);
+
+    // Tüm markalar = varsayılan + custom
+    const allBrands = [...brands, ...customBrands];
+    const activeBrands = allBrands.filter(b => b.active);
+
+    // Custom brands localStorage'dan yükle
+    React.useEffect(() => {
+        const savedBrands = localStorage.getItem('noco_custom_brands');
+        if (savedBrands) {
+            try {
+                setCustomBrands(JSON.parse(savedBrands));
+            } catch (e) {
+                console.error('Custom brands yüklenemedi');
+            }
+        }
+    }, []);
+
+    // Custom brands değiştiğinde kaydet
+    React.useEffect(() => {
+        if (customBrands.length > 0) {
+            localStorage.setItem('noco_custom_brands', JSON.stringify(customBrands));
+        }
+    }, [customBrands]);
+
+    // Marka ekleme
+    const addBrand = () => {
+        if (!newBrandName.trim()) return;
+        const newBrand = {
+            id: `custom_${Date.now()}`,
+            name: newBrandName,
+            color: newBrandColor,
+            category: 'SOSYAL_MEDYA' as const,
+            contractType: 'PROJECT' as const,
+            active: true
+        };
+        setCustomBrands([...customBrands, newBrand]);
+        setNewBrandName('');
+        setNewBrandColor('#329FF5');
+        setShowBrandModal(false);
+    };
+
+    // Marka arşivleme (silmek yerine inactive yap)
+    const archiveBrand = (id: string) => {
+        // Eğer custom marka ise
+        if (id.startsWith('custom_')) {
+            setCustomBrands(customBrands.map(b =>
+                b.id === id ? { ...b, active: false } : b
+            ));
+        }
+        // Varsayılan markalar arşivlenemez (data.ts'de sabit)
+    };
 
     // localStorage'dan veri yükle (sayfa açıldığında)
     React.useEffect(() => {
@@ -213,7 +270,7 @@ export default function ContentProductionPage() {
         return true;
     });
 
-    const activeBrands = brands.filter(b => b.active);
+    // activeBrands artık yukarıda tanımlı (allBrands ile)
     const activeTeam = getActiveTeamMembers();
 
     const openModal = (content?: ContentItem) => {
@@ -285,13 +342,14 @@ export default function ContentProductionPage() {
     return (
         <>
             <Header
-                title="İçerik Prodüksiyon"
-                subtitle="Gerçek İş Takibi"
+                title="İş Yönetimi"
+                subtitle="Merkezi İçerik Takibi"
                 actions={
                     <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
                         <Button variant={viewMode === 'list' ? 'primary' : 'secondary'} size="sm" onClick={() => setViewMode('list')}>📋 Liste</Button>
                         <Button variant={viewMode === 'calendar' ? 'primary' : 'secondary'} size="sm" onClick={() => setViewMode('calendar')}>📅 Takvim</Button>
                         <Button variant={viewMode === 'team' ? 'primary' : 'secondary'} size="sm" onClick={() => setViewMode('team')}>👥 Ekip</Button>
+                        <Button variant="secondary" size="sm" onClick={() => setShowBrandModal(true)}>🏷️ Marka Ekle</Button>
                         <Button variant="primary" onClick={() => openModal()}>+ Yeni İçerik</Button>
                     </div>
                 }
@@ -587,20 +645,118 @@ export default function ContentProductionPage() {
                 )}
             </div>
 
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={selectedContent ? '✏️ İçerik Düzenle' : '🎬 Yeni İçerik'} size="md" footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button><Button variant="primary" onClick={saveContent}>Kaydet</Button></>}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <Input label="Başlık *" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-                    <Select label="Marka *" value={formBrand} onChange={(e) => setFormBrand(e.target.value)} options={[{ value: '', label: 'Seçin...' }, ...activeBrands.map(b => ({ value: b.id, label: b.name }))]} />
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <Select label="Tür" value={formType} onChange={(e) => setFormType(e.target.value as ContentType)} options={Object.entries(contentTypes).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))} />
-                        <Select label="Durum" value={formStatus} onChange={(e) => setFormStatus(e.target.value as ContentStatus)} options={Object.entries(contentStatuses).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))} />
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={selectedContent ? '✏️ İçerik Düzenlese' : '🎬 Yeni İçerik'} size="lg" footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button><Button variant="primary" onClick={saveContent}>Kaydet</Button></>}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                    {/* Sol Kolon - Form */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <Input label="Başlık *" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
+                        <Select label="Marka *" value={formBrand} onChange={(e) => setFormBrand(e.target.value)} options={[{ value: '', label: 'Seçin...' }, ...activeBrands.map(b => ({ value: b.id, label: b.name }))]} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <Select
+                                label="Tür"
+                                value={formType}
+                                onChange={(e) => {
+                                    const newType = e.target.value as ContentType;
+                                    setFormType(newType);
+                                    // Türe göre otomatik aşama belirleme - ilk aşama PLANLANDI
+                                    setFormStatus('PLANLANDI');
+                                }}
+                                options={Object.entries(contentTypes).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))}
+                            />
+                            <Select label="Durum" value={formStatus} onChange={(e) => setFormStatus(e.target.value as ContentStatus)} options={Object.entries(contentStatuses).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))} />
+                        </div>
+                        <Select label="Sorumlu" value={formAssignee} onChange={(e) => setFormAssignee(e.target.value)} options={[{ value: '', label: 'Atanmadı' }, ...activeTeam.map(m => ({ value: m.id, label: m.name }))]} />
+                        <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={3} />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <Input label="Teslim Tarihi" type="date" value={formDeliveryDate} onChange={(e) => setFormDeliveryDate(e.target.value)} />
-                        <Input label="Yayın Tarihi" type="date" value={formPublishDate} onChange={(e) => setFormPublishDate(e.target.value)} />
+
+                    {/* Sağ Kolon - Mini Takvim */}
+                    <div>
+                        <p style={{ fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--color-sub-ink)' }}>
+                            📅 Teslim Tarihi Seç
+                        </p>
+                        <MiniCalendar
+                            selectedDate={formDeliveryDate}
+                            onSelectDate={(date) => setFormDeliveryDate(date)}
+                        />
+
+                        {formType === 'VIDEO' && (
+                            <div style={{ marginTop: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'rgba(50, 159, 245, 0.1)', borderRadius: 'var(--radius-sm)' }}>
+                                <p style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: 600, marginBottom: '8px' }}>
+                                    🎬 Video Akışı
+                                </p>
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                    <Badge style={{ backgroundColor: '#6B7B80', color: 'white', fontSize: '10px' }}>1. Yazım</Badge>
+                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
+                                    <Badge style={{ backgroundColor: '#FF9800', color: 'white', fontSize: '10px' }}>2. Çekim</Badge>
+                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
+                                    <Badge style={{ backgroundColor: '#2196F3', color: 'white', fontSize: '10px' }}>3. Kurgu</Badge>
+                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
+                                    <Badge style={{ backgroundColor: '#00F5B0', color: 'white', fontSize: '10px' }}>4. Paylaşım</Badge>
+                                </div>
+                            </div>
+                        )}
+
+                        {(formType === 'FOTOGRAF' || formType === 'POST') && (
+                            <div style={{ marginTop: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'rgba(0, 245, 176, 0.1)', borderRadius: 'var(--radius-sm)' }}>
+                                <p style={{ fontSize: '12px', color: '#00F5B0', fontWeight: 600, marginBottom: '8px' }}>
+                                    📷 Teslimat Akışı
+                                </p>
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                    <Badge style={{ backgroundColor: '#6B7B80', color: 'white', fontSize: '10px' }}>1. Planla</Badge>
+                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
+                                    <Badge style={{ backgroundColor: '#00F5B0', color: 'white', fontSize: '10px' }}>2. Teslim</Badge>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <Select label="Sorumlu" value={formAssignee} onChange={(e) => setFormAssignee(e.target.value)} options={[{ value: '', label: 'Atanmadı' }, ...activeTeam.map(m => ({ value: m.id, label: m.name }))]} />
-                    <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} />
+                </div>
+            </Modal>
+
+            {/* Marka Ekleme Modal */}
+            <Modal
+                isOpen={showBrandModal}
+                onClose={() => setShowBrandModal(false)}
+                title="🏷️ Yeni Marka Ekle"
+                size="sm"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setShowBrandModal(false)}>İptal</Button>
+                        <Button variant="primary" onClick={addBrand}>Marka Ekle</Button>
+                    </>
+                }
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    <Input
+                        label="Marka Adı *"
+                        placeholder="Örn: Yeni Müşteri"
+                        value={newBrandName}
+                        onChange={(e) => setNewBrandName(e.target.value)}
+                    />
+                    <div>
+                        <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: '8px' }}>
+                            Marka Rengi
+                        </label>
+                        <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                            {['#329FF5', '#00F5B0', '#F6D73C', '#FF4242', '#9C27B0', '#FF9800', '#795548', '#607D8B', '#E91E63', '#4CAF50'].map(color => (
+                                <button
+                                    key={color}
+                                    onClick={() => setNewBrandColor(color)}
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        backgroundColor: color,
+                                        border: newBrandColor === color ? '3px solid var(--color-ink)' : '2px solid transparent',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.15s'
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginTop: 'var(--space-1)' }}>
+                        💡 Eklediğiniz markalar içerik seçiminde görünecektir.
+                    </p>
                 </div>
             </Modal>
         </>
