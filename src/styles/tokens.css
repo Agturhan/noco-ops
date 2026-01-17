@@ -1,0 +1,175 @@
+/* NOCO Digital Design System Tokens */
+
+:root {
+  /* ===== Colors ===== */
+  /* Primary */
+  --color-primary: #329FF5;
+  --color-primary-hover: #2589db;
+  --color-accent: #00F5B0;
+  --color-highlight: #F6D73C;
+  
+  /* Neutral - Light Mode */
+  --color-ink: #111827;
+  --color-sub-ink: #374151;
+  --color-muted: #6B7280;
+  --color-surface: #F8FAFC;
+  --color-card: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-zebra: #F3F4F6;
+  
+  /* Feedback */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  
+  /* ===== Typography ===== */
+  --font-heading: 'Darker Grotesque', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Font Sizes */
+  --text-h1: 56px;
+  --text-h2: 40px;
+  --text-h3: 32px;
+  --text-body: 16px;
+  --text-body-sm: 14px;
+  --text-caption: 12px;
+  
+  /* Line Heights */
+  --leading-h1: 60px;
+  --leading-h2: 44px;
+  --leading-h3: 36px;
+  --leading-body: 24px;
+  --leading-body-sm: 22px;
+  --leading-caption: 18px;
+  
+  /* ===== Spacing (8pt grid) ===== */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+  --space-8: 64px;
+  
+  /* ===== Border Radius ===== */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  
+  /* ===== Shadows ===== */
+  --shadow-z1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-z2: 0 4px 12px rgba(0, 0, 0, 0.10);
+  
+  /* ===== Transitions ===== */
+  --transition-fast: 160ms cubic-bezier(0.2, 0, 0.2, 1);
+  --transition-base: 240ms cubic-bezier(0.2, 0, 0.2, 1);
+  
+  /* ===== Layout ===== */
+  --container-max: 1200px;
+  --gutter: 24px;
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  --color-ink: #E5E7EB;
+  --color-sub-ink: #9CA3AF;
+  --color-muted: #6B7280;
+  --color-surface: #111827;
+  --color-card: #0B1220;
+  --color-border: #243041;
+  --color-zebra: #1F2937;
+}
+
+/* ===== Base Styles ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Typography ===== */
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+h1 {
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+}
+
+h3 {
+  font-size: var(--text-h3);
+  line-height: var(--leading-h3);
+  font-weight: 600;
+}
+
+p {
+  color: var(--color-sub-ink);
+  max-width: 65ch;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+/* Focus Ring */
+:focus-visible {
+  outline: 2px solid rgba(50, 159, 245, 0.4);
+  outline-offset: 2px;
+}
+
+/* ===== Utility Classes ===== */
+.text-muted { color: var(--color-muted); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+
+.bg-surface { background-color: var(--color-surface); }
+.bg-card { background-color: var(--color-card); }
+
+/* ===== Layout ===== */
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ===== Responsive Typography ===== */
+@media (max-width: 768px) {
+  :root {
+    --text-h1: 40px;
+    --text-h2: 32px;
+    --text-h3: 24px;
+    --leading-h1: 44px;
+    --leading-h2: 36px;
+    --leading-h3: 28px;
+  }
+}

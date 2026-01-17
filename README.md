@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NOCO Creative Operations System
 
-## Getting Started
+Yaratıcı ajanslar için iş kurallarını zorlayan operasyon yönetim sistemi.
 
-First, run the development server:
+## 🚀 Hızlı Başlangıç
+
+### Gereksinimler
+- Node.js 18+
+- PostgreSQL (veya Supabase)
+- npm veya pnpm
+
+### Kurulum
 
 ```bash
+# Bağımlılıkları yükle
+npm install
+
+# Ortam değişkenlerini ayarla
+# .env dosyası oluştur ve aşağıdaki değişkenleri ekle:
+# DATABASE_URL="postgresql://postgres:password@localhost:5432/noco_ops"
+# NEXTAUTH_SECRET="your-secret-key-change-in-production"
+# NEXTAUTH_URL="http://localhost:3000"
+
+# Veritabanını oluştur
+npx prisma migrate dev
+
+# Seed data yükle
+npx prisma db seed
+
+# Geliştirme sunucusunu başlat
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📁 Proje Yapısı
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/
+│   ├── dashboard/         # Ana uygulama sayfaları
+│   ├── login/             # Giriş sayfası
+│   └── api/               # API endpoints
+├── components/
+│   ├── ui/                # Button, Card, Badge, Modal, Input
+│   └── layout/            # Sidebar, Header
+├── lib/
+│   ├── machines/          # XState state machines
+│   ├── actions/           # Server actions
+│   ├── prisma.ts          # Database client
+│   └── rules.ts           # Kural değerlendirme
+└── styles/
+    ├── tokens.css         # Design tokens
+    └── components.css     # Component stilleri
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔐 Demo Kullanıcılar
 
-## Learn More
+| E-posta | Şifre | Rol |
+|---------|-------|-----|
+| admin@noco.digital | demo123 | OWNER |
+| ops@noco.digital | demo123 | OPS |
+| design@noco.digital | demo123 | DIGITAL |
+| client@abc.com | client123 | CLIENT |
 
-To learn more about Next.js, take a look at the following resources:
+## 🔒 İş Kuralları
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Sistem aşağıdaki kuralları otomatik olarak zorlar:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Ödeme Olmadan Teslimat Yok**: Fatura ödenmeden dosyalar teslim edilemez
+2. **Sınırlı Revizyon**: Sözleşmede belirtilen revizyon sayısı aşılamaz
+3. **Rol Bazlı Erişim**: Her kullanıcı sadece yetkili olduğu işlemleri yapabilir
+4. **Audit Logging**: Tüm işlemler ve override'lar kayıt altına alınır
 
-## Deploy on Vercel
+## 🛠️ Teknolojiler
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Frontend**: Next.js 16, React 19, TypeScript
+- **Styling**: CSS Design Tokens (NOCO standartları)
+- **Database**: PostgreSQL + Prisma ORM
+- **Auth**: NextAuth.js
+- **State Machine**: XState
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 Lisans
+
+Bu proje NOCO Digital için özel olarak geliştirilmiştir.

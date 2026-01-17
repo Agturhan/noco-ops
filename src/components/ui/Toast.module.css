@@ -1,0 +1,130 @@
+.container {
+    position: fixed;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    width: 100%;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-card);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid;
+    pointer-events: auto;
+    cursor: pointer;
+    animation: slideIn 0.3s ease-out;
+    transition: all 0.2s ease;
+}
+
+.toast:hover {
+    transform: translateX(-4px);
+}
+
+.toast.exiting {
+    animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.success {
+    border-color: #10B981;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, var(--color-card) 100%);
+}
+
+.error {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, var(--color-card) 100%);
+}
+
+.warning {
+    border-color: #F59E0B;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, var(--color-card) 100%);
+}
+
+.info {
+    border-color: #329FF5;
+    background: linear-gradient(135deg, rgba(50, 159, 245, 0.1) 0%, var(--color-card) 100%);
+}
+
+.icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-ink);
+    margin: 0;
+}
+
+.message {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin: 4px 0 0 0;
+    line-height: 1.4;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: var(--color-muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.closeButton:hover {
+    opacity: 1;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .container {
+        left: 12px !important;
+        right: 12px !important;
+        max-width: none;
+    }
+
+    .toast {
+        padding: 12px;
+    }
+}
