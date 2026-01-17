@@ -7,6 +7,33 @@ import { usePathname } from 'next/navigation';
 import { Modal, Button, Input, Select, Textarea } from '@/components/ui';
 import { createFeedback } from '@/lib/actions/feedback';
 
+// Lucide Icons
+import {
+    LayoutDashboard,
+    Clapperboard,
+    ImageIcon,
+    CheckSquare,
+    Calendar,
+    Camera,
+    Users,
+    Timer,
+    Bell,
+    Building2,
+    FileText,
+    Receipt,
+    PieChart,
+    BadgeDollarSign,
+    BarChart3,
+    Shield,
+    Settings,
+    Sun,
+    Moon,
+    MessageSquare,
+    ChevronDown,
+    X,
+    type LucideIcon
+} from 'lucide-react';
+
 interface SidebarProps {
     userRole?: 'OWNER' | 'OPS' | 'STUDIO' | 'DIGITAL' | 'CLIENT';
     isOpen?: boolean;
@@ -18,39 +45,50 @@ interface SidebarProps {
 interface NavItem {
     href: string;
     label: string;
-    icon: string;
+    icon: LucideIcon;
     roles?: string[];
     isSubmenu?: boolean;
     submenuItems?: NavItem[];
 }
 
-// Ana navigasyon öğeleri
-const navItems: NavItem[] = [
-    { href: '/dashboard', label: 'Gösterge Paneli', icon: '📊' },
-    { href: '/dashboard/content-production', label: 'İş Yönetimi', icon: '🎬', roles: ['OWNER', 'OPS', 'DIGITAL'] },
-    { href: '/dashboard/deliverables', label: 'Görsel Teslimatlar', icon: '📷' },
-    { href: '/dashboard/tasks', label: 'Görevler', icon: '✅' },
-    { href: '/dashboard/calendar', label: 'Takvim', icon: '📅' },
-    { href: '/dashboard/studio', label: 'Stüdyo', icon: '📸', roles: ['OWNER', 'OPS', 'STUDIO'] },
-    { href: '/dashboard/clients', label: 'Müşteriler', icon: '👥', roles: ['OWNER', 'OPS'] },
-    { href: '/dashboard/retainers', label: 'Retainer', icon: '⏱️', roles: ['OWNER', 'OPS'] },
-    { href: '/dashboard/notifications', label: 'Bildirimler', icon: '🔔' },
+interface NavGroup {
+    title: string;
+    items: NavItem[];
+}
+
+// Gruplandırılmış navigasyon
+const navGroups: NavGroup[] = [
     {
-        href: '#',
-        label: 'Yönetim Paneli',
-        icon: '🏢',
-        roles: ['OWNER', 'OPS'],
-        isSubmenu: true,
-        submenuItems: [
-            { href: '/dashboard/proposals', label: 'Teklifler', icon: '📝' },
-            { href: '/dashboard/invoices', label: 'Faturalar', icon: '💰' },
-            { href: '/dashboard/accounting', label: 'Muhasebe', icon: '📈' },
-            { href: '/dashboard/price-list', label: 'Fiyat Listesi', icon: '💵' },
-            { href: '/dashboard/reports', label: 'Raporlar', icon: '📑' },
+        title: 'ANA',
+        items: [
+            { href: '/dashboard', label: 'Gösterge Paneli', icon: LayoutDashboard },
+            { href: '/dashboard/content-production', label: 'İş Yönetimi', icon: Clapperboard, roles: ['OWNER', 'OPS', 'DIGITAL'] },
+            { href: '/dashboard/deliverables', label: 'Görsel Teslimatlar', icon: ImageIcon },
+            { href: '/dashboard/tasks', label: 'Görevler', icon: CheckSquare },
+            { href: '/dashboard/calendar', label: 'Takvim', icon: Calendar },
+            { href: '/dashboard/studio', label: 'Stüdyo', icon: Camera, roles: ['OWNER', 'OPS', 'STUDIO'] },
+            { href: '/dashboard/clients', label: 'Müşteriler', icon: Users, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/retainers', label: 'Retainer', icon: Timer, roles: ['OWNER', 'OPS'] },
         ]
     },
-    { href: '/dashboard/audit-log', label: 'Denetim Kaydı', icon: '📜', roles: ['OWNER', 'OPS'] },
-    { href: '/dashboard/settings', label: 'Ayarlar', icon: '⚙️', roles: ['OWNER'] },
+    {
+        title: 'FİNANS',
+        items: [
+            { href: '/dashboard/proposals', label: 'Teklifler', icon: FileText, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/invoices', label: 'Faturalar', icon: Receipt, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/accounting', label: 'Muhasebe', icon: PieChart, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/price-list', label: 'Fiyat Listesi', icon: BadgeDollarSign, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/reports', label: 'Raporlar', icon: BarChart3, roles: ['OWNER', 'OPS'] },
+        ]
+    },
+    {
+        title: 'SİSTEM',
+        items: [
+            { href: '/dashboard/notifications', label: 'Bildirimler', icon: Bell },
+            { href: '/dashboard/audit-log', label: 'Denetim Kaydı', icon: Shield, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/settings', label: 'Ayarlar', icon: Settings, roles: ['OWNER'] },
+        ]
+    }
 ];
 
 export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleTheme, isDark = false }: SidebarProps) {
@@ -89,7 +127,7 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
             setShowFeedback(false);
             setFeedbackMessage('');
             setFeedbackType('BUG');
-            alert('Geri bildiriminiz alındı, teşekkürler! 🚀');
+            alert('Geri bildiriminiz alındı, teşekkürler!');
         } catch (error) {
             console.error('Feedback error:', error);
             alert('Bir hata oluştu.');
@@ -98,10 +136,15 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
         }
     };
 
-    const filteredItems = navItems.filter((item) => {
+    const isItemVisible = (item: NavItem) => {
         if (!item.roles) return true;
         return item.roles.includes(userRole);
-    });
+    };
+
+    const isActive = (href: string) => {
+        if (href === '/dashboard') return pathname === '/dashboard';
+        return pathname === href || pathname.startsWith(href + '/');
+    };
 
     return (
         <>
@@ -148,63 +191,46 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
                         onClick={onClose}
                         aria-label="Close menu"
                     >
-                        ✕
+                        <X size={20} />
                     </button>
                 </div>
 
                 <nav className="sidebar-nav">
-                    {filteredItems.map((item) => {
-                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                        const isSubmenuActive = item.submenuItems?.some(sub => pathname === sub.href || pathname.startsWith(sub.href + '/'));
-
-                        if (item.isSubmenu) {
-                            return (
-                                <div key={item.label}>
-                                    <div
-                                        className={`sidebar-link ${isSubmenuActive ? 'active' : ''}`}
-                                        onClick={() => {
-                                            const el = document.getElementById('submenu-' + item.label);
-                                            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-                                        }}
-                                        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
-                                    >
-                                        <span><span>{item.icon}</span> {item.label}</span>
-                                        <span style={{ fontSize: '10px' }}>▼</span>
-                                    </div>
-                                    <div
-                                        id={'submenu-' + item.label}
-                                        style={{ display: isSubmenuActive ? 'block' : 'none', paddingLeft: '16px' }}
-                                    >
-                                        {item.submenuItems?.map(sub => {
-                                            const subActive = pathname === sub.href;
-                                            return (
-                                                <Link
-                                                    key={sub.href}
-                                                    href={sub.href}
-                                                    className={`sidebar-link ${subActive ? 'active' : ''}`}
-                                                    style={{ fontSize: '13px', padding: '8px 12px' }}
-                                                    onClick={onClose}
-                                                >
-                                                    <span>{sub.icon}</span>
-                                                    <span>{sub.label}</span>
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        }
+                    {navGroups.map((group) => {
+                        const visibleItems = group.items.filter(isItemVisible);
+                        if (visibleItems.length === 0) return null;
 
                         return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`sidebar-link ${isActive ? 'active' : ''}`}
-                                onClick={onClose}
-                            >
-                                <span>{item.icon}</span>
-                                <span>{item.label}</span>
-                            </Link>
+                            <div key={group.title} style={{ marginBottom: 'var(--space-2)' }}>
+                                <div style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: 'var(--color-muted)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    padding: '8px 12px 4px',
+                                    marginTop: group.title !== 'ANA' ? '8px' : 0
+                                }}>
+                                    {group.title}
+                                </div>
+                                {visibleItems.map((item) => {
+                                    const Icon = item.icon;
+                                    const active = isActive(item.href);
+
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className={`sidebar-link ${active ? 'active' : ''}`}
+                                            onClick={onClose}
+                                            style={{ gap: '10px' }}
+                                        >
+                                            <Icon size={18} strokeWidth={active ? 2 : 1.5} />
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
                         );
                     })}
                 </nav>
@@ -217,18 +243,20 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
                     {/* Theme Toggle */}
                     <Button
                         variant="ghost"
-                        style={{ width: '100%', marginBottom: '8px', justifyContent: 'flex-start', color: 'var(--color-muted)' }}
+                        style={{ width: '100%', marginBottom: '8px', justifyContent: 'flex-start', color: 'var(--color-muted)', gap: '10px' }}
                         onClick={onToggleTheme}
                     >
-                        {isDark ? '☀️ Açık Tema' : '🌙 Koyu Tema'}
+                        {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                        {isDark ? 'Açık Tema' : 'Koyu Tema'}
                     </Button>
 
                     <Button
                         variant="ghost"
-                        style={{ width: '100%', marginBottom: '12px', justifyContent: 'flex-start', color: 'var(--color-muted)' }}
+                        style={{ width: '100%', marginBottom: '12px', justifyContent: 'flex-start', color: 'var(--color-muted)', gap: '10px' }}
                         onClick={() => setShowFeedback(true)}
                     >
-                        💬 Geri Bildirim
+                        <MessageSquare size={18} />
+                        Geri Bildirim
                     </Button>
 
                     <div style={{
@@ -259,7 +287,7 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
             <Modal
                 isOpen={showFeedback}
                 onClose={() => setShowFeedback(false)}
-                title="💬 Geri Bildirim & Hata Bildirimi"
+                title="Geri Bildirim & Hata Bildirimi"
                 footer={
                     <>
                         <Button variant="secondary" onClick={() => setShowFeedback(false)}>İptal</Button>
@@ -279,10 +307,10 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
                         value={feedbackType}
                         onChange={(e) => setFeedbackType(e.target.value)}
                         options={[
-                            { value: 'BUG', label: '🐛 Hata (Bug)' },
-                            { value: 'FEATURE', label: '✨ Yeni Özellik İsteği' },
-                            { value: 'UX', label: '🎨 Tasarım/Kullanım Önerisi' },
-                            { value: 'OTHER', label: '📝 Diğer' },
+                            { value: 'BUG', label: 'Hata (Bug)' },
+                            { value: 'FEATURE', label: 'Yeni Özellik İsteği' },
+                            { value: 'UX', label: 'Tasarım/Kullanım Önerisi' },
+                            { value: 'OTHER', label: 'Diğer' },
                         ]}
                     />
                     <Textarea

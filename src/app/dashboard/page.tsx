@@ -9,6 +9,7 @@ import { brands, getBrandName, getBrandColor } from '@/lib/data';
 import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib/actions/dashboard';
 import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
 import { getTodayTasks as getSharedTasks, getWeekDeadlines as getSharedDeadlines } from '@/lib/sharedTasks';
+import { Clapperboard, TrendingDown, TrendingUp, Camera, Plus, LogOut, FolderOpen, ListChecks, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 
 // ===== GELİŞMİŞ DASHBOARD (Blueprint Uyumlu) =====
 // - Düzenli (Retainer) vs Düzensiz (Proje) Gelir Ayrımı
@@ -42,9 +43,9 @@ const revenueData = {
 };
 
 const stats = [
-    { label: 'Aktif Projeler', value: '12', icon: '📁', trend: '+2', color: '#329FF5' },
-    { label: 'Bekleyen Teslimatlar', value: '8', icon: '📦', trend: '-3', color: '#F6D73C' },
-    { label: 'Müşteri Onayı', value: '5', icon: '⏳', trend: '+1', color: '#FF9800' },
+    { label: 'Aktif Projeler', value: '12', icon: FolderOpen, trend: '+2', color: '#329FF5' },
+    { label: 'Bekleyen Teslimatlar', value: '8', icon: ListChecks, trend: '-3', color: '#F6D73C' },
+    { label: 'Müşteri Onayı', value: '5', icon: Clock, trend: '+1', color: '#FF9800' },
 ];
 
 // Bugünkü Stüdyo Doluluk - Gerçek markalar
@@ -154,10 +155,10 @@ const getDynamicPendingActions = () => {
 const pendingActions = getDynamicPendingActions();
 
 const quickActions = [
-    { label: '+ Yeni Proje', icon: '📁', href: '/dashboard/projects', color: '#329FF5' },
-    { label: '+ Yeni Teklif', icon: '📝', href: '/dashboard/proposals', color: '#9C27B0' },
-    { label: '+ Yeni Fatura', icon: '💰', href: '/dashboard/invoices', color: '#F6D73C' },
-    { label: 'Stüdyo Rezerve', icon: '📸', href: '/dashboard/studio', color: '#00F5B0' },
+    { label: 'Yeni İçerik', icon: Clapperboard, href: '/dashboard/content-production', color: '#329FF5' },
+    { label: 'Yeni Gider', icon: TrendingDown, href: '/dashboard/accounting?tab=expenses', color: '#FF4242' },
+    { label: 'Yeni Gelir', icon: TrendingUp, href: '/dashboard/accounting?tab=income', color: '#00F5B0' },
+    { label: 'Stüdyo Rezerve', icon: Camera, href: '/dashboard/studio', color: '#9C27B0' },
 ];
 
 export default function DashboardPage() {
@@ -338,7 +339,7 @@ export default function DashboardPage() {
     return (
         <>
             <Header
-                title={currentUser ? `${getGreeting()}, ${currentUser.name.split(' ')[0]}! 👋` : 'Gösterge Paneli'}
+                title={currentUser ? `${getGreeting()}, ${currentUser.name.split(' ')[0]}!` : 'Gösterge Paneli'}
                 subtitle={`${new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
                 actions={
                     currentUser && (
@@ -347,7 +348,7 @@ export default function DashboardPage() {
                                 {currentUser.role}
                             </span>
                             <Button variant="ghost" size="sm" onClick={handleLogout}>
-                                🚪 Çıkış
+                                Çıkış
                             </Button>
                         </div>
                     )
@@ -357,17 +358,21 @@ export default function DashboardPage() {
             <div style={{ padding: 'var(--space-3)' }}>
                 {/* Hızlı Aksiyonlar */}
                 <div className="quick-actions" style={{ marginBottom: 'var(--space-2)' }}>
-                    {quickActions.map(action => (
-                        <Link key={action.label} href={action.href} style={{ textDecoration: 'none' }}>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                style={{ borderLeft: `3px solid ${action.color}` }}
-                            >
-                                {action.icon} {action.label}
-                            </Button>
-                        </Link>
-                    ))}
+                    {quickActions.map(action => {
+                        const Icon = action.icon;
+                        return (
+                            <Link key={action.label} href={action.href} style={{ textDecoration: 'none' }}>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    style={{ borderLeft: `3px solid ${action.color}`, gap: '8px' }}
+                                >
+                                    <Icon size={16} />
+                                    {action.label}
+                                </Button>
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 {/* KİŞİSEL BÖLÜM: Bugünkü Görevlerim + Bu Hafta Deadline */}
@@ -376,7 +381,7 @@ export default function DashboardPage() {
                         {/* Bugünkü Görevlerim */}
                         <Card style={{ borderTop: '4px solid #329FF5' }}>
                             <CardHeader
-                                title={`📋 Bugünkü Görevlerim (${todayTasks.filter(t => !t.completed).length}/${todayTasks.length})`}
+                                title={`Bugünkü Görevlerim (${todayTasks.filter(t => !t.completed).length}/${todayTasks.length})`}
                                 action={<Link href="/dashboard/tasks"><Button size="sm" variant="ghost">Tümünü Gör</Button></Link>}
                             />
                             <CardContent>
@@ -436,7 +441,7 @@ export default function DashboardPage() {
                                                     </Badge>
                                                 )}
                                                 {task.completed && (
-                                                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>✅ Tamamlandı</span>
+                                                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Tamamlandı</span>
                                                 )}
                                             </div>
                                         </div>
@@ -447,7 +452,7 @@ export default function DashboardPage() {
 
                         {/* Bu Hafta Deadline */}
                         <Card style={{ borderTop: '4px solid #FF4242' }}>
-                            <CardHeader title="⚠️ Bu Hafta Deadline" />
+                            <CardHeader title="Bu Hafta Deadline" />
                             <CardContent>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                                     {weekDeadlines.map(dl => (
@@ -475,7 +480,7 @@ export default function DashboardPage() {
                         {/* Tamamlanan Görevler */}
                         <Card style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', color: 'white' }}>
                             <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                                <p style={{ fontSize: 'var(--text-caption)', opacity: 0.8 }}>✅ TAMAMLANAN GÖREVLER</p>
+                                <p style={{ fontSize: 'var(--text-caption)', opacity: 0.8 }}>TAMAMLANAN GÖREVLER</p>
                                 <p style={{ fontSize: '32px', fontWeight: 700, color: '#00F5B0' }}>
                                     {todayTasks.filter(t => t.completed).length}
                                 </p>
@@ -486,7 +491,7 @@ export default function DashboardPage() {
                         {/* Seri Gün */}
                         <Card style={{ background: '#FFF3E0', borderTop: '4px solid #FF9800' }}>
                             <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#E65100' }}>🔥 SERİ GÜN</p>
+                                <p style={{ fontSize: 'var(--text-caption)', color: '#E65100' }}>SERİ GÜN</p>
                                 <p style={{ fontSize: '28px', fontWeight: 700, color: '#BF360C' }}>7</p>
                                 <p style={{ fontSize: 'var(--text-caption)', color: '#F57C00' }}>Ardışık aktif gün</p>
                             </div>
@@ -495,7 +500,7 @@ export default function DashboardPage() {
                         {/* Haftalık Hedef */}
                         <Card style={{ background: '#E3F2FD', borderTop: '4px solid #2196F3' }}>
                             <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#1565C0' }}>🎯 HAFTALIK HEDEF</p>
+                                <p style={{ fontSize: 'var(--text-caption)', color: '#1565C0' }}>HAFTALIK HEDEF</p>
                                 <p style={{ fontSize: '28px', fontWeight: 700, color: '#0D47A1' }}>12/15</p>
                                 <div style={{ marginTop: '8px', height: '6px', backgroundColor: '#BBDEFB', borderRadius: '3px' }}>
                                     <div style={{ width: '80%', height: '100%', backgroundColor: '#2196F3', borderRadius: '3px' }} />
@@ -509,25 +514,28 @@ export default function DashboardPage() {
                 <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
                     {/* Sol: İstatistikler */}
                     <div className="stats-grid">
-                        {stats.map((stat) => (
-                            <Card key={stat.label}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                                    <div>
-                                        <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)', marginBottom: '4px' }}>{stat.label}</p>
-                                        <p style={{ fontSize: '28px', fontWeight: 700, color: stat.color }}>{stat.value}</p>
-                                        <span style={{ fontSize: 'var(--text-caption)', color: stat.trend.startsWith('+') ? 'var(--color-success)' : stat.trend.startsWith('-') ? 'var(--color-error)' : 'var(--color-muted)' }}>
-                                            {stat.trend} bu ay
-                                        </span>
+                        {stats.map((stat) => {
+                            const Icon = stat.icon;
+                            return (
+                                <Card key={stat.label}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                                        <div>
+                                            <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)', marginBottom: '4px' }}>{stat.label}</p>
+                                            <p style={{ fontSize: '28px', fontWeight: 700, color: stat.color }}>{stat.value}</p>
+                                            <span style={{ fontSize: 'var(--text-caption)', color: stat.trend.startsWith('+') ? 'var(--color-success)' : stat.trend.startsWith('-') ? 'var(--color-error)' : 'var(--color-muted)' }}>
+                                                {stat.trend} bu ay
+                                            </span>
+                                        </div>
+                                        <Icon size={32} color={stat.color} strokeWidth={1.5} />
                                     </div>
-                                    <span style={{ fontSize: '32px' }}>{stat.icon}</span>
-                                </div>
-                            </Card>
-                        ))}
+                                </Card>
+                            );
+                        })}
                     </div>
 
                     {/* Sağ: Bugünkü Stüdyo Doluluk */}
                     <Card style={{ borderLeft: todayStudio.isOccupiedNow ? '4px solid #4CAF50' : '4px solid var(--color-border)' }}>
-                        <CardHeader title="📸 Bugün Stüdyo" />
+                        <CardHeader title="Bugün Stüdyo" />
                         <CardContent>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                                 <div style={{ width: '100%', height: 10, backgroundColor: 'var(--color-border)', borderRadius: 5 }}>
@@ -537,7 +545,7 @@ export default function DashboardPage() {
                             </div>
                             {todayStudio.isOccupiedNow && (
                                 <div style={{ padding: '8px', backgroundColor: '#E8F5E9', borderRadius: 'var(--radius-sm)', marginBottom: '8px' }}>
-                                    <p style={{ fontSize: 'var(--text-caption)', color: '#2E7D32' }}>🔴 ŞU AN DOLU</p>
+                                    <p style={{ fontSize: 'var(--text-caption)', color: '#2E7D32' }}>ŞU AN DOLU</p>
                                     <p style={{ fontWeight: 600, color: '#1B5E20' }}>{todayStudio.currentBooking}</p>
                                 </div>
                             )}
@@ -594,7 +602,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <span style={{ fontSize: 'var(--text-body-sm)' }}>
-                                        {action.type === 'payment' ? '💰' : action.type === 'deadline' ? '⏰' : '👀'} {action.message}
+                                        {action.message}
                                     </span>
                                     <Link href={action.link}>
                                         <Button variant="ghost" size="sm">{action.actionLabel} →</Button>
@@ -608,7 +616,7 @@ export default function DashboardPage() {
                 {/* BÖLÜM 5: Aktif Projeler */}
                 <Card>
                     <CardHeader
-                        title="📁 Aktif Projeler"
+                        title="Aktif Projeler"
                         action={<Link href="/dashboard/projects"><Button variant="secondary" size="sm">Tümünü Gör</Button></Link>}
                     />
                     <div className="table-container">
@@ -642,8 +650,8 @@ export default function DashboardPage() {
                                                 project.paymentStatus === 'PAID' ? 'success' :
                                                     project.paymentStatus === 'OVERDUE' ? 'error' : 'warning'
                                             }>
-                                                {project.paymentStatus === 'PAID' ? '✅ Ödendi' :
-                                                    project.paymentStatus === 'OVERDUE' ? '🔴 Gecikmiş' : '⏳ Bekliyor'}
+                                                {project.paymentStatus === 'PAID' ? 'Ödendi' :
+                                                    project.paymentStatus === 'OVERDUE' ? 'Gecikmiş' : 'Bekliyor'}
                                             </Badge>
                                         </td>
                                         <td>
