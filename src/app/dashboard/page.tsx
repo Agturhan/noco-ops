@@ -147,7 +147,7 @@ export default function DashboardPage() {
         const loadDashboardData = async () => {
             try {
                 // Önce localStorage'dan görevleri al (Kanban ile senkron)
-                const savedTasks = localStorage.getItem('noco_kanban_tasks');
+                const savedTasks = localStorage.getItem('noco_tasks');
                 let localTasks: any[] = [];
                 if (savedTasks) {
                     try {
