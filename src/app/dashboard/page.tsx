@@ -135,10 +135,12 @@ export default function DashboardPage() {
         // Kullanıcı bilgilerini localStorage'dan al
         const userStr = localStorage.getItem('currentUser');
         let userId = 'user-owner'; // Default
+        let userName = ''; // Kullanıcı adı
         if (userStr) {
             const user = JSON.parse(userStr);
             setCurrentUser(user);
             userId = user.id || 'user-owner';
+            userName = user.name || '';
         }
 
         // Dashboard verilerini DB'den çek
@@ -150,8 +152,20 @@ export default function DashboardPage() {
                     getUserWeekDeadlines(userId),
                 ]);
 
+                // Kullanıcıya atanan görevleri filtrele (assigneeId ile eşleştir)
+                // Not: Şu an görevlerde assigneeId yerine assignee ismi kullanılıyor
+                // Tüm görevleri göster ama kullanıcının kendi görevlerini öne al
+                const userTasks = (dbTasks || []).filter((t: any) => {
+                    // Eğer assigneeId varsa ve kullanıcının ID'si veya ismiyle eşleşiyorsa
+                    if (t.assigneeId) {
+                        return t.assigneeId === userId;
+                    }
+                    // assigneeId yoksa tüm görevleri göster (genel görevler)
+                    return true;
+                });
+
                 // Görevleri set et
-                setTodayTasks(dbTasks || []);
+                setTodayTasks(userTasks);
                 setWeekDeadlines(dbDeadlines || []);
 
                 // Diğer dashboard verileri

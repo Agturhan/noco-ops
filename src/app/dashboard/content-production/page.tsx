@@ -151,7 +151,18 @@ export default function ContentProductionPage() {
     const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [filterAssignee, setFilterAssignee] = useState('all'); // 'all', 'me', veya kişi ismi
+    const [currentUser, setCurrentUser] = useState<{ name: string; id: string } | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'team'>('list');
+
+    // Kullanıcı bilgilerini localStorage'dan al
+    React.useEffect(() => {
+        const userStr = localStorage.getItem('currentUser');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            setCurrentUser(user);
+        }
+    }, []);
 
     // Marka yönetimi
     const [customBrands, setCustomBrands] = useState<typeof brands>([]);
@@ -267,6 +278,12 @@ export default function ContentProductionPage() {
     const filteredContents = contents.filter(c => {
         if (filterBrand !== 'all' && c.brandId !== filterBrand) return false;
         if (filterStatus !== 'all' && c.status !== filterStatus) return false;
+        // Atanan kişi filtresi
+        if (filterAssignee === 'me' && currentUser) {
+            if (c.assigneeId !== currentUser.name) return false;
+        } else if (filterAssignee !== 'all' && filterAssignee !== 'me') {
+            if (c.assigneeId !== filterAssignee) return false;
+        }
         return true;
     });
 
@@ -374,6 +391,12 @@ export default function ContentProductionPage() {
                     <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
                         <option value="all">Tüm Durumlar</option>
                         {Object.entries(contentStatuses).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
+                    </select>
+                    {/* Sorumlu filtresi */}
+                    <select value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: filterAssignee === 'me' ? '2px solid #00F5B0' : '1px solid var(--color-border)', backgroundColor: filterAssignee === 'me' ? 'rgba(0, 245, 176, 0.1)' : 'transparent' }}>
+                        <option value="all">👥 Tüm Sorumlular</option>
+                        <option value="me">👤 Bana Atananlar</option>
+                        {activeTeam.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                     {/* Hızlı marka filtreleri */}
                     <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap' }}>
