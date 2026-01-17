@@ -248,27 +248,38 @@ export default function CalendarPage() {
                 <Card>
                     <CardContent>
                         {/* Filtreler */}
-                        <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', minWidth: 150 }}>
-                                <option value="all">Tüm Markalar</option>
-                                {brands.filter(b => b.active).map(b => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                ))}
-                            </select>
-                            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', minWidth: 120 }}>
-                                <option value="all">Tüm Tipler</option>
-                                {Object.entries(calendarEventTypes).map(([key, val]) => (
-                                    <option key={key} value={key}>{val.icon} {val.label}</option>
-                                ))}
-                            </select>
-                            <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                                {brandEventCounts.slice(0, 6).map(b => (
-                                    <button key={b.id} onClick={() => setFilterBrand(filterBrand === b.id ? 'all' : b.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 11, border: filterBrand === b.id ? `2px solid ${b.color}` : '1px solid var(--color-border)', borderRadius: 12, background: filterBrand === b.id ? b.color + '20' : 'white', cursor: 'pointer' }}>
-                                        <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: b.color }}></span>
-                                        {b.name.split(' ')[0]} {b.count}
-                                    </button>
-                                ))}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
+                            {/* Dropdown Filtreleri */}
+                            <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                                <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', minWidth: 150 }}>
+                                    <option value="all">Tüm Markalar</option>
+                                    {brands.filter(b => b.active).map(b => (
+                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                    ))}
+                                </select>
+                                <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', minWidth: 120 }}>
+                                    <option value="all">Tüm Tipler</option>
+                                    {Object.entries(calendarEventTypes).map(([key, val]) => (
+                                        <option key={key} value={key}>{val.icon} {val.label}</option>
+                                    ))}
+                                </select>
+                                {(filterBrand !== 'all' || filterType !== 'all') && (
+                                    <Button variant="ghost" size="sm" onClick={() => { setFilterBrand('all'); setFilterType('all'); }}>
+                                        ✕ Temizle
+                                    </Button>
+                                )}
                             </div>
+                            {/* Hızlı Marka Chip'leri */}
+                            {brandEventCounts.length > 0 && (
+                                <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                                    {brandEventCounts.slice(0, 6).map(b => (
+                                        <button key={b.id} onClick={() => setFilterBrand(filterBrand === b.id ? 'all' : b.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, border: filterBrand === b.id ? `2px solid ${b.color}` : '1px solid var(--color-border)', borderRadius: 12, background: filterBrand === b.id ? b.color + '20' : 'var(--color-card)', cursor: 'pointer' }}>
+                                            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: b.color }}></span>
+                                            {b.name.split(' ')[0]} ({b.count})
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Tip Efsanesi */}

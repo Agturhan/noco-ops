@@ -362,10 +362,22 @@ export default function ContentProductionPage() {
                 title="İş Yönetimi"
                 subtitle="Merkezi İçerik Takibi"
                 actions={
-                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                        <Button variant={viewMode === 'list' ? 'primary' : 'secondary'} size="sm" onClick={() => setViewMode('list')}>📋 Liste</Button>
-                        <Button variant={viewMode === 'calendar' ? 'primary' : 'secondary'} size="sm" onClick={() => setViewMode('calendar')}>📅 Takvim</Button>
-                        <Button variant={viewMode === 'team' ? 'primary' : 'secondary'} size="sm" onClick={() => setViewMode('team')}>👥 Ekip</Button>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                        {/* View Mode - Segmented Control */}
+                        <div style={{
+                            display: 'flex',
+                            backgroundColor: 'var(--color-surface)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '2px',
+                            border: '1px solid var(--color-border)'
+                        }}>
+                            <Button variant={viewMode === 'list' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('list')}>📋 Liste</Button>
+                            <Button variant={viewMode === 'calendar' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')}>📅 Takvim</Button>
+                            <Button variant={viewMode === 'team' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('team')}>👥 Ekip</Button>
+                        </div>
+                        {/* Separator */}
+                        <div style={{ width: 1, height: 24, backgroundColor: 'var(--color-border)' }} />
+                        {/* Actions */}
                         <Button variant="secondary" size="sm" onClick={() => setShowBrandModal(true)}>🏷️ Marka Ekle</Button>
                         <Button variant="primary" onClick={() => openModal()}>+ Yeni İçerik</Button>
                     </div>

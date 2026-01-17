@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
             { href: '/dashboard/reports', label: 'Raporlar', icon: '📑' },
         ]
     },
-    { href: '/dashboard/audit-log', label: 'Audit Log', icon: '📜', roles: ['OWNER', 'OPS'] },
+    { href: '/dashboard/audit-log', label: 'Denetim Kaydı', icon: '📜', roles: ['OWNER', 'OPS'] },
     { href: '/dashboard/settings', label: 'Ayarlar', icon: '⚙️', roles: ['OWNER'] },
 ];
 
