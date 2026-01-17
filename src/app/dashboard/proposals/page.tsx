@@ -172,9 +172,12 @@ export default function ProposalsPage() {
                     notes: p.notes || '',
                     paymentTerms: p.paymentTerms || '',
                 }));
-                setProposalList(formatted);
+                // Fallback to static proposals if DB is empty
+                setProposalList(formatted.length > 0 ? formatted : proposals);
             } catch (error) {
                 console.error('Teklifler yüklenirken hata:', error);
+                // Use static proposals on error
+                setProposalList(proposals);
             } finally {
                 setLoading(false);
             }

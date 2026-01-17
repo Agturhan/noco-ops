@@ -205,7 +205,7 @@ export default function RetainersPage() {
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>AYLIK SAAT</p>
                             <p style={{ fontSize: '28px', fontWeight: 700 }}>{totalMonthlyHours}</p>
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>
-                                {totalUsedHours} kullanıldı ({Math.round((totalUsedHours / totalMonthlyHours) * 100)}%)
+                                {totalUsedHours} kullanıldı ({totalMonthlyHours > 0 ? Math.round((totalUsedHours / totalMonthlyHours) * 100) : 0}%)
                             </p>
                         </div>
                     </Card>
@@ -232,7 +232,7 @@ export default function RetainersPage() {
                 {/* Retainer Kartları */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 'var(--space-2)' }}>
                     {retainerClients.map(client => {
-                        const usagePercent = Math.round((client.usedHours / client.monthlyHours) * 100);
+                        const usagePercent = client.monthlyHours > 0 ? Math.round((client.usedHours / client.monthlyHours) * 100) : 0;
                         const remainingHours = client.monthlyHours - client.usedHours;
                         const daysLeft = Math.ceil((new Date(client.renewDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 

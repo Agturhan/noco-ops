@@ -186,83 +186,102 @@ export default function DeliverablesPage() {
                 </Card>
 
                 {/* Deliverables Table */}
-                <Card>
-                    <div className="table-container">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Teslimat</th>
-                                    <th>Proje</th>
-                                    <th>Durum</th>
-                                    <th>Revizyon</th>
-                                    <th>Ödeme</th>
-                                    <th>İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {deliverables.map((deliverable) => {
-                                    const canDeliver = deliverable.status === 'APPROVED' && deliverable.invoicePaid;
-                                    const deliverBlockedReason = !deliverable.invoicePaid
-                                        ? 'Fatura ödenmeden teslimat yapılamaz'
-                                        : null;
+                {loading ? (
+                    <Card>
+                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+                            <p style={{ color: 'var(--color-muted)' }}>Teslimatlar yükleniyor...</p>
+                        </div>
+                    </Card>
+                ) : deliverables.length === 0 ? (
+                    <Card>
+                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>📦</p>
+                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)' }}>Henüz teslimat yok</p>
+                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>
+                                Bir proje için ilk teslimatınızı oluşturun
+                            </p>
+                            <Button variant="primary">+ Yeni Teslimat</Button>
+                        </div>
+                    </Card>
+                ) : (
+                    <Card>
+                        <div className="table-container">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Teslimat</th>
+                                        <th>Proje</th>
+                                        <th>Durum</th>
+                                        <th>Revizyon</th>
+                                        <th>Ödeme</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {deliverables.map((deliverable) => {
+                                        const canDeliver = deliverable.status === 'APPROVED' && deliverable.invoicePaid;
+                                        const deliverBlockedReason = !deliverable.invoicePaid
+                                            ? 'Fatura ödenmeden teslimat yapılamaz'
+                                            : null;
 
-                                    return (
-                                        <tr key={deliverable.id}>
-                                            <td style={{ fontWeight: 500 }}>{deliverable.name}</td>
-                                            <td style={{ color: 'var(--color-muted)' }}>{deliverable.project}</td>
-                                            <td>
-                                                <DeliverableStatusBadge status={deliverable.status} />
-                                            </td>
-                                            <td>
-                                                <span style={{
-                                                    color: deliverable.revisionCount >= deliverable.maxRevisions
-                                                        ? 'var(--color-error)'
-                                                        : 'var(--color-sub-ink)'
-                                                }}>
-                                                    {deliverable.revisionCount}/{deliverable.maxRevisions}
-                                                    {deliverable.revisionCount >= deliverable.maxRevisions && ' ⚠️'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <InvoiceStatusBadge status={deliverable.invoiceStatus} />
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                                                    {deliverable.status === 'APPROVED' && (
-                                                        <Button
-                                                            variant={canDeliver ? 'success' : 'secondary'}
-                                                            size="sm"
-                                                            disabled={!canDeliver}
-                                                            blockedReason={deliverBlockedReason}
-                                                            onClick={() => handleDeliverClick(deliverable)}
-                                                            style={!canDeliver ? { cursor: 'not-allowed' } : {}}
-                                                        >
-                                                            {canDeliver ? '📤 Teslim Et' : '🔒 Teslim Et'}
-                                                        </Button>
-                                                    )}
-                                                    {deliverable.status === 'IN_PROGRESS' && (
-                                                        <Button variant="primary" size="sm" onClick={() => handleSendToReview(deliverable)}>
-                                                            📤 İncelemeye Gönder
-                                                        </Button>
-                                                    )}
-                                                    {deliverable.status === 'IN_REVIEW' && (
-                                                        <Badge variant="info">Müşteri Bekleniyor</Badge>
-                                                    )}
-                                                    {deliverable.status === 'REVISION_LIMIT_MET' && (
-                                                        <Button variant="secondary" size="sm">
-                                                            Ek Kapsam Talep Et
-                                                        </Button>
-                                                    )}
-                                                    <Button variant="ghost" size="sm">⋮</Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
+                                        return (
+                                            <tr key={deliverable.id}>
+                                                <td style={{ fontWeight: 500 }}>{deliverable.name}</td>
+                                                <td style={{ color: 'var(--color-muted)' }}>{deliverable.project}</td>
+                                                <td>
+                                                    <DeliverableStatusBadge status={deliverable.status} />
+                                                </td>
+                                                <td>
+                                                    <span style={{
+                                                        color: deliverable.revisionCount >= deliverable.maxRevisions
+                                                            ? 'var(--color-error)'
+                                                            : 'var(--color-sub-ink)'
+                                                    }}>
+                                                        {deliverable.revisionCount}/{deliverable.maxRevisions}
+                                                        {deliverable.revisionCount >= deliverable.maxRevisions && ' ⚠️'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <InvoiceStatusBadge status={deliverable.invoiceStatus} />
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                                                        {deliverable.status === 'APPROVED' && (
+                                                            <Button
+                                                                variant={canDeliver ? 'success' : 'secondary'}
+                                                                size="sm"
+                                                                disabled={!canDeliver}
+                                                                blockedReason={deliverBlockedReason}
+                                                                onClick={() => handleDeliverClick(deliverable)}
+                                                                style={!canDeliver ? { cursor: 'not-allowed' } : {}}
+                                                            >
+                                                                {canDeliver ? '📤 Teslim Et' : '🔒 Teslim Et'}
+                                                            </Button>
+                                                        )}
+                                                        {deliverable.status === 'IN_PROGRESS' && (
+                                                            <Button variant="primary" size="sm" onClick={() => handleSendToReview(deliverable)}>
+                                                                📤 İncelemeye Gönder
+                                                            </Button>
+                                                        )}
+                                                        {deliverable.status === 'IN_REVIEW' && (
+                                                            <Badge variant="info">Müşteri Bekleniyor</Badge>
+                                                        )}
+                                                        {deliverable.status === 'REVISION_LIMIT_MET' && (
+                                                            <Button variant="secondary" size="sm">
+                                                                Ek Kapsam Talep Et
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="ghost" size="sm">⋮</Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                )}
             </div>
 
             {/* Teslimat Onay Modal */}

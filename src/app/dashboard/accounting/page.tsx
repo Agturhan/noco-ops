@@ -405,7 +405,7 @@ export default function AccountingPage() {
 
                         {/* Gider Kategorileri Detay */}
                         <Card>
-                            <CardHeader title="📊 Gider Dağılımı (Kategorilere Göre)" />
+                            <CardHeader title="📋 Gider Detayları" />
                             <CardContent>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-2)' }}>
                                     {expensesByCategory.map(cat => (

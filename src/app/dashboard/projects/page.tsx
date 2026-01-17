@@ -50,6 +50,7 @@ export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -63,10 +64,12 @@ export default function ProjectsPage() {
     const loadProjects = async () => {
         try {
             setLoading(true);
+            setError(null);
             const data = await getProjects(statusFilter || undefined);
             setProjects(data as Project[]);
         } catch (error) {
             console.error('Projeler yüklenirken hata:', error);
+            setError('Projeler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
         } finally {
             setLoading(false);
         }
@@ -119,9 +122,11 @@ export default function ProjectsPage() {
         }
     };
 
-    // Tamamlanan teslimat sayısı
+    // Tamamlanan teslimat sayısı - Detay sayfasıyla tutarlı
     const getCompletedDeliverables = (project: Project) => {
-        return project.deliverables.filter(d => d.status === 'DELIVERED' || d.status === 'APPROVED').length;
+        return project.deliverables.filter(d =>
+            d.status === 'DELIVERED' || d.status === 'APPROVED' || d.status === 'COMPLETED'
+        ).length;
     };
 
     // Sözleşme seçenekleri oluştur
@@ -209,6 +214,17 @@ export default function ProjectsPage() {
                     <Card>
                         <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
                             <p style={{ color: 'var(--color-muted)' }}>Yükleniyor...</p>
+                        </div>
+                    </Card>
+                ) : error ? (
+                    <Card style={{ borderLeft: '4px solid var(--color-error)' }}>
+                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>⚠️</p>
+                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--color-error)' }}>Hata Oluştu</p>
+                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>{error}</p>
+                            <Button variant="primary" onClick={() => loadProjects()}>
+                                🔄 Tekrar Dene
+                            </Button>
                         </div>
                     </Card>
                 ) : projects.length === 0 ? (

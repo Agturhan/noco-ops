@@ -231,15 +231,15 @@ export default function DeliverableDetailPage() {
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: 'var(--text-body-sm)' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span>{deliverable.contract.isPaid ? '✅' : '❌'}</span>
-                                        <span>Ödeme Durumu</span>
+                                        <span>Ödeme {deliverable.contract.isPaid ? 'Alındı' : 'Bekleniyor'}</span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span>{revisionsRemaining > 0 ? '✅' : '⚠️'}</span>
-                                        <span>Revizyon Hakkı ({revisionsRemaining}/{deliverable.contract.maxRevisions})</span>
+                                        <span>Revizyon: {deliverable.contract.currentRevision}/{deliverable.contract.maxRevisions} kullanıldı</span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span>{deliverable.contract.paymentRequired ? '🔒' : '🔓'}</span>
-                                        <span>Teslim için ödeme {deliverable.contract.paymentRequired ? 'gerekli' : 'gerekli değil'}</span>
+                                        <span>{!deliverable.contract.paymentRequired || deliverable.contract.isPaid ? '✅' : '🔒'}</span>
+                                        <span>Teslim {!deliverable.contract.paymentRequired ? 'açık' : deliverable.contract.isPaid ? 'hazır' : 'ödeme bekliyor'}</span>
                                     </div>
                                 </div>
                             </div>

@@ -5,49 +5,149 @@ import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
 
-// Mock proje verisi
-const projectData = {
-    id: '1',
-    name: 'Zeytindalı Rebrand 2026',
-    client: 'Zeytindalı Gıda',
-    status: 'ACTIVE',
-    priority: 'HIGH',
-    startDate: '2026-01-01',
-    dueDate: '2026-02-28',
-    budget: 150000,
-    description: 'Zeytindalı markası için kapsamlı yeniden markalaşma projesi. Logo, kurumsal kimlik, ambalaj tasarımı ve dijital varlıklar.',
-    manager: 'Ahmet Yılmaz',
-    team: ['Ahmet Yılmaz', 'Mehmet Kaya', 'Zeynep Demir'],
-    tags: ['rebrand', 'kurumsal kimlik', 'ambalaj'],
-    contract: {
-        signedDate: '2025-12-20',
-        maxRevisions: 3,
-        paymentTerms: 'Net 30',
-        retainerHours: 0,
+// Mock proje verileri - ID bazlı
+const projectsData: Record<string, typeof projectTemplate> = {
+    '1': {
+        id: '1',
+        name: 'Zeytindalı Rebrand 2026',
+        client: 'Zeytindalı Gıda',
+        status: 'ACTIVE',
+        priority: 'HIGH',
+        startDate: '2026-01-01',
+        dueDate: '2026-02-28',
+        budget: 150000,
+        description: 'Zeytindalı markası için kapsamlı yeniden markalaşma projesi. Logo, kurumsal kimlik, ambalaj tasarımı ve dijital varlıklar.',
+        manager: 'Ahmet Yılmaz',
+        team: ['Ahmet Yılmaz', 'Mehmet Kaya', 'Zeynep Demir'],
+        tags: ['rebrand', 'kurumsal kimlik', 'ambalaj'],
+        contract: {
+            signedDate: '2025-12-20',
+            maxRevisions: 3,
+            paymentTerms: 'Net 30',
+            retainerHours: 0,
+        },
+        deliverables: [
+            { id: 'd1', title: 'Logo Tasarımı', status: 'IN_REVIEW', dueDate: '2026-01-20', assignee: 'Ahmet', progress: 90 },
+            { id: 'd2', title: 'Kurumsal Kimlik Kılavuzu', status: 'IN_PROGRESS', dueDate: '2026-02-01', assignee: 'Mehmet', progress: 45 },
+            { id: 'd3', title: 'Ambalaj Tasarımı (5 SKU)', status: 'TODO', dueDate: '2026-02-15', assignee: 'Zeynep', progress: 0 },
+            { id: 'd4', title: 'Sosyal Medya Görselleri', status: 'TODO', dueDate: '2026-02-20', assignee: 'Ahmet', progress: 0 },
+            { id: 'd5', title: 'Web Sitesi UI/UX', status: 'BLOCKED', dueDate: '2026-02-28', assignee: 'Mehmet', progress: 10 },
+        ],
+        invoices: [
+            { id: 'i1', number: 'INV-2026-001', amount: 50000, status: 'PAID', dueDate: '2026-01-15', paidDate: '2026-01-10', description: 'Ön ödeme (%33)' },
+            { id: 'i2', number: 'INV-2026-002', amount: 50000, status: 'PENDING', dueDate: '2026-02-01', description: 'Ara ödeme (%33)' },
+            { id: 'i3', number: 'INV-2026-003', amount: 50000, status: 'DRAFT', dueDate: '2026-02-28', description: 'Final ödeme (%33)' },
+        ],
+        activities: [
+            { id: 'a1', date: '2026-01-13 14:30', user: 'Ahmet', action: 'Logo tasarımını incelemeye gönderdi', type: 'deliverable' },
+            { id: 'a2', date: '2026-01-12 10:15', user: 'Zeynep', action: 'Proje notlarını güncelledi', type: 'note' },
+            { id: 'a3', date: '2026-01-10 09:00', user: 'Sistem', action: 'Fatura INV-2026-001 ödendi', type: 'payment' },
+        ],
+        notes: [
+            { id: 'n1', date: '2026-01-12', user: 'Zeynep', content: 'Müşteri yeşil tonlarını tercih ediyor. Zeytin yaprağı motifi önemli.' },
+        ]
     },
-    deliverables: [
-        { id: 'd1', title: 'Logo Tasarımı', status: 'IN_REVIEW', dueDate: '2026-01-20', assignee: 'Ahmet', progress: 90 },
-        { id: 'd2', title: 'Kurumsal Kimlik Kılavuzu', status: 'IN_PROGRESS', dueDate: '2026-02-01', assignee: 'Mehmet', progress: 45 },
-        { id: 'd3', title: 'Ambalaj Tasarımı (5 SKU)', status: 'TODO', dueDate: '2026-02-15', assignee: 'Zeynep', progress: 0 },
-        { id: 'd4', title: 'Sosyal Medya Görselleri', status: 'TODO', dueDate: '2026-02-20', assignee: 'Ahmet', progress: 0 },
-        { id: 'd5', title: 'Web Sitesi UI/UX', status: 'BLOCKED', dueDate: '2026-02-28', assignee: 'Mehmet', progress: 10 },
-    ],
-    invoices: [
-        { id: 'i1', number: 'INV-2026-001', amount: 50000, status: 'PAID', dueDate: '2026-01-15', paidDate: '2026-01-10', description: 'Ön ödeme (%33)' },
-        { id: 'i2', number: 'INV-2026-002', amount: 50000, status: 'PENDING', dueDate: '2026-02-01', description: 'Ara ödeme (%33)' },
-        { id: 'i3', number: 'INV-2026-003', amount: 50000, status: 'DRAFT', dueDate: '2026-02-28', description: 'Final ödeme (%33)' },
-    ],
-    activities: [
-        { id: 'a1', date: '2026-01-13 14:30', user: 'Ahmet', action: 'Logo tasarımını incelemeye gönderdi', type: 'deliverable' },
-        { id: 'a2', date: '2026-01-12 10:15', user: 'Zeynep', action: 'Proje notlarını güncelledi', type: 'note' },
-        { id: 'a3', date: '2026-01-10 09:00', user: 'Sistem', action: 'Fatura INV-2026-001 ödendi', type: 'payment' },
-        { id: 'a4', date: '2026-01-05 16:45', user: 'Mehmet', action: 'Kurumsal kimlik çalışmasına başladı', type: 'deliverable' },
-        { id: 'a5', date: '2026-01-01 10:00', user: 'Ahmet', action: 'Proje oluşturuldu', type: 'project' },
-    ],
-    notes: [
-        { id: 'n1', date: '2026-01-12', user: 'Zeynep', content: 'Müşteri yeşil tonlarını tercih ediyor. Zeytin yaprağı motifi önemli.' },
-        { id: 'n2', date: '2026-01-08', user: 'Ahmet', content: 'Logo için 3 farklı konsept hazırlanacak. Brifinge uygun olmalı.' },
-    ]
+    '2': {
+        id: '2',
+        name: 'İkranur Sosyal Medya Paketi',
+        client: 'İkranur Kozmetik',
+        status: 'ACTIVE',
+        priority: 'MEDIUM',
+        startDate: '2026-01-10',
+        dueDate: '2026-03-15',
+        budget: 85000,
+        description: 'İkranur için aylık sosyal medya içerik üretimi ve yönetimi. Instagram, TikTok ve YouTube içerikleri.',
+        manager: 'Zeynep Demir',
+        team: ['Zeynep Demir', 'Ali Veli'],
+        tags: ['sosyal medya', 'içerik', 'kozmetik'],
+        contract: { signedDate: '2026-01-05', maxRevisions: 2, paymentTerms: 'Net 15', retainerHours: 20 },
+        deliverables: [
+            { id: 'd1', title: 'Ocak Video Paketi', status: 'COMPLETED', dueDate: '2026-01-31', assignee: 'Zeynep', progress: 100 },
+            { id: 'd2', title: 'Şubat Video Paketi', status: 'IN_PROGRESS', dueDate: '2026-02-28', assignee: 'Ali', progress: 30 },
+        ],
+        invoices: [
+            { id: 'i1', number: 'INV-2026-010', amount: 28000, status: 'PAID', dueDate: '2026-01-15', paidDate: '2026-01-14', description: 'Ocak paketi' },
+        ],
+        activities: [
+            { id: 'a1', date: '2026-01-15 10:00', user: 'Zeynep', action: 'Ocak videolarını teslim etti', type: 'deliverable' },
+        ],
+        notes: []
+    },
+    '3': {
+        id: '3',
+        name: 'Louvess E-Ticaret Lansmanı',
+        client: 'Louvess Beauty',
+        status: 'PENDING',
+        priority: 'HIGH',
+        startDate: '2026-02-01',
+        dueDate: '2026-04-30',
+        budget: 250000,
+        description: 'Louvess için yeni e-ticaret platformu tasarımı ve lansman kampanyası.',
+        manager: 'Mehmet Kaya',
+        team: ['Mehmet Kaya', 'Ahmet Yılmaz', 'Zeynep Demir'],
+        tags: ['e-ticaret', 'lansman', 'web tasarım'],
+        contract: { signedDate: '2026-01-20', maxRevisions: 4, paymentTerms: 'Net 30', retainerHours: 0 },
+        deliverables: [
+            { id: 'd1', title: 'UI/UX Tasarım', status: 'TODO', dueDate: '2026-02-28', assignee: 'Mehmet', progress: 0 },
+            { id: 'd2', title: 'Lansman Kampanyası', status: 'TODO', dueDate: '2026-04-15', assignee: 'Zeynep', progress: 0 },
+        ],
+        invoices: [],
+        activities: [
+            { id: 'a1', date: '2026-01-20 14:00', user: 'Sistem', action: 'Proje oluşturuldu', type: 'project' },
+        ],
+        notes: []
+    },
+    '4': {
+        id: '4',
+        name: 'Tevfik Usta Web Sitesi',
+        client: 'Tevfik Usta Döner',
+        status: 'ACTIVE',
+        priority: 'MEDIUM',
+        startDate: '2026-01-05',
+        dueDate: '2026-02-15',
+        budget: 45000,
+        description: 'Tevfik Usta franchise için kurumsal web sitesi tasarımı.',
+        manager: 'Ahmet Yılmaz',
+        team: ['Ahmet Yılmaz'],
+        tags: ['web sitesi', 'kurumsal', 'restoran'],
+        contract: { signedDate: '2026-01-03', maxRevisions: 2, paymentTerms: 'Net 15', retainerHours: 0 },
+        deliverables: [
+            { id: 'd1', title: 'Ana Sayfa Tasarımı', status: 'COMPLETED', dueDate: '2026-01-20', assignee: 'Ahmet', progress: 100 },
+            { id: 'd2', title: 'Alt Sayfalar', status: 'IN_PROGRESS', dueDate: '2026-02-01', assignee: 'Ahmet', progress: 60 },
+            { id: 'd3', title: 'Mobil Optimizasyon', status: 'TODO', dueDate: '2026-02-10', assignee: 'Ahmet', progress: 0 },
+        ],
+        invoices: [
+            { id: 'i1', number: 'INV-2026-015', amount: 22500, status: 'PAID', dueDate: '2026-01-10', paidDate: '2026-01-08', description: 'Ön ödeme (%50)' },
+            { id: 'i2', number: 'INV-2026-016', amount: 22500, status: 'PENDING', dueDate: '2026-02-15', description: 'Final ödeme (%50)' },
+        ],
+        activities: [
+            { id: 'a1', date: '2026-01-18 16:00', user: 'Ahmet', action: 'Ana sayfa tasarımı onaylandı', type: 'deliverable' },
+        ],
+        notes: [
+            { id: 'n1', date: '2026-01-10', user: 'Ahmet', content: 'Müşteri kırmızı-beyaz renk paletini onayladı.' },
+        ]
+    },
+};
+
+// Template type tanımı
+const projectTemplate = {
+    id: '',
+    name: '',
+    client: '',
+    status: '' as 'ACTIVE' | 'PENDING' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED',
+    priority: '' as 'HIGH' | 'MEDIUM' | 'LOW',
+    startDate: '',
+    dueDate: '',
+    budget: 0,
+    description: '',
+    manager: '',
+    team: [] as string[],
+    tags: [] as string[],
+    contract: { signedDate: '', maxRevisions: 0, paymentTerms: '', retainerHours: 0 },
+    deliverables: [] as { id: string; title: string; status: string; dueDate: string; assignee: string; progress: number }[],
+    invoices: [] as { id: string; number: string; amount: number; status: string; dueDate: string; paidDate?: string; description: string }[],
+    activities: [] as { id: string; date: string; user: string; action: string; type: string }[],
+    notes: [] as { id: string; date: string; user: string; content: string }[],
 };
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -77,11 +177,38 @@ export default function ProjectDetailPage() {
     const [showNoteModal, setShowNoteModal] = useState(false);
     const [newNote, setNewNote] = useState('');
 
-    const project = projectData; // Gerçek uygulamada ID'ye göre fetch edilir
+    // ID'ye göre proje seç
+    const projectId = params.id as string;
+    const project = projectsData[projectId];
 
-    // Hesaplamalar
+    // Proje bulunamadıysa 404 state
+    if (!project) {
+        return (
+            <>
+                <Header title="Proje Bulunamadı" subtitle="404" />
+                <div style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
+                    <Card>
+                        <CardContent>
+                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>🔍</p>
+                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)' }}>Proje bulunamadı</p>
+                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>
+                                ID: {projectId} ile eşleşen bir proje yok.
+                            </p>
+                            <Button variant="primary" onClick={() => router.push('/dashboard/projects')}>
+                                ← Projelere Dön
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </>
+        );
+    }
+
+    // Hesaplamalar - Liste sayfasıyla tutarlı
     const totalDeliverables = project.deliverables.length;
-    const completedDeliverables = project.deliverables.filter(d => d.status === 'COMPLETED').length;
+    const completedDeliverables = project.deliverables.filter(d =>
+        d.status === 'DELIVERED' || d.status === 'APPROVED' || d.status === 'COMPLETED'
+    ).length;
     const progress = totalDeliverables > 0 ? Math.round((completedDeliverables / totalDeliverables) * 100) : 0;
 
     const totalInvoiced = project.invoices.reduce((sum, inv) => sum + inv.amount, 0);

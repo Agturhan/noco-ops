@@ -8,6 +8,7 @@ import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui';
 import { brands, getBrandName, getBrandColor } from '@/lib/data';
 import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib/actions/dashboard';
 import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
+import { getTodayTasks as getSharedTasks, getWeekDeadlines as getSharedDeadlines } from '@/lib/sharedTasks';
 
 // ===== GELİŞMİŞ DASHBOARD (Blueprint Uyumlu) =====
 // - Düzenli (Retainer) vs Düzensiz (Proje) Gelir Ayrımı
@@ -57,20 +58,45 @@ const todayStudio = {
     currentBooking: 'Valora Psikoloji - Ürün Çekimi',
 };
 
-// Yaklaşan Ödeme Riskleri - Gerçek markalar
+// Yaklaşan Ödeme Riskleri - Gerçek markalar (dinamik tarih hesabı)
+const getOverdueDays = (dueDateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(dueDateStr);
+    dueDate.setHours(0, 0, 0, 0);
+    return Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const getDaysUntil = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0, 0, 0, 0);
+    return Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// Fatura vade tarihleri
+const invoiceDueDates = {
+    'INV-2026-002': '2026-01-12', // Zeytindalı - vadesi geçmiş
+    'INV-2026-003': '2026-01-20', // Valora
+    'INV-2026-004': '2026-01-24', // İkra
+    'INV-2026-005': '2026-01-29', // Zoks
+    'INV-2026-006': '2026-02-10', // Ali Haydar
+};
+
 const paymentRisks = {
     overdue: [
-        { id: 'o1', client: 'Zeytindalı Gıda', invoice: 'INV-2026-002', amount: 50000, daysOverdue: 5 },
+        { id: 'o1', client: 'Zeytindalı Gıda', invoice: 'INV-2026-002', amount: 50000, dueDate: invoiceDueDates['INV-2026-002'], daysOverdue: Math.max(0, getOverdueDays(invoiceDueDates['INV-2026-002'])) },
     ],
     next7Days: [
-        { id: 'p1', client: 'Valora Psikoloji', invoice: 'INV-2026-003', amount: 35000, dueIn: 3 },
-        { id: 'p2', client: 'İkra Giyim', invoice: 'INV-2026-004', amount: 25000, dueIn: 7 },
+        { id: 'p1', client: 'Valora Psikoloji', invoice: 'INV-2026-003', amount: 35000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-003']) },
+        { id: 'p2', client: 'İkra Giyim', invoice: 'INV-2026-004', amount: 25000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-004']) },
     ],
     next14Days: [
-        { id: 'p3', client: 'Zoks Studio', invoice: 'INV-2026-005', amount: 45000, dueIn: 12 },
+        { id: 'p3', client: 'Zoks Studio', invoice: 'INV-2026-005', amount: 45000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-005']) },
     ],
     next30Days: [
-        { id: 'p4', client: 'Ali Haydar Ocakbaşı', invoice: 'INV-2026-006', amount: 20000, dueIn: 25 },
+        { id: 'p4', client: 'Ali Haydar Ocakbaşı', invoice: 'INV-2026-006', amount: 20000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-006']) },
     ],
 };
 
@@ -78,15 +104,55 @@ const paymentRisks = {
 const recentProjects = [
     { id: '1', name: 'Zeytindalı Rebrand 2026', client: 'Zeytindalı Gıda', status: 'ACTIVE', progress: 45, dueDate: '2026-02-28', paymentStatus: 'OVERDUE' },
     { id: '2', name: 'İkra Giyim Sosyal Medya', client: 'İkra Giyim', status: 'ACTIVE', progress: 70, dueDate: '2026-01-25', paymentStatus: 'PAID' },
-    { id: '3', name: 'Zoks Studio Kampanyası', client: 'Zoks Studio', status: 'ACTIVE', progress: 90, dueDate: '2026-01-17', paymentStatus: 'PENDING' },
+    { id: '3', name: 'Zoks Studio Kampanyası', client: 'Zoks Studio', status: 'ACTIVE', progress: 90, dueDate: '2026-01-21', paymentStatus: 'PENDING' },
     { id: '4', name: 'Tevfik Usta Web Sitesi', client: 'Tevfik Usta', status: 'ON_HOLD', progress: 30, dueDate: '2026-01-30', paymentStatus: 'PAID' },
 ];
 
-const pendingActions = [
-    { id: '1', type: 'payment', message: 'Zeytindalı Gıda faturası ödenmedi - ₺50,000 (5 gün gecikmiş)', actionLabel: 'Faturayı Gör', severity: 'error', link: '/dashboard/invoices/i2' },
-    { id: '2', type: 'deadline', message: 'Zoks Studio Video teslimi için 4 gün kaldı', actionLabel: 'Görevler', severity: 'warning', link: '/dashboard/tasks' },
-    { id: '3', type: 'approval', message: 'Valora Logo Tasarımı müşteri onayı bekliyor', actionLabel: 'İncele', severity: 'info', link: '/dashboard/deliverables/d1' },
-];
+// Dinamik pending actions - bugünün tarihine göre
+const getDynamicPendingActions = () => {
+    const actions = [];
+
+    // Gecikmiş faturalar
+    const overdueDays = getOverdueDays(invoiceDueDates['INV-2026-002']);
+    if (overdueDays > 0) {
+        actions.push({
+            id: '1',
+            type: 'payment',
+            message: `Zeytindalı Gıda faturası ödenmedi - ₺50.000 (${overdueDays} gün gecikmiş)`,
+            actionLabel: 'Faturayı Gör',
+            severity: 'error',
+            link: '/dashboard/invoices/i2'
+        });
+    }
+
+    // Yakın deadline'lar
+    const zoksDaysLeft = getDaysUntil('2026-01-21');
+    if (zoksDaysLeft >= 0) {
+        actions.push({
+            id: '2',
+            type: 'deadline',
+            message: zoksDaysLeft === 0
+                ? 'Zoks Studio Video teslimi BUGÜN!'
+                : `Zoks Studio Video teslimi için ${zoksDaysLeft} gün kaldı`,
+            actionLabel: 'Teslimatı Gör',
+            severity: zoksDaysLeft <= 1 ? 'error' : 'warning',
+            link: '/dashboard/deliverables/d1'  // Doğru deliverable sayfasına yönlendir
+        });
+    }
+
+    actions.push({
+        id: '3',
+        type: 'approval',
+        message: 'Valora Logo Tasarımı müşteri onayı bekliyor',
+        actionLabel: 'İncele',
+        severity: 'info',
+        link: '/dashboard/deliverables/d1'
+    });
+
+    return actions;
+};
+
+const pendingActions = getDynamicPendingActions();
 
 const quickActions = [
     { label: '+ Yeni Proje', icon: '📁', href: '/dashboard/projects', color: '#329FF5' },
@@ -155,6 +221,16 @@ export default function DashboardPage() {
                     } catch (e) {
                         console.error('localStorage görevleri ayrıştırılamadı');
                     }
+                }
+
+                // localStorage boşsa, sharedTasks'ten fallback kullan
+                if (localTasks.length === 0) {
+                    const sharedTasksData = getSharedTasks();
+                    localTasks = sharedTasksData.map(t => ({
+                        ...t,
+                        status: 'TODO',
+                        dueDate: t.deadline || '',
+                    }));
                 }
 
                 // Kullanıcıya atanan görevleri filtrele
