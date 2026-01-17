@@ -203,7 +203,7 @@ export default function DashboardPage() {
 
             <div style={{ padding: 'var(--space-3)' }}>
                 {/* Hızlı Aksiyonlar */}
-                <div style={{ display: 'flex', gap: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
+                <div className="quick-actions" style={{ marginBottom: 'var(--space-2)' }}>
                     {quickActions.map(action => (
                         <Link key={action.label} href={action.href} style={{ textDecoration: 'none' }}>
                             <Button
@@ -219,7 +219,7 @@ export default function DashboardPage() {
 
                 {/* KİŞİSEL BÖLÜM: Bugünkü Görevlerim + Bu Hafta Deadline */}
                 {currentUser && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                    <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
                         {/* Bugünkü Görevlerim */}
                         <Card style={{ borderTop: '4px solid #329FF5' }}>
                             <CardHeader
@@ -353,9 +353,9 @@ export default function DashboardPage() {
                 )}
 
                 {/* BÖLÜM 2: Stats + Stüdyo Doluluk */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
                     {/* Sol: İstatistikler */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
+                    <div className="stats-grid">
                         {stats.map((stat) => (
                             <Card key={stat.label}>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
