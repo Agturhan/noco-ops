@@ -141,7 +141,7 @@ export default function AuditLogPage() {
     if (loading) {
         return (
             <>
-                <Header title="Audit Log" subtitle="Yükleniyor..." />
+                <Header title="Denetim Kaydı" subtitle="Yükleniyor..." />
                 <div style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
                     <p style={{ fontSize: '48px' }}>⏳</p>
                     <p>Denetim kayıtları yükleniyor...</p>
@@ -153,7 +153,7 @@ export default function AuditLogPage() {
     return (
         <>
             <Header
-                title="Audit Log"
+                title="Denetim Kaydı"
                 subtitle="Sistem Aktivite Kayıtları"
                 actions={
                     <div style={{ display: 'flex', gap: 'var(--space-1)' }}>

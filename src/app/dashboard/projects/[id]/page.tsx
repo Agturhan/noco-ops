@@ -377,17 +377,29 @@ export default function ProjectDetailPage() {
                             <Card>
                                 <CardHeader title="💳 Ödeme Durumu" />
                                 <CardContent>
-                                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                                        <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-success)' }}>
-                                            %{paymentProgress}
-                                        </p>
-                                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>
-                                            {formatCurrency(totalPaid)} / {formatCurrency(totalInvoiced)}
-                                        </p>
-                                    </div>
-                                    <div style={{ height: 8, backgroundColor: 'var(--color-border)', borderRadius: 4 }}>
-                                        <div style={{ height: '100%', width: `${paymentProgress}%`, backgroundColor: 'var(--color-success)', borderRadius: 4 }} />
-                                    </div>
+                                    {totalInvoiced > 0 ? (
+                                        <>
+                                            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                                                <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-success)' }}>
+                                                    %{paymentProgress}
+                                                </p>
+                                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>
+                                                    {formatCurrency(totalPaid)} / {formatCurrency(totalInvoiced)}
+                                                </p>
+                                            </div>
+                                            <div style={{ height: 8, backgroundColor: 'var(--color-border)', borderRadius: 4 }}>
+                                                <div style={{ height: '100%', width: `${paymentProgress}%`, backgroundColor: 'var(--color-success)', borderRadius: 4 }} />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: 'var(--space-2)', color: 'var(--color-muted)' }}>
+                                            <p style={{ fontSize: '24px', marginBottom: '8px' }}>📋</p>
+                                            <p>Henüz fatura kesilmedi</p>
+                                            <p style={{ fontSize: 'var(--text-caption)', marginTop: '4px' }}>
+                                                Bütçe: {formatCurrency(project.budget)}
+                                            </p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>

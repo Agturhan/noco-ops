@@ -398,106 +398,128 @@ export default function TasksPage() {
 
                             {/* Görev Kartları */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-                                {filteredTasks.filter(t => t.status === status).map(task => (
-                                    <div
-                                        key={task.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, task)}
-                                        onDragEnd={handleDragEnd}
-                                        onClick={() => openDetailModal(task)}
-                                        style={{
-                                            backgroundColor: 'var(--color-card)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            padding: 'var(--space-2)',
-                                            cursor: 'grab',
-                                            borderLeft: `3px solid ${priorityConfig[task.priority].color}`,
-                                            transition: 'transform 0.2s, box-shadow 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            (e.target as HTMLElement).style.transform = 'translateY(-2px)';
-                                            (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            (e.target as HTMLElement).style.transform = 'none';
-                                            (e.target as HTMLElement).style.boxShadow = 'none';
-                                        }}
-                                    >
-                                        {/* Öncelik Badge */}
-                                        {task.priority === 'URGENT' && (
-                                            <span style={{ fontSize: '12px' }}>🔴</span>
-                                        )}
-                                        {task.priority === 'HIGH' && (
-                                            <span style={{ fontSize: '12px' }}>🟠</span>
-                                        )}
-
-                                        <p style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', marginBottom: '4px' }}>
-                                            {task.title}
-                                        </p>
-
-                                        {task.project && (
-                                            <p style={{ fontSize: '11px', color: 'var(--color-muted)', marginBottom: '8px' }}>
-                                                📁 {task.project}
-                                            </p>
-                                        )}
-
-                                        {/* Alt görevler progress */}
-                                        {task.subtasks.length > 0 && (
-                                            <div style={{ marginBottom: '8px' }}>
-                                                <div style={{
-                                                    height: 4,
-                                                    backgroundColor: 'var(--color-border)',
-                                                    borderRadius: 2,
-                                                    overflow: 'hidden'
-                                                }}>
-                                                    <div style={{
-                                                        height: '100%',
-                                                        width: `${(task.subtasks.filter(s => s.completed).length / task.subtasks.length) * 100}%`,
-                                                        backgroundColor: 'var(--color-success)',
-                                                        transition: 'width 0.3s'
-                                                    }} />
-                                                </div>
-                                                <p style={{ fontSize: '10px', color: 'var(--color-muted)', marginTop: '2px' }}>
-                                                    {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} alt görev
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Footer */}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                                                👤 {task.assignee}
-                                            </span>
-                                            {task.dueDate && (
-                                                <span style={{
-                                                    fontSize: '10px',
-                                                    padding: '2px 6px',
-                                                    backgroundColor: new Date(task.dueDate) < new Date() ? '#FFEBEE' : 'var(--color-surface)',
-                                                    color: new Date(task.dueDate) < new Date() ? '#C62828' : 'var(--color-muted)',
-                                                    borderRadius: 4
-                                                }}>
-                                                    📅 {new Date(task.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Tags */}
-                                        {task.tags.length > 0 && (
-                                            <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
-                                                {task.tags.map(tag => (
-                                                    <span key={tag} style={{
-                                                        fontSize: '10px',
-                                                        padding: '2px 6px',
-                                                        backgroundColor: 'var(--color-primary)',
-                                                        color: 'white',
-                                                        borderRadius: 10
-                                                    }}>
-                                                        #{tag}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                {filteredTasks.filter(t => t.status === status).length === 0 ? (
+                                    <div style={{
+                                        textAlign: 'center',
+                                        padding: 'var(--space-3)',
+                                        color: 'var(--color-muted)',
+                                        fontSize: 'var(--text-caption)'
+                                    }}>
+                                        <p style={{ fontSize: '24px', marginBottom: '8px', opacity: 0.5 }}>📋</p>
+                                        <p>Bu kolonda görev yok</p>
+                                        {status === 'TODO' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => openAddModal()}
+                                                style={{ marginTop: '8px' }}
+                                            >
+                                                + Görev Ekle
+                                            </Button>
                                         )}
                                     </div>
-                                ))}
+                                ) : (
+                                    filteredTasks.filter(t => t.status === status).map(task => (
+                                        <div
+                                            key={task.id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, task)}
+                                            onDragEnd={handleDragEnd}
+                                            onClick={() => openDetailModal(task)}
+                                            style={{
+                                                backgroundColor: 'var(--color-card)',
+                                                borderRadius: 'var(--radius-sm)',
+                                                padding: 'var(--space-2)',
+                                                cursor: 'grab',
+                                                borderLeft: `3px solid ${priorityConfig[task.priority].color}`,
+                                                transition: 'transform 0.2s, box-shadow 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                (e.target as HTMLElement).style.transform = 'translateY(-2px)';
+                                                (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                (e.target as HTMLElement).style.transform = 'none';
+                                                (e.target as HTMLElement).style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            {/* Öncelik Badge */}
+                                            {task.priority === 'URGENT' && (
+                                                <span style={{ fontSize: '12px' }}>🔴</span>
+                                            )}
+                                            {task.priority === 'HIGH' && (
+                                                <span style={{ fontSize: '12px' }}>🟠</span>
+                                            )}
+
+                                            <p style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', marginBottom: '4px' }}>
+                                                {task.title}
+                                            </p>
+
+                                            {task.project && (
+                                                <p style={{ fontSize: '11px', color: 'var(--color-muted)', marginBottom: '8px' }}>
+                                                    📁 {task.project}
+                                                </p>
+                                            )}
+
+                                            {/* Alt görevler progress */}
+                                            {task.subtasks.length > 0 && (
+                                                <div style={{ marginBottom: '8px' }}>
+                                                    <div style={{
+                                                        height: 4,
+                                                        backgroundColor: 'var(--color-border)',
+                                                        borderRadius: 2,
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{
+                                                            height: '100%',
+                                                            width: `${(task.subtasks.filter(s => s.completed).length / task.subtasks.length) * 100}%`,
+                                                            backgroundColor: 'var(--color-success)',
+                                                            transition: 'width 0.3s'
+                                                        }} />
+                                                    </div>
+                                                    <p style={{ fontSize: '10px', color: 'var(--color-muted)', marginTop: '2px' }}>
+                                                        {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length} alt görev
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Footer */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
+                                                    👤 {task.assignee}
+                                                </span>
+                                                {task.dueDate && (
+                                                    <span style={{
+                                                        fontSize: '10px',
+                                                        padding: '2px 6px',
+                                                        backgroundColor: new Date(task.dueDate) < new Date() ? '#FFEBEE' : 'var(--color-surface)',
+                                                        color: new Date(task.dueDate) < new Date() ? '#C62828' : 'var(--color-muted)',
+                                                        borderRadius: 4
+                                                    }}>
+                                                        📅 {new Date(task.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Tags */}
+                                            {task.tags.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '4px', marginTop: '8px', flexWrap: 'wrap' }}>
+                                                    {task.tags.map(tag => (
+                                                        <span key={tag} style={{
+                                                            fontSize: '10px',
+                                                            padding: '2px 6px',
+                                                            backgroundColor: 'var(--color-primary)',
+                                                            color: 'white',
+                                                            borderRadius: 10
+                                                        }}>
+                                                            #{tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     ))}

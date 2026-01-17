@@ -100,51 +100,50 @@ const paymentRisks = {
     ],
 };
 
-// Gerçek marka projeleri
+// Gerçek marka projeleri - projects/[id]/page.tsx ile SENKRON
 const recentProjects = [
     { id: '1', name: 'Zeytindalı Rebrand 2026', client: 'Zeytindalı Gıda', status: 'ACTIVE', progress: 45, dueDate: '2026-02-28', paymentStatus: 'OVERDUE' },
-    { id: '2', name: 'İkra Giyim Sosyal Medya', client: 'İkra Giyim', status: 'ACTIVE', progress: 70, dueDate: '2026-01-25', paymentStatus: 'PAID' },
-    { id: '3', name: 'Zoks Studio Kampanyası', client: 'Zoks Studio', status: 'ACTIVE', progress: 90, dueDate: '2026-01-21', paymentStatus: 'PENDING' },
-    { id: '4', name: 'Tevfik Usta Web Sitesi', client: 'Tevfik Usta', status: 'ON_HOLD', progress: 30, dueDate: '2026-01-30', paymentStatus: 'PAID' },
+    { id: '2', name: 'İkranur Sosyal Medya Paketi', client: 'İkranur Kozmetik', status: 'ACTIVE', progress: 50, dueDate: '2026-03-15', paymentStatus: 'PAID' },
+    { id: '3', name: 'Louvess E-Ticaret Lansmanı', client: 'Louvess Beauty', status: 'PENDING', progress: 0, dueDate: '2026-04-01', paymentStatus: 'PENDING' },
+    { id: '4', name: 'Hair Chef Reklam Kampanyası', client: 'Hair Chef', status: 'COMPLETED', progress: 100, dueDate: '2026-01-15', paymentStatus: 'PAID' },
 ];
 
 // Dinamik pending actions - bugünün tarihine göre
 const getDynamicPendingActions = () => {
     const actions = [];
+    const today = new Date();
 
-    // Gecikmiş faturalar
-    const overdueDays = getOverdueDays(invoiceDueDates['INV-2026-002']);
+    // Gecikmiş fatura - INV-2026-002 (Zeytindalı ara ödeme)
+    // Not: projects/[id]/page.tsx'deki invoices ile tutarlı: amount: 50000, dueDate: '2026-02-01'
+    const inv002DueDate = new Date('2026-02-01');
+    const overdueDays = Math.ceil((today.getTime() - inv002DueDate.getTime()) / (1000 * 60 * 60 * 24));
     if (overdueDays > 0) {
         actions.push({
             id: '1',
             type: 'payment',
-            message: `Zeytindalı Gıda faturası ödenmedi - ₺50.000 (${overdueDays} gün gecikmiş)`,
+            message: `Zeytindalı Gıda ara ödeme - ₺50.000 (${overdueDays} gün gecikmiş)`,
             actionLabel: 'Faturayı Gör',
             severity: 'error',
-            link: '/dashboard/invoices/i2'
+            link: '/dashboard/invoices/i1' // ID=1 proje faturasına
         });
     }
 
-    // Yakın deadline'lar
-    const zoksDaysLeft = getDaysUntil('2026-01-21');
-    if (zoksDaysLeft >= 0) {
-        actions.push({
-            id: '2',
-            type: 'deadline',
-            message: zoksDaysLeft === 0
-                ? 'Zoks Studio Video teslimi BUGÜN!'
-                : `Zoks Studio Video teslimi için ${zoksDaysLeft} gün kaldı`,
-            actionLabel: 'Teslimatı Gör',
-            severity: zoksDaysLeft <= 1 ? 'error' : 'warning',
-            link: '/dashboard/deliverables/d1'  // Doğru deliverable sayfasına yönlendir
-        });
-    }
+    // Louvess projesi beklemede  - projects/[id] ID=3 ile tutarlı
+    actions.push({
+        id: '2',
+        type: 'approval',
+        message: 'Louvess E-Ticaret Lansmanı onay bekliyor',
+        actionLabel: 'Projeyi Gör',
+        severity: 'warning',
+        link: '/dashboard/projects/3'
+    });
 
+    // Zeytindalı Logo incelemede - deliverables/d1 ile tutarlı
     actions.push({
         id: '3',
-        type: 'approval',
-        message: 'Valora Logo Tasarımı müşteri onayı bekliyor',
-        actionLabel: 'İncele',
+        type: 'deadline',
+        message: 'Zeytindalı Logo Tasarımı müşteri onayı bekliyor',
+        actionLabel: 'Teslimatı Gör',
         severity: 'info',
         link: '/dashboard/deliverables/d1'
     });

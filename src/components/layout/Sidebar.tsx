@@ -220,7 +220,7 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
                         style={{ width: '100%', marginBottom: '8px', justifyContent: 'flex-start', color: 'var(--color-muted)' }}
                         onClick={onToggleTheme}
                     >
-                        {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                        {isDark ? '☀️ Açık Tema' : '🌙 Koyu Tema'}
                     </Button>
 
                     <Button
