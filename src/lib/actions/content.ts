@@ -15,7 +15,8 @@ export interface ContentItem {
     notes?: string;
     deliveryDate?: string;
     publishDate?: string;
-    assigneeId?: string;
+    assigneeId?: string;     // Geriye uyumluluk
+    assigneeIds?: string[];  // Çoklu atama desteği
     createdAt?: string;
     updatedAt?: string;
 }
@@ -247,6 +248,7 @@ export async function createContentWithBrand(content: {
     deliveryDate?: string;
     publishDate?: string;
     assigneeId?: string;
+    assigneeIds?: string[];  // Çoklu atama
 }): Promise<ContentItem | null> {
     try {
         // 1. Client bul veya oluştur
@@ -265,7 +267,8 @@ export async function createContentWithBrand(content: {
                 notes: content.notes,
                 deliveryDate: content.deliveryDate,
                 publishDate: content.publishDate,
-                assigneeId: content.assigneeId,
+                assigneeId: content.assigneeId || (content.assigneeIds?.[0]) || null,
+                assigneeIds: content.assigneeIds || (content.assigneeId ? [content.assigneeId] : []),
             }])
             .select()
             .single();

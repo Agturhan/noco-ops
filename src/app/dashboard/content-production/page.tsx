@@ -269,6 +269,7 @@ export default function ContentProductionPage() {
                         deliveryDate: c.deliveryDate,
                         publishDate: c.publishDate,
                         assigneeId: c.assigneeId,
+                        assigneeIds: c.assigneeIds || (c.assigneeId ? [c.assigneeId] : []),
                     })));
                 }
                 // Note history için localStorage kullanmaya devam et
@@ -427,6 +428,7 @@ export default function ContentProductionPage() {
                     deliveryDate: formDeliveryDate || undefined,
                     publishDate: formPublishDate || undefined,
                     assigneeId: formAssignees[0] || undefined,
+                    assigneeIds: formAssignees.length > 0 ? formAssignees : undefined,
                 });
                 if (result) {
                     setContents([{ ...data, id: result.id, notes: data.notes || '' } as ContentItem, ...contents]);
