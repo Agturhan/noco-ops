@@ -931,35 +931,7 @@ export default function ContentProductionPage() {
                             onSelectDate={(date) => setFormDeliveryDate(date)}
                         />
 
-                        {formType === 'VIDEO' && (
-                            <div style={{ marginTop: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'rgba(50, 159, 245, 0.1)', borderRadius: 'var(--radius-sm)' }}>
-                                <p style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: 600, marginBottom: '8px' }}>
-                                    🎬 Video Akışı
-                                </p>
-                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                    <Badge style={{ backgroundColor: '#6B7B80', color: 'white', fontSize: '10px' }}>1. Yazım</Badge>
-                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
-                                    <Badge style={{ backgroundColor: '#FF9800', color: 'white', fontSize: '10px' }}>2. Çekim</Badge>
-                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
-                                    <Badge style={{ backgroundColor: '#2196F3', color: 'white', fontSize: '10px' }}>3. Kurgu</Badge>
-                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
-                                    <Badge style={{ backgroundColor: '#00F5B0', color: 'white', fontSize: '10px' }}>4. Paylaşım</Badge>
-                                </div>
-                            </div>
-                        )}
-
-                        {(formType === 'FOTOGRAF' || formType === 'POST') && (
-                            <div style={{ marginTop: 'var(--space-2)', padding: 'var(--space-2)', backgroundColor: 'rgba(0, 245, 176, 0.1)', borderRadius: 'var(--radius-sm)' }}>
-                                <p style={{ fontSize: '12px', color: '#00F5B0', fontWeight: 600, marginBottom: '8px' }}>
-                                    📷 Teslimat Akışı
-                                </p>
-                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                    <Badge style={{ backgroundColor: '#6B7B80', color: 'white', fontSize: '10px' }}>1. Planla</Badge>
-                                    <span style={{ color: 'var(--color-muted)' }}>→</span>
-                                    <Badge style={{ backgroundColor: '#00F5B0', color: 'white', fontSize: '10px' }}>2. Teslim</Badge>
-                                </div>
-                            </div>
-                        )}
+                        {/* Video/Teslimat akış grafikleri kaldırıldı - Revizyon notu uyarınca */}
                     </div>
                 </div>
             </Modal>
