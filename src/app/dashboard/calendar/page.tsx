@@ -264,7 +264,7 @@ export default function CalendarPage() {
                 actions={<Button variant="primary" onClick={openNewEventModal}>+ Etkinlik</Button>}
             />
 
-            <div className="calendar-layout" style={{ padding: 'var(--space-3)', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--space-3)' }}>
+            <div className="calendar-layout" style={{ padding: 'var(--space-3)', gap: 'var(--space-3)' }}>
                 {/* Ana Takvim */}
                 <Card>
                     <CardContent>
