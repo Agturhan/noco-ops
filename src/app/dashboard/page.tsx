@@ -8,8 +8,17 @@ import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui';
 import { brands, getBrandName, getBrandColor } from '@/lib/data';
 import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib/actions/dashboard';
 import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
+import { getMemberColors } from '@/lib/actions/userSettings';
 import { getTodayTasks as getSharedTasks, getWeekDeadlines as getSharedDeadlines } from '@/lib/sharedTasks';
 import { Clapperboard, TrendingDown, TrendingUp, Camera, Plus, LogOut, FolderOpen, ListChecks, AlertTriangle, Clock, CheckCircle, Check } from 'lucide-react';
+
+// Takım üyeleri varsayılan renkleri
+const defaultMemberColors: Record<string, string> = {
+    'Şeyma Bora': '#E91E63',
+    'Fatih Ustaosmanoğlu': '#329FF5',
+    'Ayşegül Güler': '#00F5B0',
+    'Ahmet Gürkan Turhan': '#9C27B0'
+};
 
 // ===== GELİŞMİŞ DASHBOARD (Blueprint Uyumlu) =====
 // - Düzenli (Retainer) vs Düzensiz (Proje) Gelir Ayrımı
@@ -175,6 +184,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [todayTasks, setTodayTasks] = useState<any[]>([]);
     const [weekDeadlines, setWeekDeadlines] = useState<any[]>([]);
+    const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
 
     // Görev tamamla/geri al toggle - DB'ye kaydet
     const handleToggleTask = async (taskId: string) => {
@@ -218,11 +228,15 @@ export default function DashboardPage() {
         // Dashboard verilerini yükle
         const loadDashboardData = async () => {
             try {
-                // Supabase'den görevleri çek (localStorage yerine)
-                const [dbTasks, dbDeadlines] = await Promise.all([
+                // Supabase'den görevleri ve renkleri çek
+                const [dbTasks, dbDeadlines, memberColors] = await Promise.all([
                     getUserTodayTasks(userId),
                     getUserWeekDeadlines(userId),
+                    getMemberColors().catch(() => defaultMemberColors),
                 ]);
+
+                // Kişi renklerini set et
+                setTeamMemberColors(memberColors);
 
                 let userTasks = dbTasks || [];
 
@@ -457,11 +471,21 @@ export default function DashboardPage() {
                                                 </span>
                                                 {dl.assigneeIds && dl.assigneeIds.length > 0 && (
                                                     <div style={{ display: 'flex', gap: 4 }}>
-                                                        {dl.assigneeIds.slice(0, 3).map((name: string) => (
-                                                            <span key={name} style={{ fontSize: 9, padding: '2px 6px', backgroundColor: 'var(--color-primary)', color: 'white', borderRadius: 8 }}>
-                                                                {name.split(' ')[0]}
-                                                            </span>
-                                                        ))}
+                                                        {dl.assigneeIds.slice(0, 3).map((name: string) => {
+                                                            const memberColor = teamMemberColors[name] || '#6B7B80';
+                                                            return (
+                                                                <span key={name} style={{
+                                                                    fontSize: 9,
+                                                                    padding: '2px 6px',
+                                                                    backgroundColor: memberColor + '20',
+                                                                    color: memberColor,
+                                                                    borderRadius: 8,
+                                                                    fontWeight: 500
+                                                                }}>
+                                                                    {name.split(' ')[0]}
+                                                                </span>
+                                                            );
+                                                        })}
                                                         {dl.assigneeIds.length > 3 && <span style={{ fontSize: 9, color: 'var(--color-muted)' }}>+{dl.assigneeIds.length - 3}</span>}
                                                     </div>
                                                 )}
