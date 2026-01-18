@@ -58,7 +58,15 @@ const priorityConfig = {
     URGENT: { label: 'Acil', color: '#FF4242' },
 };
 
-const teamMembers = ['Şeyma Bora', 'Fatih Ustaosmanoğlu', 'Ayşegül Güler', 'Ahmet Gürkan Turhan'];
+// Takım üyeleri ve renkleri
+const teamMemberColors: Record<string, string> = {
+    'Şeyma Bora': '#E91E63',
+    'Fatih Ustaosmanoğlu': '#329FF5',
+    'Ayşegül Güler': '#00F5B0',
+    'Ahmet Gürkan Turhan': '#9C27B0'
+};
+
+const teamMembers = Object.keys(teamMemberColors);
 
 export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -489,11 +497,25 @@ export default function TasksPage() {
                                                     </div>
                                                 )}
 
-                                                {/* Footer */}
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <span style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                                                        👤 {task.assignees.length > 0 ? task.assignees.join(', ') : '-'}
-                                                    </span>
+                                                {/* Footer - Assignees with colors */}
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
+                                                    {task.assignees.map(assignee => (
+                                                        <span
+                                                            key={assignee}
+                                                            style={{
+                                                                fontSize: '10px',
+                                                                padding: '2px 6px',
+                                                                backgroundColor: (teamMemberColors[assignee] || '#6B7B80') + '20',
+                                                                color: teamMemberColors[assignee] || '#6B7B80',
+                                                                borderRadius: '10px',
+                                                                fontWeight: 500
+                                                            }}
+                                                        >
+                                                            {assignee.split(' ')[0]}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                                                     {task.dueDate && (
                                                         <span style={{
                                                             fontSize: '10px',
@@ -560,7 +582,7 @@ export default function TasksPage() {
                             label="Atanan Kişiler"
                             value={formAssignees}
                             onChange={setFormAssignees}
-                            options={teamMembers.map(m => ({ value: m, label: m }))}
+                            options={teamMembers.map(m => ({ value: m, label: m, color: teamMemberColors[m] }))}
                             placeholder="Kişi seçiniz..."
                         />
                     </div>
@@ -612,7 +634,23 @@ export default function TasksPage() {
                             </div>
                             <div>
                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Atananlar</p>
-                                <p>👤 {selectedTask.assignees.length > 0 ? selectedTask.assignees.join(', ') : '-'}</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                    {selectedTask.assignees.length > 0 ? selectedTask.assignees.map(assignee => (
+                                        <span
+                                            key={assignee}
+                                            style={{
+                                                padding: '4px 10px',
+                                                backgroundColor: (teamMemberColors[assignee] || '#6B7B80') + '20',
+                                                color: teamMemberColors[assignee] || '#6B7B80',
+                                                borderRadius: '12px',
+                                                fontSize: 'var(--text-caption)',
+                                                fontWeight: 500
+                                            }}
+                                        >
+                                            {assignee}
+                                        </span>
+                                    )) : <span style={{ color: 'var(--color-muted)' }}>-</span>}
+                                </div>
                             </div>
                             <div>
                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Bitiş Tarihi</p>
