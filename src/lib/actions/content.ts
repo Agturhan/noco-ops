@@ -2,62 +2,120 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { createTask, ContentType as TaskContentType } from './tasks';
 
-// Content tipi
+// Content status mapping (eski sistem -> yeni sistem)
+const statusMapping: Record<string, string> = {
+    'PLANLANDI': 'TODO',
+    'CEKILDI': 'IN_PROGRESS',
+    'TASARLANIYOR': 'IN_PROGRESS',
+    'TASARLANDI': 'IN_PROGRESS',
+    'KURGULANIYOR': 'IN_PROGRESS',
+    'KURGULANDI': 'IN_REVIEW',
+    'ICERIK_HAZIRLANDI': 'IN_REVIEW',
+    'ONAY': 'IN_REVIEW',
+    'FOTOGRAF_RETOUCH': 'IN_PROGRESS',
+    'PAYLASILD': 'DONE',
+    'TESLIM': 'DONE',
+};
+
+// ContentItem tipi (geriye uyumluluk)
 export interface ContentItem {
     id: string;
     title: string;
     brandId: string;
-    brandName?: string;  // Yeni: Marka adı (text)
-    clientId?: string;   // Yeni: Client referansı
+    brandName?: string;
+    clientId?: string;
     status: string;
     type: string;
     notes?: string;
     deliveryDate?: string;
     publishDate?: string;
-    assigneeId?: string;     // Geriye uyumluluk
-    assigneeIds?: string[];  // Çoklu atama desteği
+    assigneeId?: string;
+    assigneeIds?: string[];
     createdAt?: string;
     updatedAt?: string;
 }
 
-// Tüm içerikleri getir
+// Content olarak işaretli Task'ları getir
 export async function getContents(): Promise<ContentItem[]> {
     try {
         const { data, error } = await supabaseAdmin
-            .from('Content')
+            .from('Task')
             .select('*')
-            .order('deliveryDate', { ascending: true });
+            .eq('sourceType', 'content')
+            .order('dueDate', { ascending: true });
 
         if (error) {
             console.error('Supabase getContents error:', error);
             return [];
         }
 
-        return data || [];
+        // Task formatını ContentItem formatına dönüştür
+        return (data || []).map(task => ({
+            id: task.id,
+            title: task.title,
+            brandId: task.brandName || task.clientId || '',
+            brandName: task.brandName,
+            clientId: task.clientId,
+            status: task.status,
+            type: task.contentType || 'VIDEO',
+            notes: task.notes || task.description || '',
+            deliveryDate: task.dueDate,
+            publishDate: task.publishDate,
+            assigneeId: task.assigneeId,
+            assigneeIds: task.assigneeIds || (task.assigneeId ? [task.assigneeId] : []),
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt,
+        }));
     } catch (error) {
         console.error('getContents error:', error);
         return [];
     }
 }
 
-// Yeni içerik oluştur
+// Yeni içerik oluştur (Task olarak)
 export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<ContentItem | null> {
     try {
-        const { data, error } = await supabaseAdmin
-            .from('Content')
-            .insert([content])
-            .select()
-            .single();
+        const task = await createTask({
+            title: content.title,
+            description: content.notes,
+            status: 'TODO',
+            priority: 'NORMAL',
+            dueDate: content.deliveryDate,
+            assigneeId: content.assigneeId,
+            contentType: content.type as TaskContentType,
+            publishDate: content.publishDate,
+            assigneeIds: content.assigneeIds,
+            clientId: content.clientId,
+            brandName: content.brandName || content.brandId,
+            notes: content.notes,
+            sourceType: 'content',
+        });
 
-        if (error) {
-            console.error('Supabase createContent error:', error);
-            return null;
-        }
+        if (!task) return null;
 
         revalidatePath('/dashboard/content-production');
         revalidatePath('/dashboard/calendar');
-        return data;
+        revalidatePath('/dashboard/tasks');
+        revalidatePath('/dashboard');
+
+        return {
+            id: task.id,
+            title: task.title,
+            brandId: task.brandName || '',
+            brandName: task.brandName,
+            clientId: task.clientId,
+            status: task.status,
+            type: task.contentType || 'VIDEO',
+            notes: task.notes || '',
+            deliveryDate: task.dueDate,
+            publishDate: task.publishDate,
+            assigneeId: task.assigneeId,
+            assigneeIds: task.assigneeIds || [],
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt,
+        };
     } catch (error) {
         console.error('createContent error:', error);
         return null;
@@ -67,9 +125,26 @@ export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt
 // İçerik güncelle
 export async function updateContent(id: string, updates: Partial<ContentItem>): Promise<ContentItem | null> {
     try {
+        const taskUpdates: Record<string, unknown> = {
+            updatedAt: new Date().toISOString(),
+        };
+
+        if (updates.title) taskUpdates.title = updates.title;
+        if (updates.notes !== undefined) taskUpdates.notes = updates.notes;
+        if (updates.notes !== undefined) taskUpdates.description = updates.notes;
+        if (updates.status) taskUpdates.status = updates.status;
+        if (updates.type) taskUpdates.contentType = updates.type;
+        if (updates.deliveryDate !== undefined) taskUpdates.dueDate = updates.deliveryDate;
+        if (updates.publishDate !== undefined) taskUpdates.publishDate = updates.publishDate;
+        if (updates.assigneeId !== undefined) taskUpdates.assigneeId = updates.assigneeId;
+        if (updates.assigneeIds !== undefined) taskUpdates.assigneeIds = updates.assigneeIds;
+        if (updates.clientId !== undefined) taskUpdates.clientId = updates.clientId;
+        if (updates.brandName !== undefined) taskUpdates.brandName = updates.brandName;
+        if (updates.brandId !== undefined) taskUpdates.brandName = updates.brandId;
+
         const { data, error } = await supabaseAdmin
-            .from('Content')
-            .update({ ...updates, updatedAt: new Date().toISOString() })
+            .from('Task')
+            .update(taskUpdates)
             .eq('id', id)
             .select()
             .single();
@@ -81,7 +156,25 @@ export async function updateContent(id: string, updates: Partial<ContentItem>): 
 
         revalidatePath('/dashboard/content-production');
         revalidatePath('/dashboard/calendar');
-        return data;
+        revalidatePath('/dashboard/tasks');
+        revalidatePath('/dashboard');
+
+        return {
+            id: data.id,
+            title: data.title,
+            brandId: data.brandName || '',
+            brandName: data.brandName,
+            clientId: data.clientId,
+            status: data.status,
+            type: data.contentType || 'VIDEO',
+            notes: data.notes || '',
+            deliveryDate: data.dueDate,
+            publishDate: data.publishDate,
+            assigneeId: data.assigneeId,
+            assigneeIds: data.assigneeIds || [],
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+        };
     } catch (error) {
         console.error('updateContent error:', error);
         return null;
@@ -92,7 +185,7 @@ export async function updateContent(id: string, updates: Partial<ContentItem>): 
 export async function deleteContent(id: string): Promise<boolean> {
     try {
         const { error } = await supabaseAdmin
-            .from('Content')
+            .from('Task')
             .delete()
             .eq('id', id);
 
@@ -103,6 +196,8 @@ export async function deleteContent(id: string): Promise<boolean> {
 
         revalidatePath('/dashboard/content-production');
         revalidatePath('/dashboard/calendar');
+        revalidatePath('/dashboard/tasks');
+        revalidatePath('/dashboard');
         return true;
     } catch (error) {
         console.error('deleteContent error:', error);
@@ -130,12 +225,12 @@ export async function getContentsAsCalendarEvents() {
 
 // ===== MARKA/MÜŞTERİ AUTOCOMPLETE =====
 
-// Marka adını normalize et (case-insensitive karşılaştırma için)
+// Marka adını normalize et
 function normalizeBrandName(name: string): string {
     return name.trim().toLowerCase();
 }
 
-// Marka adını capitalize et (görüntüleme için)
+// Marka adını capitalize et
 function capitalizeBrandName(name: string): string {
     return name.trim().split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -149,16 +244,17 @@ export async function getBrandSuggestions(query: string): Promise<{ id: string; 
 
         const normalizedQuery = normalizeBrandName(query);
 
-        // 1. Mevcut Client'lardan ara
+        // Client tablosundan ara (Brand = Client birleştirildi)
         const { data: clients } = await supabaseAdmin
             .from('Client')
-            .select('id, name')
+            .select('id, name, color')
             .ilike('name', `%${query}%`)
+            .eq('active', true)
             .limit(10);
 
-        // 2. Content tablosundaki benzersiz brandName'lerden ara
-        const { data: contents } = await supabaseAdmin
-            .from('Content')
+        // Task tablosundaki benzersiz brandName'lerden ara
+        const { data: tasks } = await supabaseAdmin
+            .from('Task')
             .select('brandName, clientId')
             .not('brandName', 'is', null)
             .ilike('brandName', `%${query}%`)
@@ -175,15 +271,15 @@ export async function getBrandSuggestions(query: string): Promise<{ id: string; 
             }
         });
 
-        // Content'ten gelen benzersiz markaları ekle
-        contents?.forEach(c => {
-            if (c.brandName) {
-                const normalizedName = normalizeBrandName(c.brandName);
+        // Task'tan gelen benzersiz markaları ekle
+        tasks?.forEach(t => {
+            if (t.brandName) {
+                const normalizedName = normalizeBrandName(t.brandName);
                 if (!suggestions.has(normalizedName)) {
                     suggestions.set(normalizedName, {
                         id: `brand-${normalizedName}`,
-                        name: c.brandName,
-                        clientId: c.clientId
+                        name: t.brandName,
+                        clientId: t.clientId
                     });
                 }
             }
@@ -201,10 +297,9 @@ export async function getBrandSuggestions(query: string): Promise<{ id: string; 
 // Marka adına göre Client bul veya oluştur
 export async function findOrCreateClient(brandName: string): Promise<{ clientId: string; name: string } | null> {
     try {
-        const normalizedName = normalizeBrandName(brandName);
         const displayName = capitalizeBrandName(brandName);
 
-        // 1. Mevcut Client'ı ara (case-insensitive)
+        // 1. Mevcut Client'ı ara
         const { data: existingClients } = await supabaseAdmin
             .from('Client')
             .select('id, name')
@@ -219,8 +314,9 @@ export async function findOrCreateClient(brandName: string): Promise<{ clientId:
             .from('Client')
             .insert([{
                 name: displayName,
-                email: `${normalizedName.replace(/\s+/g, '')}@placeholder.com`,
-                company: displayName,
+                color: '#329FF5',
+                active: true,
+                category: 'SOSYAL_MEDYA',
             }])
             .select()
             .single();
@@ -248,40 +344,26 @@ export async function createContentWithBrand(content: {
     deliveryDate?: string;
     publishDate?: string;
     assigneeId?: string;
-    assigneeIds?: string[];  // Çoklu atama
+    assigneeIds?: string[];
 }): Promise<ContentItem | null> {
     try {
         // 1. Client bul veya oluştur
         const client = await findOrCreateClient(content.brandName);
 
-        // 2. Content oluştur
-        const { data, error } = await supabaseAdmin
-            .from('Content')
-            .insert([{
-                title: content.title,
-                brandId: client?.name || content.brandName, // Geriye uyumluluk için
-                brandName: client?.name || content.brandName,
-                clientId: client?.clientId || null,
-                status: content.status,
-                type: content.type,
-                notes: content.notes,
-                deliveryDate: content.deliveryDate,
-                publishDate: content.publishDate,
-                assigneeId: content.assigneeId || (content.assigneeIds?.[0]) || null,
-                assigneeIds: content.assigneeIds || (content.assigneeId ? [content.assigneeId] : []),
-            }])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Supabase createContentWithBrand error:', error);
-            return null;
-        }
-
-        revalidatePath('/dashboard/content-production');
-        revalidatePath('/dashboard/calendar');
-        revalidatePath('/dashboard/clients');
-        return data;
+        // 2. Content oluştur (Task olarak)
+        return await createContent({
+            title: content.title,
+            brandId: client?.name || content.brandName,
+            brandName: client?.name || content.brandName,
+            clientId: client?.clientId,
+            status: content.status,
+            type: content.type,
+            notes: content.notes,
+            deliveryDate: content.deliveryDate,
+            publishDate: content.publishDate,
+            assigneeId: content.assigneeId || content.assigneeIds?.[0],
+            assigneeIds: content.assigneeIds || (content.assigneeId ? [content.assigneeId] : []),
+        });
     } catch (error) {
         console.error('createContentWithBrand error:', error);
         return null;

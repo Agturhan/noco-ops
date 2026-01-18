@@ -6,6 +6,33 @@ import { revalidatePath } from 'next/cache';
 // ===== Task Types =====
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
 export type TaskPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+export type ContentType = 'VIDEO' | 'POST' | 'FOTOGRAF' | 'REKLAM' | 'RAPOR' | 'TEKLIF' | 'WEB' | 'PODCAST';
+export type SourceType = 'task' | 'content';
+
+// Birleşik Task interface (Content dahil)
+export interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    dueDate?: string;
+    projectId?: string;
+    assigneeId?: string;
+    estimatedHours?: number;
+    actualHours?: number;
+    completedAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    // Content alanları
+    contentType?: ContentType;
+    publishDate?: string;
+    assigneeIds?: string[];
+    clientId?: string;
+    brandName?: string;
+    notes?: string;
+    sourceType?: SourceType;
+}
 
 // ===== Get Tasks =====
 export async function getTasks(status?: TaskStatus, assigneeId?: string) {
@@ -64,7 +91,7 @@ export async function getTaskById(id: string) {
     return data;
 }
 
-// ===== Create Task =====
+// ===== Create Task (veya Content) =====
 export async function createTask(data: {
     title: string;
     description?: string;
@@ -74,6 +101,14 @@ export async function createTask(data: {
     assigneeId?: string;
     dueDate?: string;
     estimatedHours?: number;
+    // Content alanları
+    contentType?: ContentType;
+    publishDate?: string;
+    assigneeIds?: string[];
+    clientId?: string;
+    brandName?: string;
+    notes?: string;
+    sourceType?: SourceType;
 }) {
     const { data: task, error } = await supabaseAdmin
         .from('Task')
@@ -86,6 +121,14 @@ export async function createTask(data: {
             assigneeId: data.assigneeId || null,
             dueDate: data.dueDate || null,
             estimatedHours: data.estimatedHours || null,
+            // Content alanları
+            contentType: data.contentType || null,
+            publishDate: data.publishDate || null,
+            assigneeIds: data.assigneeIds || [],
+            clientId: data.clientId || null,
+            brandName: data.brandName || null,
+            notes: data.notes || null,
+            sourceType: data.sourceType || 'task',
         }])
         .select()
         .single();
