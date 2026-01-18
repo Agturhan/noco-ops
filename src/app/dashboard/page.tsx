@@ -102,12 +102,19 @@ const paymentRisks = {
 };
 
 // Gerçek marka projeleri - projects/[id]/page.tsx ile SENKRON
+// Progress: Tamamlanan teslimat / Toplam teslimat (detay sayfasıyla aynı)
+// PaymentStatus: Ödeme durumu detay sayfasındaki fatura durumuna göre
 const recentProjects = [
-    { id: '1', name: 'Zeytindalı Rebrand 2026', client: 'Zeytindalı Gıda', status: 'ACTIVE', progress: 45, dueDate: '2026-02-28', paymentStatus: 'OVERDUE' },
+    // Zeytindalı: 0/5 teslimat completed → %0, Fatura PENDING → OVERDUE değil
+    { id: '1', name: 'Zeytindalı Rebrand 2026', client: 'Zeytindalı Gıda', status: 'ACTIVE', progress: 0, dueDate: '2026-02-28', paymentStatus: 'PENDING' },
+    // İkranur: 1/2 teslimat completed → %50
     { id: '2', name: 'İkranur Sosyal Medya Paketi', client: 'İkranur Kozmetik', status: 'ACTIVE', progress: 50, dueDate: '2026-03-15', paymentStatus: 'PAID' },
+    // Louvess: 0/2 teslimat → %0
     { id: '3', name: 'Louvess E-Ticaret Lansmanı', client: 'Louvess Beauty', status: 'PENDING', progress: 0, dueDate: '2026-04-01', paymentStatus: 'PENDING' },
-    { id: '4', name: 'Hair Chef Reklam Kampanyası', client: 'Hair Chef', status: 'COMPLETED', progress: 100, dueDate: '2026-01-15', paymentStatus: 'PAID' },
+    // Tevfik: 1/3 teslimat completed → %33
+    { id: '4', name: 'Tevfik Usta Web Sitesi', client: 'Tevfik Usta Döner', status: 'ACTIVE', progress: 33, dueDate: '2026-02-15', paymentStatus: 'PENDING' },
 ];
+
 
 // Dinamik pending actions - bugünün tarihine göre
 const getDynamicPendingActions = () => {
