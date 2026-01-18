@@ -5,6 +5,7 @@ import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MultiSelect, ColorPicker } from '@/components/ui';
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
 import type { TaskStatus as TaskStatusType, TaskPriority as TaskPriorityType } from '@/lib/actions/tasks';
+import { getMemberColors, saveMemberColors } from '@/lib/actions/userSettings';
 import { ClipboardList, RefreshCw, Eye, CheckCircle2, XCircle, type LucideIcon } from 'lucide-react';
 
 // ===== TİPLER =====
@@ -129,30 +130,44 @@ export default function TasksPage() {
         loadTasks();
     }, []);
 
-    // Tasks değiştiğinde localStorage'a kaydet
-    React.useEffect(() => {
-        if (tasks.length > 0 && !loading) {
-            localStorage.setItem('noco_tasks', JSON.stringify(tasks));
-        }
-    }, [tasks, loading]);
+    // Note: Tasks artık Supabase'te yönetiliyor, localStorage kullanılmıyor
 
-    // Renkleri localStorage'dan yükle
+    // Renkleri Supabase'ten yükle (localStorage fallback ile)
     React.useEffect(() => {
-        const savedColors = localStorage.getItem('noco_member_colors');
-        if (savedColors) {
+        const loadColors = async () => {
             try {
-                setTeamMemberColors(JSON.parse(savedColors));
+                const colors = await getMemberColors();
+                setTeamMemberColors(colors);
             } catch (e) {
-                console.error('Renk ayarları yüklenemedi:', e);
+                console.error('Renk ayarları Supabase\'den yüklenemedi:', e);
+                // LocalStorage fallback
+                const savedColors = localStorage.getItem('noco_member_colors');
+                if (savedColors) {
+                    try {
+                        setTeamMemberColors(JSON.parse(savedColors));
+                    } catch (parseError) {
+                        console.error('localStorage parse hatası:', parseError);
+                    }
+                }
             }
-        }
+        };
+        loadColors();
     }, []);
 
-    // Renk değiştiğinde localStorage'a kaydet
-    const updateMemberColor = (member: string, color: string) => {
+    // Renk değiştiğinde Supabase'e kaydet (localStorage backup ile)
+    const updateMemberColor = async (member: string, color: string) => {
         const newColors = { ...teamMemberColors, [member]: color };
         setTeamMemberColors(newColors);
+
+        // LocalStorage backup
         localStorage.setItem('noco_member_colors', JSON.stringify(newColors));
+
+        // Supabase'e kaydet
+        try {
+            await saveMemberColors(newColors);
+        } catch (e) {
+            console.error('Renk ayarları Supabase\'e kaydedilemedi:', e);
+        }
     };
 
     // Filtrelenmiş görevler
