@@ -373,7 +373,7 @@ export default function CalendarPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                     {/* Yaklaşan Etkinlikler */}
                     <Card>
-                        <CardHeader title="📅 Yaklaşan Etkinlikler" />
+                        <CardHeader title="Yaklaşan Etkinlikler" />
                         <CardContent>
                             {upcomingEvents.length === 0 ? (
                                 <p style={{ color: 'var(--color-muted)', fontSize: 'var(--text-caption)', textAlign: 'center' }}>Bu ay etkinlik yok</p>
@@ -405,7 +405,7 @@ export default function CalendarPage() {
 
                     {/* Marka İstatistikleri */}
                     <Card>
-                        <CardHeader title="📊 Bu Ay" />
+                        <CardHeader title="Bu Ay" />
                         <CardContent>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {brandEventCounts.slice(0, 8).map(b => (
@@ -422,7 +422,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Etkinlik Oluştur/Düzenle Modal */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingEvent ? '✏️ Etkinlik Düzenle' : '📅 Yeni Etkinlik'} size="md" footer={
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingEvent ? 'Etkinlik Düzenle' : 'Yeni Etkinlik'} size="md" footer={
                 <>
                     {editingEvent && <Button variant="danger" onClick={deleteEvent} style={{ marginRight: 'auto' }}>Sil</Button>}
                     <Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button>

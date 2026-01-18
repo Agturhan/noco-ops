@@ -153,7 +153,7 @@ export default function ContentProductionPage() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterAssignee, setFilterAssignee] = useState('all'); // 'all', 'me', veya kişi ismi
     const [currentUser, setCurrentUser] = useState<{ name: string; id: string } | null>(null);
-    const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'team'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'team' | 'archive'>('list');
 
     // Kullanıcı bilgilerini localStorage'dan al
     React.useEffect(() => {
@@ -275,6 +275,25 @@ export default function ContentProductionPage() {
         }
     }, [selectedContent]);
 
+    // Bugünün tarihini al
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Tamamlanmış durumlar
+    const completedStatuses: ContentStatus[] = ['PAYLASILD', 'TESLIM'];
+
+    // Geçmiş tarihli mi kontrol et
+    const isOverdue = (content: ContentItem) => {
+        if (!content.deliveryDate) return false;
+        const deliveryDate = new Date(content.deliveryDate);
+        deliveryDate.setHours(0, 0, 0, 0);
+        return deliveryDate < today && !completedStatuses.includes(content.status);
+    };
+
+    // Arşiv filtresi: 30 günden eski VE tamamlanmış işler
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const filteredContents = contents.filter(c => {
         if (filterBrand !== 'all' && c.brandId !== filterBrand) return false;
         if (filterStatus !== 'all' && c.status !== filterStatus) return false;
@@ -284,6 +303,22 @@ export default function ContentProductionPage() {
         } else if (filterAssignee !== 'all' && filterAssignee !== 'me') {
             if (c.assigneeId !== filterAssignee) return false;
         }
+
+        // Arşiv modu: 30 günden eski + tamamlanmış işler
+        if (viewMode === 'archive') {
+            if (!c.deliveryDate) return false;
+            const deliveryDate = new Date(c.deliveryDate);
+            return deliveryDate < thirtyDaysAgo && completedStatuses.includes(c.status);
+        }
+
+        // Normal modlarda: Arşive gitmiş işleri gösterme
+        if (c.deliveryDate) {
+            const deliveryDate = new Date(c.deliveryDate);
+            if (deliveryDate < thirtyDaysAgo && completedStatuses.includes(c.status)) {
+                return false;
+            }
+        }
+
         return true;
     });
 
@@ -371,14 +406,15 @@ export default function ContentProductionPage() {
                             padding: '2px',
                             border: '1px solid var(--color-border)'
                         }}>
-                            <Button variant={viewMode === 'list' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('list')}>📋 Liste</Button>
-                            <Button variant={viewMode === 'calendar' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')}>📅 Takvim</Button>
-                            <Button variant={viewMode === 'team' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('team')}>👥 Ekip</Button>
+                            <Button variant={viewMode === 'list' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('list')}>Liste</Button>
+                            <Button variant={viewMode === 'calendar' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')}>Takvim</Button>
+                            <Button variant={viewMode === 'team' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('team')}>Ekip</Button>
+                            <Button variant={viewMode === 'archive' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('archive')} style={{ opacity: 0.7 }}>Arşiv</Button>
                         </div>
                         {/* Separator */}
                         <div style={{ width: 1, height: 24, backgroundColor: 'var(--color-border)' }} />
                         {/* Actions */}
-                        <Button variant="secondary" size="sm" onClick={() => setShowBrandModal(true)}>🏷️ Marka Ekle</Button>
+                        <Button variant="secondary" size="sm" onClick={() => setShowBrandModal(true)}>Marka Ekle</Button>
                         <Button variant="primary" onClick={() => openModal()}>+ Yeni İçerik</Button>
                     </div>
                 }
@@ -651,6 +687,7 @@ export default function ContentProductionPage() {
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                                 <span style={{ backgroundColor: brandColor, color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: 11 }}>{brandName}</span>
+                                                {isOverdue(c) && <Badge style={{ backgroundColor: '#E13A3A', color: 'white', fontSize: 10, fontWeight: 700 }}>ACİL</Badge>}
                                                 <Badge style={{ backgroundColor: contentStatuses[c.status].color, color: 'white', fontSize: 10 }}>{contentStatuses[c.status].label}</Badge>
                                             </div>
                                             <p style={{ fontWeight: 600 }}>{contentTypes[c.type].icon} {c.title}</p>

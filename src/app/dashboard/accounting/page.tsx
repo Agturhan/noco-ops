@@ -301,8 +301,8 @@ export default function AccountingPage() {
                 <Card style={{ marginBottom: 'var(--space-2)' }}>
                     <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
                         {[
-                            { id: 'overview', label: '📊 Genel Bakış' },
-                            { id: 'income', label: '💰 Gelirler' },
+                            { id: 'overview', label: 'Genel Bakış' },
+                            { id: 'income', label: 'Gelirler' },
                             { id: 'expenses', label: '💸 Giderler' },
                             { id: 'cashflow', label: '📈 Nakit Akışı' },
                         ].map(tab => (
@@ -330,7 +330,7 @@ export default function AccountingPage() {
                         }}>
                             <Card style={{ background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)' }}>
                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-success)', fontWeight: 600 }}>
-                                    💰 AYLIK GELİR
+                                    AYLIK GELİR
                                 </p>
                                 <p style={{ fontSize: '32px', fontWeight: 700, fontFamily: 'var(--font-heading)', color: '#2E7D32' }}>
                                     {formatCurrency(totalMonthlyIncome)}
@@ -448,7 +448,7 @@ export default function AccountingPage() {
                         {/* Ödeme Günü: 1 */}
                         <Card style={{ marginBottom: 'var(--space-2)' }}>
                             <CardHeader
-                                title="📅 Her Ayın 1'i - Sabit Ödemeler"
+                                title="Her Ayın 1'i - Sabit Ödemeler"
                                 description={`Toplam: ${formatCurrency(incomeByPaymentDay.day1.reduce((s, c) => s + c.amount, 0))}`}
                             />
                             <CardContent>
@@ -483,7 +483,7 @@ export default function AccountingPage() {
                         {/* Ödeme Günü: 15 */}
                         <Card>
                             <CardHeader
-                                title="📅 Her Ayın 15'i - Ödemeler"
+                                title="Her Ayın 15'i - Ödemeler"
                                 description={`Toplam: ${formatCurrency(incomeByPaymentDay.day15.reduce((s, c) => s + c.amount, 0))}`}
                             />
                             <CardContent>
@@ -592,7 +592,7 @@ export default function AccountingPage() {
                         <CardContent>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                                 <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                                    <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--color-success)' }}>📅 Ayın 1'i</h4>
+                                    <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--color-success)' }}>Ayın 1'i</h4>
                                     <div style={{ marginBottom: 'var(--space-2)' }}>
                                         <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Gelen Ödemeler:</p>
                                         {incomeByPaymentDay.day1.map(c => (
@@ -611,7 +611,7 @@ export default function AccountingPage() {
                                 </div>
 
                                 <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                                    <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--color-success)' }}>📅 Ayın 15'i</h4>
+                                    <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--color-success)' }}>Ayın 15'i</h4>
                                     <div style={{ marginBottom: 'var(--space-2)' }}>
                                         <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Gelen Ödemeler:</p>
                                         {incomeByPaymentDay.day15.map(c => (
@@ -637,7 +637,7 @@ export default function AccountingPage() {
                                 borderRadius: 'var(--radius-md)',
                                 border: '2px solid var(--color-primary)'
                             }}>
-                                <h4 style={{ marginBottom: 'var(--space-2)', textAlign: 'center' }}>📊 Ay Sonu Özeti - {selectedMonth}</h4>
+                                <h4 style={{ marginBottom: 'var(--space-2)', textAlign: 'center' }}>Ay Sonu Özeti - {selectedMonth}</h4>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)', textAlign: 'center' }}>
                                     <div>
                                         <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Toplam Gelir</p>
@@ -662,7 +662,7 @@ export default function AccountingPage() {
             <Modal
                 isOpen={showIncomeModal}
                 onClose={() => setShowIncomeModal(false)}
-                title={editingClient ? `✏️ Gelir Düzenle: ${editingClient.name}` : '💰 Yeni Gelir Ekle'}
+                title={editingClient ? `Gelir Düzenle: ${editingClient.name}` : 'Yeni Gelir Ekle'}
                 size="md"
                 footer={
                     <>
@@ -736,7 +736,7 @@ export default function AccountingPage() {
                                 borderLeft: '3px solid var(--color-warning)'
                             }}>
                                 <div style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '4px' }}>
-                                    📅 {entry.date}
+                                    {entry.date}
                                 </div>
                                 <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                                     <Badge variant="info">{entry.field}</Badge>

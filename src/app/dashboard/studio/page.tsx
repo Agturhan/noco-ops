@@ -34,7 +34,7 @@ const bookings: Booking[] = [
 ];
 
 const typeConfig: Record<string, { label: string; icon: string; color: string }> = {
-    PHOTO: { label: 'Fotoğraf', icon: '📸', color: '#329FF5' },
+    PHOTO: { label: 'Fotoğraf', icon: 'Fotoğraf', color: '#329FF5' },
     VIDEO: { label: 'Video', icon: '🎬', color: '#FF4242' },
     PODCAST: { label: 'Podcast', icon: '🎙️', color: '#9C27B0' },
     OTHER: { label: 'Diğer', icon: '📌', color: '#6B7B80' },
@@ -209,7 +209,7 @@ export default function StudioBookingPage() {
                     <Card style={{ background: '#E3F2FD' }}>
                         <div style={{ textAlign: 'center' }}>
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>EN POPÜLER</p>
-                            <p style={{ fontSize: '28px' }}>📸</p>
+                            <p style={{ fontSize: '28px' }}>Fotoğraf</p>
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Fotoğraf</p>
                         </div>
                     </Card>
@@ -225,7 +225,7 @@ export default function StudioBookingPage() {
                 {/* Haftalık Takvim Grid */}
                 <Card>
                     <CardHeader
-                        title={`📅 ${currentWeekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - ${weekDays[6].dayNum} ${currentWeekStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}`}
+                        title={`Tarih: ${currentWeekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - ${weekDays[6].dayNum} ${currentWeekStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}`}
                     />
                     <CardContent>
                         <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '1px', backgroundColor: 'var(--color-border)' }}>
@@ -311,7 +311,7 @@ export default function StudioBookingPage() {
             <Modal
                 isOpen={showBookingModal}
                 onClose={() => setShowBookingModal(false)}
-                title="📅 Yeni Rezervasyon"
+                title="Yeni Rezervasyon"
                 size="md"
                 footer={
                     <>
@@ -390,7 +390,7 @@ export default function StudioBookingPage() {
                             </div>
                             <div>
                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Tarih</p>
-                                <p>📅 {selectedBooking.date}</p>
+                                <p>Tarih: {selectedBooking.date}</p>
                             </div>
                             <div>
                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Saat</p>

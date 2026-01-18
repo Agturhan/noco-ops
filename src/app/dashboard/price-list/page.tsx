@@ -96,7 +96,7 @@ export default function PriceListPage() {
     return (
         <>
             <Header
-                title="💰 Fiyat Listesi"
+                title="Fiyat Listesi"
                 subtitle="NOCO Creative Digital Studios - 2026"
             />
 
@@ -110,9 +110,9 @@ export default function PriceListPage() {
                     paddingBottom: 'var(--space-1)'
                 }}>
                     {[
-                        { id: 'packages', label: '📱 Sosyal Medya Paketleri', icon: '📱' },
-                        { id: 'studio', label: '🎬 Studio Reels', icon: '🎬' },
-                        { id: 'units', label: '📋 Birim Fiyatlar', icon: '📋' },
+                        { id: 'packages', label: 'Sosyal Medya Paketleri' },
+                        { id: 'studio', label: 'Studio Reels' },
+                        { id: 'units', label: 'Birim Fiyatlar' },
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -294,7 +294,7 @@ export default function PriceListPage() {
                         {/* Video Prodüksiyon */}
                         <Card>
                             <div className="card-header">
-                                <h3>🎬 Video Prodüksiyon</h3>
+                                <h3>Video Prodüksiyon</h3>
                             </div>
                             <div className="table-container">
                                 <table className="table">
@@ -454,7 +454,7 @@ export default function PriceListPage() {
                     borderLeft: '4px solid var(--color-primary)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <span style={{ fontSize: '24px' }}>💡</span>
+                        <span style={{ fontSize: '24px' }}>ℹ️</span>
                         <div>
                             <p style={{ fontWeight: 600, marginBottom: '4px' }}>Fiyatlandırma Notu</p>
                             <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
