@@ -274,25 +274,20 @@ export default function ContentProductionPage() {
             setEditingNotes(selectedContent.notes || '');
         }
     }, [selectedContent]);
-
     // Bugünün tarihini al
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Tamamlanmış durumlar
-    const completedStatuses: ContentStatus[] = ['PAYLASILD', 'TESLIM'];
+    // Tamamlanmış durumlar (arşive gidecekler)
+    const archivedStatuses: ContentStatus[] = ['PAYLASILD', 'TESLIM'];
 
-    // Geçmiş tarihli mi kontrol et
+    // Geçmiş tarihli mi kontrol et (ACİL badge için)
     const isOverdue = (content: ContentItem) => {
         if (!content.deliveryDate) return false;
         const deliveryDate = new Date(content.deliveryDate);
         deliveryDate.setHours(0, 0, 0, 0);
-        return deliveryDate < today && !completedStatuses.includes(content.status);
+        return deliveryDate < today && !archivedStatuses.includes(content.status);
     };
-
-    // Arşiv filtresi: 30 günden eski VE tamamlanmış işler
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const filteredContents = contents.filter(c => {
         if (filterBrand !== 'all' && c.brandId !== filterBrand) return false;
@@ -304,19 +299,14 @@ export default function ContentProductionPage() {
             if (c.assigneeId !== filterAssignee) return false;
         }
 
-        // Arşiv modu: 30 günden eski + tamamlanmış işler
+        // Arşiv modu: Sadece PAYLASILD veya TESLIM olanlar
         if (viewMode === 'archive') {
-            if (!c.deliveryDate) return false;
-            const deliveryDate = new Date(c.deliveryDate);
-            return deliveryDate < thirtyDaysAgo && completedStatuses.includes(c.status);
+            return archivedStatuses.includes(c.status);
         }
 
-        // Normal modlarda: Arşive gitmiş işleri gösterme
-        if (c.deliveryDate) {
-            const deliveryDate = new Date(c.deliveryDate);
-            if (deliveryDate < thirtyDaysAgo && completedStatuses.includes(c.status)) {
-                return false;
-            }
+        // Normal modlarda: Arşivdekileri gösterme
+        if (archivedStatuses.includes(c.status)) {
+            return false;
         }
 
         return true;
@@ -456,7 +446,7 @@ export default function ContentProductionPage() {
                     </div>
                 </div>
 
-                {viewMode === 'list' && (
+                {(viewMode === 'list' || viewMode === 'archive') && (
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-3)' }}>
                         <div>
                             {filteredContents.map(content => {
