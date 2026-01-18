@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar, MultiSelect, ColorPicker } from '@/components/ui';
 import { brands, teamMembers, getBrandColor, getBrandName, getActiveTeamMembers, contentStatuses, contentTypes, ContentStatus, ContentType } from '@/lib/data';
 import { getContents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB, ContentItem as DBContentItem, getBrandSuggestions, createContentWithBrand } from '@/lib/actions/content';
+import { getMemberColors, saveMemberColors } from '@/lib/actions/userSettings';
 
 // ===== TİPLER =====
 interface ContentItem {
@@ -16,7 +17,8 @@ interface ContentItem {
     notes: string;
     deliveryDate?: string;
     publishDate?: string;
-    assigneeId?: string;
+    assigneeIds?: string[];  // Çoklu atama desteği
+    assigneeId?: string;     // Geriye uyumluluk
 }
 
 interface ActivityLog {
@@ -180,11 +182,21 @@ export default function ContentProductionPage() {
     const [formNotes, setFormNotes] = useState('');
     const [formDeliveryDate, setFormDeliveryDate] = useState('');
     const [formPublishDate, setFormPublishDate] = useState('');
-    const [formAssignee, setFormAssignee] = useState('');
+    const [formAssignees, setFormAssignees] = useState<string[]>([]);  // Çoklu atama
 
     // Inline editing states
     const [editingNotes, setEditingNotes] = useState('');
     const [noteHistory, setNoteHistory] = useState<NoteHistoryEntry[]>([]);
+
+    // Kişi renkleri (Supabase'ten yükle)
+    const defaultMemberColors: Record<string, string> = {
+        'Şeyma Bora': '#E91E63',
+        'Fatih Ustaoğmanoğlu': '#329FF5',
+        'Ayşegül Güler': '#00F5B0',
+        'Ahmet Gürkan Turhan': '#9C27B0'
+    };
+    const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
+    const [showColorSettings, setShowColorSettings] = useState(false);
 
     // Tüm markalar = varsayılan + custom
     const allBrands = [...brands, ...customBrands];
@@ -268,6 +280,13 @@ export default function ContentProductionPage() {
                         console.error('Note history yüklenemedi');
                     }
                 }
+                // Member colors Supabase'ten yükle
+                try {
+                    const colors = await getMemberColors();
+                    setTeamMemberColors(colors);
+                } catch (e) {
+                    console.error('Member colors yüklenemedi:', e);
+                }
             } catch (error) {
                 console.error('Supabase veri yüklenemedi:', error);
             } finally {
@@ -341,7 +360,7 @@ export default function ContentProductionPage() {
             setFormNotes(content.notes);
             setFormDeliveryDate(content.deliveryDate || '');
             setFormPublishDate(content.publishDate || '');
-            setFormAssignee(content.assigneeId || '');
+            setFormAssignees(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : []));
         } else {
             setSelectedContent(null);
             setFormTitle('');
@@ -351,7 +370,7 @@ export default function ContentProductionPage() {
             setFormNotes('');
             setFormDeliveryDate('');
             setFormPublishDate('');
-            setFormAssignee('');
+            setFormAssignees([]);
         }
         setShowModal(true);
     };
@@ -386,7 +405,8 @@ export default function ContentProductionPage() {
             notes: formNotes,
             deliveryDate: formDeliveryDate || undefined,
             publishDate: formPublishDate || undefined,
-            assigneeId: formAssignee || undefined,
+            assigneeIds: formAssignees.length > 0 ? formAssignees : undefined,
+            assigneeId: formAssignees[0] || undefined,  // Geriye uyumluluk
         };
 
         try {
@@ -406,7 +426,7 @@ export default function ContentProductionPage() {
                     notes: formNotes,
                     deliveryDate: formDeliveryDate || undefined,
                     publishDate: formPublishDate || undefined,
-                    assigneeId: formAssignee || undefined,
+                    assigneeId: formAssignees[0] || undefined,
                 });
                 if (result) {
                     setContents([{ ...data, id: result.id, notes: data.notes || '' } as ContentItem, ...contents]);
@@ -480,6 +500,7 @@ export default function ContentProductionPage() {
                         {/* Separator */}
                         <div style={{ width: 1, height: 24, backgroundColor: 'var(--color-border)' }} />
                         {/* Actions */}
+                        <Button variant="secondary" size="sm" onClick={() => setShowColorSettings(true)} title="Renk Ayarları">🎨</Button>
                         <Button variant="secondary" size="sm" onClick={() => setShowBrandModal(true)}>Marka Ekle</Button>
                         <Button variant="primary" onClick={() => openModal()}>+ Yeni İçerik</Button>
                     </div>
@@ -535,10 +556,25 @@ export default function ContentProductionPage() {
                                             <span>{contentTypes[content.type].icon}</span>
                                             <div>
                                                 <p style={{ fontWeight: 600 }}>{content.title}</p>
-                                                <p style={{ fontSize: 12, color: 'var(--color-muted)' }}>
-                                                    <span style={{ backgroundColor: brandColor, color: 'white', padding: '1px 6px', borderRadius: 10, fontSize: 10, marginRight: 8 }}>{brandName}</span>
-                                                    {content.deliveryDate && `📅 ${new Date(content.deliveryDate).toLocaleDateString('tr-TR')}`}
-                                                    {content.notes && ` • ${content.notes.slice(0, 30)}...`}
+                                                <p style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                                    <span style={{ backgroundColor: brandColor, color: 'white', padding: '1px 6px', borderRadius: 10, fontSize: 10 }}>{brandName}</span>
+                                                    {content.deliveryDate && <span>📅 {new Date(content.deliveryDate).toLocaleDateString('tr-TR')}</span>}
+                                                    {/* Atanan kişiler */}
+                                                    {(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map(assignee => (
+                                                        <span
+                                                            key={assignee}
+                                                            style={{
+                                                                fontSize: 10,
+                                                                padding: '2px 6px',
+                                                                backgroundColor: (teamMemberColors[assignee] || '#6B7B80') + '20',
+                                                                color: teamMemberColors[assignee] || '#6B7B80',
+                                                                borderRadius: 10,
+                                                                fontWeight: 500
+                                                            }}
+                                                        >
+                                                            {assignee.split(' ')[0]}
+                                                        </span>
+                                                    ))}
                                                 </p>
                                             </div>
                                         </div>
@@ -873,7 +909,13 @@ export default function ContentProductionPage() {
                             />
                             <Select label="Durum" value={formStatus} onChange={(e) => setFormStatus(e.target.value as ContentStatus)} options={Object.entries(contentStatuses).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))} />
                         </div>
-                        <Select label="Sorumlu" value={formAssignee} onChange={(e) => setFormAssignee(e.target.value)} options={[{ value: '', label: 'Atanmadı' }, ...activeTeam.map(m => ({ value: m.id, label: m.name }))]} />
+                        <MultiSelect
+                            label="Sorumlular"
+                            value={formAssignees}
+                            onChange={setFormAssignees}
+                            options={activeTeam.map(m => ({ value: m.name, label: m.name, color: teamMemberColors[m.name] }))}
+                            placeholder="Kişi seçiniz..."
+                        />
                         <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={3} />
                     </div>
 
@@ -1016,6 +1058,49 @@ export default function ContentProductionPage() {
                     <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginTop: 'var(--space-1)' }}>
                         💡 Eklediğiniz markalar içerik seçiminde görünecektir.
                     </p>
+                </div>
+            </Modal>
+
+            {/* ===== RENK AYARLARI MODAL ===== */}
+            <Modal
+                isOpen={showColorSettings}
+                onClose={() => setShowColorSettings(false)}
+                title="🎨 Kişi Renk Ayarları"
+                size="md"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>
+                        Her takım üyesi için bir renk seçin. Değişiklikler otomatik kaydedilir.
+                    </p>
+                    {activeTeam.map(member => (
+                        <div
+                            key={member.id}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 16px',
+                                backgroundColor: 'var(--color-surface)',
+                                borderRadius: 'var(--radius-sm)',
+                                borderLeft: `4px solid ${teamMemberColors[member.name] || '#6B7B80'}`
+                            }}
+                        >
+                            <span style={{ fontWeight: 500 }}>{member.name}</span>
+                            <ColorPicker
+                                value={teamMemberColors[member.name] || '#6B7B80'}
+                                onChange={async (color) => {
+                                    const newColors = { ...teamMemberColors, [member.name]: color };
+                                    setTeamMemberColors(newColors);
+                                    // Supabase'e kaydet
+                                    try {
+                                        await saveMemberColors(newColors);
+                                    } catch (e) {
+                                        console.error('Renk kaydedilemedi:', e);
+                                    }
+                                }}
+                            />
+                        </div>
+                    ))}
                 </div>
             </Modal>
         </>
