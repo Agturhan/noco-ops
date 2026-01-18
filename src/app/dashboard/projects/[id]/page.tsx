@@ -248,7 +248,7 @@ export default function ProjectDetailPage() {
                     <Card>
                         <div style={{ textAlign: 'center' }}>
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>İLERLEME</p>
-                            <p style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)' }}>%{progress}</p>
+                            <p style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)' }}>{progress}%</p>
                             <div style={{ height: 4, backgroundColor: 'var(--color-border)', borderRadius: 2, marginTop: 8 }}>
                                 <div style={{ height: '100%', width: `${progress}%`, backgroundColor: 'var(--color-primary)', borderRadius: 2 }} />
                             </div>
@@ -432,7 +432,7 @@ export default function ProjectDetailPage() {
                                                     <div style={{ flex: 1, height: 6, backgroundColor: 'var(--color-border)', borderRadius: 3 }}>
                                                         <div style={{ height: '100%', width: `${del.progress}%`, backgroundColor: 'var(--color-primary)', borderRadius: 3 }} />
                                                     </div>
-                                                    <span style={{ fontSize: 'var(--text-caption)' }}>%{del.progress}</span>
+                                                    <span style={{ fontSize: 'var(--text-caption)' }}>{del.progress}%</span>
                                                 </div>
                                             </td>
                                             <td>

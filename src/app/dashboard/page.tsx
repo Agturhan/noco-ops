@@ -548,7 +548,7 @@ export default function DashboardPage() {
                                 <div style={{ width: '100%', height: 10, backgroundColor: 'var(--color-border)', borderRadius: 5 }}>
                                     <div style={{ width: `${todayStudio.occupancyPercent}%`, height: '100%', backgroundColor: '#4CAF50', borderRadius: 5 }} />
                                 </div>
-                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>%{todayStudio.occupancyPercent}</span>
+                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{todayStudio.occupancyPercent}%</span>
                             </div>
                             {todayStudio.isOccupiedNow && (
                                 <div style={{ padding: '8px', backgroundColor: '#E8F5E9', borderRadius: 'var(--radius-sm)', marginBottom: '8px' }}>
@@ -648,7 +648,7 @@ export default function DashboardPage() {
                                                 <div style={{ flex: 1, maxWidth: 80, height: 6, backgroundColor: 'var(--color-border)', borderRadius: 3 }}>
                                                     <div style={{ height: '100%', width: `${project.progress}%`, backgroundColor: 'var(--color-primary)', borderRadius: 3 }} />
                                                 </div>
-                                                <span style={{ fontSize: 'var(--text-caption)' }}>%{project.progress}</span>
+                                                <span style={{ fontSize: 'var(--text-caption)' }}>{project.progress}%</span>
                                             </div>
                                         </td>
                                         <td>{new Date(project.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</td>

@@ -250,13 +250,13 @@ export default function InvoicesPage() {
                                             <td>
                                                 {invoice.status === 'PAID' ? (
                                                     <span style={{ color: 'var(--color-success)' }}>
-                                                        ✓ {invoice.paidAt}
+                                                        ✓ {invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                                                     </span>
                                                 ) : (
                                                     <span style={{
                                                         color: invoice.status === 'OVERDUE' ? 'var(--color-error)' : 'inherit'
                                                     }}>
-                                                        {invoice.dueDate}
+                                                        {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                                                     </span>
                                                 )}
                                             </td>
