@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar } from '@/components/ui';
 import { brands, teamMembers, getBrandColor, getBrandName, getActiveTeamMembers, contentStatuses, contentTypes, ContentStatus, ContentType } from '@/lib/data';
+import { getContents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB, ContentItem as DBContentItem } from '@/lib/actions/content';
 
 // ===== TİPLER =====
 interface ContentItem {
@@ -234,35 +235,48 @@ export default function ContentProductionPage() {
         // Varsayılan markalar arşivlenemez (data.ts'de sabit)
     };
 
-    // localStorage'dan veri yükle (sayfa açıldığında)
-    React.useEffect(() => {
-        const savedContents = localStorage.getItem('noco_contents');
-        if (savedContents) {
+    // Supabase'den veri yükle (sayfa açıldığında)
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const loadContents = async () => {
             try {
-                setContents(JSON.parse(savedContents));
-            } catch (e) {
-                console.error('Contents yüklenemedi');
+                setIsLoading(true);
+                const dbContents = await getContents();
+                if (dbContents && dbContents.length > 0) {
+                    // Supabase'ten gelen verileri kullan
+                    setContents(dbContents.map(c => ({
+                        id: c.id,
+                        title: c.title,
+                        brandId: c.brandId,
+                        status: c.status as ContentStatus,
+                        type: c.type as ContentType,
+                        notes: c.notes || '',
+                        deliveryDate: c.deliveryDate,
+                        publishDate: c.publishDate,
+                        assigneeId: c.assigneeId,
+                    })));
+                }
+                // Note history için localStorage kullanmaya devam et
+                const savedHistory = localStorage.getItem('noco_note_history');
+                if (savedHistory) {
+                    try {
+                        setNoteHistory(JSON.parse(savedHistory));
+                    } catch (e) {
+                        console.error('Note history yüklenemedi');
+                    }
+                }
+            } catch (error) {
+                console.error('Supabase veri yüklenemedi:', error);
+            } finally {
+                setIsLoading(false);
             }
-        }
-        const savedHistory = localStorage.getItem('noco_note_history');
-        if (savedHistory) {
-            try {
-                setNoteHistory(JSON.parse(savedHistory));
-            } catch (e) {
-                console.error('Note history yüklenemedi');
-            }
-        }
+        };
+        loadContents();
     }, []);
 
-    // contents değiştiğinde localStorage'a kaydet
-    React.useEffect(() => {
-        if (contents.length > 0) {
-            localStorage.setItem('noco_contents', JSON.stringify(contents));
-        }
-    }, [contents]);
-
     // noteHistory değiştiğinde localStorage'a kaydet
-    React.useEffect(() => {
+    useEffect(() => {
         if (noteHistory.length > 0) {
             localStorage.setItem('noco_note_history', JSON.stringify(noteHistory));
         }
@@ -340,10 +354,9 @@ export default function ContentProductionPage() {
         setShowModal(true);
     };
 
-    const saveContent = () => {
+    const saveContent = async () => {
         if (!formTitle || !formBrand) return;
-        const data: ContentItem = {
-            id: selectedContent?.id || Date.now().toString(),
+        const data = {
             title: formTitle,
             brandId: formBrand,
             type: formType,
@@ -353,16 +366,48 @@ export default function ContentProductionPage() {
             publishDate: formPublishDate || undefined,
             assigneeId: formAssignee || undefined,
         };
-        if (selectedContent) {
-            setContents(contents.map(c => c.id === selectedContent.id ? data : c));
-        } else {
-            setContents([data, ...contents]);
+
+        try {
+            if (selectedContent) {
+                // Güncelleme
+                const result = await updateContentDB(selectedContent.id, data);
+                if (result) {
+                    setContents(contents.map(c => c.id === selectedContent.id ? { ...c, ...data, id: selectedContent.id } : c));
+                }
+            } else {
+                // Yeni oluştur
+                const result = await createContent(data as any);
+                if (result) {
+                    setContents([{ ...data, id: result.id, notes: data.notes || '' } as ContentItem, ...contents]);
+                }
+            }
+            setShowModal(false);
+        } catch (error) {
+            console.error('İçerik kaydedilemedi:', error);
+            // Fallback: lokal state'i güncelle
+            const localData: ContentItem = {
+                id: selectedContent?.id || Date.now().toString(),
+                ...data,
+                notes: data.notes || '',
+            };
+            if (selectedContent) {
+                setContents(contents.map(c => c.id === selectedContent.id ? localData : c));
+            } else {
+                setContents([localData, ...contents]);
+            }
+            setShowModal(false);
         }
-        setShowModal(false);
     };
 
-    const updateStatus = (id: string, status: ContentStatus) => {
+    const updateStatus = async (id: string, status: ContentStatus) => {
+        // Önce UI'ı güncelle (iyimser güncelleme)
         setContents(contents.map(c => c.id === id ? { ...c, status } : c));
+        // Sonra DB'ye kaydet
+        try {
+            await updateContentDB(id, { status });
+        } catch (error) {
+            console.error('Status güncellenemedi:', error);
+        }
     };
 
     // İstatistikler

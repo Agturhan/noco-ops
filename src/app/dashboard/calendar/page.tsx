@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
 import { brands, getBrandById, getBrandColor, getBrandName, eventTypes, teamMembers, getActiveTeamMembers } from '@/lib/data';
-import { getContentsAsCalendarEvents } from '@/lib/sharedContent';
+import { getContentsAsCalendarEvents } from '@/lib/actions/content';
 
 // ===== TİPLER =====
 interface CalendarEvent {
@@ -96,16 +96,24 @@ export default function CalendarPage() {
     const [filterBrand, setFilterBrand] = useState<string>('all');
     const [filterType, setFilterType] = useState<string>('all');
 
-    // İş Yönetimi (Content Production) verilerini yükle
+    // İş Yönetimi (Content Production) verilerini yükle - Supabase'ten
     useEffect(() => {
-        const contentEvents = getContentsAsCalendarEvents();
-        // Mevcut takvim events + Content Production içerikleri
-        setEvents(prev => {
-            // Duplicate önleme - content- prefix ile
-            const existingIds = new Set(prev.map(e => e.id));
-            const newContentEvents = contentEvents.filter(e => !existingIds.has(e.id));
-            return [...prev.filter(e => !e.id.startsWith('content-')), ...contentEvents];
-        });
+        const loadContentEvents = async () => {
+            try {
+                const contentEvents = await getContentsAsCalendarEvents();
+                // Mevcut takvim events + Content Production içerikleri
+                setEvents(prev => {
+                    // Duplicate önleme - content- prefix ile
+                    return [...prev.filter(e => !e.id.startsWith('content-')), ...contentEvents.map(e => ({
+                        ...e,
+                        description: e.description || '',
+                    })) as CalendarEvent[]];
+                });
+            } catch (error) {
+                console.error('Content events yüklenemedi:', error);
+            }
+        };
+        loadContentEvents();
     }, []);
 
     // Form state
