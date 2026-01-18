@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar } from '@/components/ui';
 import { brands, teamMembers, getBrandColor, getBrandName, getActiveTeamMembers, contentStatuses, contentTypes, ContentStatus, ContentType } from '@/lib/data';
-import { getContents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB, ContentItem as DBContentItem } from '@/lib/actions/content';
+import { getContents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB, ContentItem as DBContentItem, getBrandSuggestions, createContentWithBrand } from '@/lib/actions/content';
 
 // ===== TİPLER =====
 interface ContentItem {
@@ -173,6 +173,8 @@ export default function ContentProductionPage() {
     // Form states
     const [formTitle, setFormTitle] = useState('');
     const [formBrand, setFormBrand] = useState('');
+    const [brandSuggestions, setBrandSuggestions] = useState<{ id: string; name: string; clientId?: string }[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [formType, setFormType] = useState<ContentType>('VIDEO');
     const [formStatus, setFormStatus] = useState<ContentStatus>('PLANLANDI');
     const [formNotes, setFormNotes] = useState('');
@@ -354,11 +356,31 @@ export default function ContentProductionPage() {
         setShowModal(true);
     };
 
+    // Marka autocomplete handler
+    const handleBrandInput = useCallback(async (value: string) => {
+        setFormBrand(value);
+        if (value.length >= 2) {
+            const suggestions = await getBrandSuggestions(value);
+            setBrandSuggestions(suggestions);
+            setShowSuggestions(true);
+        } else {
+            setBrandSuggestions([]);
+            setShowSuggestions(false);
+        }
+    }, []);
+
+    const selectBrandSuggestion = (suggestion: { id: string; name: string }) => {
+        setFormBrand(suggestion.name);
+        setBrandSuggestions([]);
+        setShowSuggestions(false);
+    };
+
     const saveContent = async () => {
         if (!formTitle || !formBrand) return;
         const data = {
             title: formTitle,
             brandId: formBrand,
+            brandName: formBrand, // Yeni: marka adı
             type: formType,
             status: formStatus,
             notes: formNotes,
@@ -375,8 +397,17 @@ export default function ContentProductionPage() {
                     setContents(contents.map(c => c.id === selectedContent.id ? { ...c, ...data, id: selectedContent.id } : c));
                 }
             } else {
-                // Yeni oluştur
-                const result = await createContent(data as any);
+                // Yeni oluştur - createContentWithBrand kullan (otomatik Client bağlantısı)
+                const result = await createContentWithBrand({
+                    title: formTitle,
+                    brandName: formBrand,
+                    status: formStatus,
+                    type: formType,
+                    notes: formNotes,
+                    deliveryDate: formDeliveryDate || undefined,
+                    publishDate: formPublishDate || undefined,
+                    assigneeId: formAssignee || undefined,
+                });
                 if (result) {
                     setContents([{ ...data, id: result.id, notes: data.notes || '' } as ContentItem, ...contents]);
                 }
@@ -771,7 +802,63 @@ export default function ContentProductionPage() {
                     {/* Sol Kolon - Form */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <Input label="Başlık *" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-                        <Select label="Marka *" value={formBrand} onChange={(e) => setFormBrand(e.target.value)} options={[{ value: '', label: 'Seçin...' }, ...activeBrands.map(b => ({ value: b.id, label: b.name }))]} />
+                        {/* Marka Autocomplete */}
+                        <div style={{ position: 'relative' }}>
+                            <Input
+                                label="Marka *"
+                                value={formBrand}
+                                onChange={(e) => handleBrandInput(e.target.value)}
+                                placeholder="Marka adı yazın..."
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                onFocus={() => formBrand.length >= 2 && setBrandSuggestions.length > 0 && setShowSuggestions(true)}
+                            />
+                            {showSuggestions && brandSuggestions.length > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    backgroundColor: 'var(--color-card)',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    boxShadow: 'var(--shadow-lg)',
+                                    zIndex: 100,
+                                    maxHeight: 200,
+                                    overflowY: 'auto',
+                                }}>
+                                    {brandSuggestions.map((s) => (
+                                        <div
+                                            key={s.id}
+                                            onClick={() => selectBrandSuggestion(s)}
+                                            style={{
+                                                padding: '10px 12px',
+                                                cursor: 'pointer',
+                                                borderBottom: '1px solid var(--color-border)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            <span style={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: '50%',
+                                                backgroundColor: s.clientId ? 'var(--color-success)' : 'var(--color-warning)',
+                                            }} />
+                                            <span>{s.name}</span>
+                                            {s.clientId && <span style={{ fontSize: 10, color: 'var(--color-muted)' }}>✓ Müşteri</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {formBrand && brandSuggestions.length === 0 && formBrand.length >= 2 && (
+                                <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>
+                                    💡 "{formBrand}" yeni marka olarak oluşturulacak
+                                </p>
+                            )}
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                             <Select
                                 label="Tür"
