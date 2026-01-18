@@ -179,7 +179,7 @@ export default function StudioBookingPage() {
                             <div>
                                 <p style={{ fontWeight: 600, color: '#F57F17' }}>{pendingCount} rezervasyon onay bekliyor</p>
                                 <p style={{ fontSize: 'var(--text-caption)', color: '#F9A825' }}>
-                                    Waiver imzalanmadan rezervasyon onaylanamaz
+                                    Feragatname imzalanmadan rezervasyon onaylanamaz
                                 </p>
                             </div>
                         </div>
@@ -302,7 +302,7 @@ export default function StudioBookingPage() {
                         </div>
                     ))}
                     <span style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginLeft: 'auto' }}>
-                        ⚠️ = Waiver imzalanmamış
+                        ⚠️ = Feragatname imzalanmamış
                     </span>
                 </div>
             </div>
@@ -347,7 +347,7 @@ export default function StudioBookingPage() {
                     <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} placeholder="Ekipman, özel gereksinimler..." />
                     <div style={{ padding: 'var(--space-2)', backgroundColor: '#FFF3E0', borderRadius: 'var(--radius-sm)' }}>
                         <p style={{ fontSize: 'var(--text-caption)', color: '#E65100' }}>
-                            ⚠️ Rezervasyon onayı için Waiver (sorumluluk belgesi) imzalanmalıdır.
+                            ⚠️ Rezervasyon onayı için feragatname (sorumluluk belgesi) imzalanmalıdır.
                         </p>
                     </div>
                 </div>
@@ -363,7 +363,7 @@ export default function StudioBookingPage() {
                     <>
                         <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
                         {selectedBooking?.status === 'PENDING' && !selectedBooking.waiverSigned && (
-                            <Button variant="warning">📝 Waiver Gönder</Button>
+                            <Button variant="warning">Feragatname Gönder</Button>
                         )}
                         {selectedBooking?.status === 'PENDING' && selectedBooking.waiverSigned && (
                             <Button variant="success">✅ Onayla</Button>
@@ -380,7 +380,7 @@ export default function StudioBookingPage() {
                             <Badge style={{ backgroundColor: typeConfig[selectedBooking.type].color, color: 'white' }}>
                                 {typeConfig[selectedBooking.type].icon} {typeConfig[selectedBooking.type].label}
                             </Badge>
-                            {!selectedBooking.waiverSigned && <Badge variant="error">⚠️ Waiver Yok</Badge>}
+                            {!selectedBooking.waiverSigned && <Badge variant="error">Feragatname Yok</Badge>}
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>

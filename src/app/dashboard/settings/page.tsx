@@ -259,7 +259,7 @@ export default function SettingsPage() {
                                     { key: 'paymentRequired' as const, icon: '💰', title: 'Ödeme Zorunluluğu', desc: 'Fatura ödenmeden dosya teslimi yapılamaz', color: '#4CAF50' },
                                     { key: 'rawFilesProtected' as const, icon: '🔐', title: 'RAW Dosya Koruması', desc: 'Kaynak dosyalar (AI, PSD vb.) varsayılan olarak paylaşılmaz', color: '#FF9800' },
                                     { key: 'retainerExpiry' as const, icon: '⏰', title: 'Retainer Saat Süresi', desc: 'Kullanılmayan saatler ay sonunda sıfırlanır', color: '#329FF5' },
-                                    { key: 'waiverRequired' as const, icon: '📝', title: 'Stüdyo Waiver Zorunluluğu', desc: 'Çekim rezervasyonları için sorumluluk belgesi gerekli', color: '#9C27B0' },
+                                    { key: 'waiverRequired' as const, icon: '📝', title: 'Stüdyo Feragatname Zorunluluğu', desc: 'Çekim rezervasyonları için sorumluluk belgesi gerekli', color: '#9C27B0' },
                                 ].map(item => (
                                     <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-2)', backgroundColor: settings[item.key] ? `${item.color}20` : 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: settings[item.key] ? `4px solid ${item.color}` : 'none' }}>
                                         <div>

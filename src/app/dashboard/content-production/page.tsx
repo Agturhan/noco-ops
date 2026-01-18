@@ -467,6 +467,7 @@ export default function ContentProductionPage() {
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            {isOverdue(content) && <Badge style={{ backgroundColor: '#E13A3A', color: 'white', fontWeight: 700 }}>ACİL</Badge>}
                                             <Badge style={{ backgroundColor: contentStatuses[content.status].color, color: 'white' }}>{contentStatuses[content.status].icon} {contentStatuses[content.status].label}</Badge>
                                             <select value={content.status} onClick={(e) => e.stopPropagation()} onChange={(e) => updateStatus(content.id, e.target.value as ContentStatus)} style={{ padding: '4px', fontSize: 11, borderRadius: 4, border: '1px solid var(--color-border)' }}>
                                                 {Object.entries(contentStatuses).map(([k, v]) => <option key={k} value={k}>{v.icon}</option>)}
