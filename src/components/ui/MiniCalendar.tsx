@@ -40,8 +40,11 @@ export function MiniCalendar({ selectedDate, onSelectDate }: MiniCalendarProps) 
     }
 
     const handleSelectDay = (day: number) => {
-        const date = new Date(year, month, day);
-        const isoDate = date.toISOString().split('T')[0];
+        // Manuel YYYY-MM-DD formatı - toISOString() UTC kullandığı için saat dilimi kayması oluyordu
+        const yyyy = year;
+        const mm = String(month + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        const isoDate = `${yyyy}-${mm}-${dd}`;
         onSelectDate(isoDate);
     };
 
