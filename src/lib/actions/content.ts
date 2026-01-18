@@ -2,22 +2,6 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
-import { createTask, ContentType as TaskContentType } from './tasks';
-
-// Content status mapping (eski sistem -> yeni sistem)
-const statusMapping: Record<string, string> = {
-    'PLANLANDI': 'TODO',
-    'CEKILDI': 'IN_PROGRESS',
-    'TASARLANIYOR': 'IN_PROGRESS',
-    'TASARLANDI': 'IN_PROGRESS',
-    'KURGULANIYOR': 'IN_PROGRESS',
-    'KURGULANDI': 'IN_REVIEW',
-    'ICERIK_HAZIRLANDI': 'IN_REVIEW',
-    'ONAY': 'IN_REVIEW',
-    'FOTOGRAF_RETOUCH': 'IN_PROGRESS',
-    'PAYLASILD': 'DONE',
-    'TESLIM': 'DONE',
-};
 
 // ContentItem tipi (geriye uyumluluk)
 export interface ContentItem {
@@ -74,26 +58,33 @@ export async function getContents(): Promise<ContentItem[]> {
     }
 }
 
-// Yeni içerik oluştur (Task olarak)
+// Yeni içerik oluştur (Task tablosuna direkt)
 export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<ContentItem | null> {
     try {
-        const task = await createTask({
-            title: content.title,
-            description: content.notes,
-            status: 'TODO',
-            priority: 'NORMAL',
-            dueDate: content.deliveryDate,
-            assigneeId: content.assigneeId,
-            contentType: content.type as TaskContentType,
-            publishDate: content.publishDate,
-            assigneeIds: content.assigneeIds,
-            clientId: content.clientId,
-            brandName: content.brandName || content.brandId,
-            notes: content.notes,
-            sourceType: 'content',
-        });
+        const { data: task, error } = await supabaseAdmin
+            .from('Task')
+            .insert([{
+                title: content.title,
+                description: content.notes,
+                status: content.status || 'PLANLANDI',  // ContentStatus kullan
+                priority: 'NORMAL',
+                dueDate: content.deliveryDate || null,
+                assigneeId: content.assigneeId || (content.assigneeIds?.[0]) || null,
+                contentType: content.type || 'VIDEO',
+                publishDate: content.publishDate || null,
+                assigneeIds: content.assigneeIds || [],
+                clientId: content.clientId || null,
+                brandName: content.brandName || content.brandId || null,
+                notes: content.notes || null,
+                sourceType: 'content',
+            }])
+            .select()
+            .single();
 
-        if (!task) return null;
+        if (error) {
+            console.error('Supabase createContent error:', error);
+            return null;
+        }
 
         revalidatePath('/dashboard/content-production');
         revalidatePath('/dashboard/calendar');

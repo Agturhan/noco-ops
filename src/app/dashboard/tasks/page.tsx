@@ -109,7 +109,7 @@ export default function TasksPage() {
                     description: t.description || '',
                     status: t.status,
                     priority: t.priority,
-                    assignees: t.assignee?.name ? [t.assignee.name] : [],
+                    assignees: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : []),
                     project: t.project?.name || '',
                     dueDate: t.dueDate ? t.dueDate.split('T')[0] : '',
                     subtasks: [],
@@ -267,6 +267,8 @@ export default function TasksPage() {
                     description: formDescription,
                     priority: formPriority as TaskPriorityType,
                     dueDate: formDueDate || null,
+                    assigneeIds: formAssignees,
+                    assigneeId: formAssignees[0] || null,
                 });
                 setTasks(tasks.map(t => t.id === editingTask.id ? {
                     ...t,
@@ -286,6 +288,8 @@ export default function TasksPage() {
                     description: formDescription,
                     priority: formPriority as TaskPriorityType,
                     dueDate: formDueDate || undefined,
+                    assigneeIds: formAssignees,
+                    assigneeId: formAssignees[0] || undefined,
                 });
                 setTasks([...tasks, {
                     id: newTask.id,

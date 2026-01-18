@@ -94,7 +94,8 @@ export type ContentStatus =
 
 export type ContentType = 'VIDEO' | 'POST' | 'FOTOGRAF' | 'REKLAM' | 'RAPOR' | 'TEKLIF' | 'WEB' | 'PODCAST';
 
-export const contentStatuses: Record<ContentStatus, { label: string; color: string; icon: string }> = {
+export const contentStatuses: Record<string, { label: string; color: string; icon: string }> = {
+    // Content statuses
     CEKILDI: { label: 'Çekildi', color: '#2196F3', icon: '📷' },
     TASARLANIYOR: { label: 'Tasarlanıyor', color: '#FF9800', icon: '🎨' },
     TASARLANDI: { label: 'Tasarlandı', color: '#F6D73C', icon: '✏️' },
@@ -106,6 +107,12 @@ export const contentStatuses: Record<ContentStatus, { label: string; color: stri
     FOTOGRAF_RETOUCH: { label: 'Fotoğraf Retouch', color: '#2196F3', icon: '🖼️' },
     PAYLASILD: { label: 'Paylaşıldı', color: '#00F5B0', icon: '✅' },
     TESLIM: { label: 'Teslim Edildi', color: '#9E9E9E', icon: '📦' },
+    // Task statuses (fallback - birleşik tablo için)
+    TODO: { label: 'Yapılacak', color: '#6B7B80', icon: '📋' },
+    IN_PROGRESS: { label: 'Devam Ediyor', color: '#FF9800', icon: '🔄' },
+    IN_REVIEW: { label: 'İnceleniyor', color: '#9C27B0', icon: '👀' },
+    DONE: { label: 'Tamamlandı', color: '#00F5B0', icon: '✓' },
+    BLOCKED: { label: 'Engellendi', color: '#E91E63', icon: '🚫' },
 };
 
 export const contentTypes: Record<ContentType, { label: string; icon: string; color: string }> = {

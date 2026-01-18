@@ -158,10 +158,17 @@ export async function updateTask(id: string, data: {
     priority?: TaskPriority;
     projectId?: string | null;
     assigneeId?: string | null;
+    assigneeIds?: string[] | null;
     dueDate?: string | null;
     estimatedHours?: number | null;
     actualHours?: number | null;
     completedAt?: string | null;
+    // Content fields
+    contentType?: ContentType | null;
+    publishDate?: string | null;
+    clientId?: string | null;
+    brandName?: string | null;
+    notes?: string | null;
 }) {
     const updateData: Record<string, any> = {};
 
@@ -171,10 +178,17 @@ export async function updateTask(id: string, data: {
     if (data.priority !== undefined) updateData.priority = data.priority;
     if (data.projectId !== undefined) updateData.projectId = data.projectId;
     if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
+    if (data.assigneeIds !== undefined) updateData.assigneeIds = data.assigneeIds;
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
     if (data.estimatedHours !== undefined) updateData.estimatedHours = data.estimatedHours;
     if (data.actualHours !== undefined) updateData.actualHours = data.actualHours;
     if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
+    // Content fields
+    if (data.contentType !== undefined) updateData.contentType = data.contentType;
+    if (data.publishDate !== undefined) updateData.publishDate = data.publishDate;
+    if (data.clientId !== undefined) updateData.clientId = data.clientId;
+    if (data.brandName !== undefined) updateData.brandName = data.brandName;
+    if (data.notes !== undefined) updateData.notes = data.notes;
 
     // Auto-set completedAt when status changes to DONE
     if (data.status === 'DONE' && !data.completedAt) {
