@@ -45,7 +45,6 @@ const revenueData = {
 const stats = [
     { label: 'Aktif Projeler', value: '12', icon: FolderOpen, trend: '+2', color: '#329FF5' },
     { label: 'Bekleyen Teslimatlar', value: '8', icon: ListChecks, trend: '-3', color: '#F6D73C' },
-    { label: 'Müşteri Onayı', value: '5', icon: Clock, trend: '+1', color: '#FF9800' },
 ];
 
 // Bugünkü Stüdyo Doluluk - Gerçek markalar
@@ -481,41 +480,7 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* BÖLÜM 1: Kişisel Performans */}
-                {currentUser && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                        {/* Tamamlanan Görevler */}
-                        <Card style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', color: 'white' }}>
-                            <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                                <p style={{ fontSize: 'var(--text-caption)', opacity: 0.8 }}>TAMAMLANAN GÖREVLER</p>
-                                <p style={{ fontSize: '32px', fontWeight: 700, color: '#00F5B0' }}>
-                                    {todayTasks.filter(t => t.completed).length}
-                                </p>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#00F5B0' }}>Bugün</p>
-                            </div>
-                        </Card>
-
-                        {/* Seri Gün */}
-                        <Card style={{ background: '#FFF3E0', borderTop: '4px solid #FF9800' }}>
-                            <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#E65100' }}>SERİ GÜN</p>
-                                <p style={{ fontSize: '28px', fontWeight: 700, color: '#BF360C' }}>7</p>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#F57C00' }}>Ardışık aktif gün</p>
-                            </div>
-                        </Card>
-
-                        {/* Haftalık Hedef */}
-                        <Card style={{ background: '#E3F2FD', borderTop: '4px solid #2196F3' }}>
-                            <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#1565C0' }}>HAFTALIK HEDEF</p>
-                                <p style={{ fontSize: '28px', fontWeight: 700, color: '#0D47A1' }}>12/15</p>
-                                <div style={{ marginTop: '8px', height: '6px', backgroundColor: '#BBDEFB', borderRadius: '3px' }}>
-                                    <div style={{ width: '80%', height: '100%', backgroundColor: '#2196F3', borderRadius: '3px' }} />
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                )}
+                {/* Not: Kişisel Performans bloğu kaldırıldı (Tamamlanan/Seri/Haftalık) */}
 
                 {/* BÖLÜM 2: Stats + Stüdyo Doluluk */}
                 <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
