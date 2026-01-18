@@ -63,7 +63,6 @@ const navGroups: NavGroup[] = [
         items: [
             { href: '/dashboard', label: 'Gösterge Paneli', icon: LayoutDashboard },
             { href: '/dashboard/content-production', label: 'İş Yönetimi', icon: Clapperboard, roles: ['OWNER', 'OPS', 'DIGITAL'] },
-            { href: '/dashboard/deliverables', label: 'Görsel Teslimatlar', icon: ImageIcon },
             { href: '/dashboard/tasks', label: 'Görevler', icon: CheckSquare },
             { href: '/dashboard/calendar', label: 'Takvim', icon: Calendar },
             { href: '/dashboard/studio', label: 'Stüdyo', icon: Camera, roles: ['OWNER', 'OPS', 'STUDIO'] },

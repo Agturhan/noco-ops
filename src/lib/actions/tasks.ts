@@ -400,6 +400,7 @@ export async function getUserWeekDeadlines(userId: string) {
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
+    // Tüm görevleri getir (kullanıcı filtresi olmadan - dashboard'da hepsini göster)
     const { data, error } = await supabaseAdmin
         .from('Task')
         .select(`
@@ -407,7 +408,11 @@ export async function getUserWeekDeadlines(userId: string) {
             title, 
             dueDate,
             priority,
+            assigneeId,
+            assigneeIds,
+            brandName,
             project:Project (
+                name,
                 contract:Contract (
                     client:Client (
                         name
@@ -415,10 +420,10 @@ export async function getUserWeekDeadlines(userId: string) {
                 )
             )
         `)
-        .eq('assigneeId', userId)
         .neq('status', 'DONE')
-        .gte('dueDate', today.toISOString())
-        .lte('dueDate', weekEnd.toISOString())
+        .not('dueDate', 'is', null)
+        .gte('dueDate', today.toISOString().split('T')[0])
+        .lte('dueDate', weekEnd.toISOString().split('T')[0])
         .order('dueDate', { ascending: true })
         .limit(10);
 
@@ -436,7 +441,9 @@ export async function getUserWeekDeadlines(userId: string) {
             date: dueDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
             daysLeft,
             priority: t.priority,
-            brand: t.project?.contract?.client?.name || 'Genel',
+            brand: t.brandName || t.project?.name || t.project?.contract?.client?.name || 'Genel',
+            assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
         };
     });
 }
+

@@ -744,13 +744,30 @@ export default function ContentProductionPage() {
                                             </div>
                                         )}
 
-                                        {/* Atanan Kişi */}
-                                        {selectedContent.assigneeId && (
+                                        {/* Atanan Kişi(ler) */}
+                                        {(selectedContent.assigneeIds?.length > 0 || selectedContent.assigneeId) && (
                                             <div style={{ marginBottom: 'var(--space-3)' }}>
                                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>👤 Atanan</p>
-                                                <p style={{ fontWeight: 600 }}>
-                                                    {activeTeam.find(t => t.id === selectedContent.assigneeId)?.name || 'Belirsiz'}
-                                                </p>
+                                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                                    {(selectedContent.assigneeIds || (selectedContent.assigneeId ? [selectedContent.assigneeId] : [])).map((assignee: string) => {
+                                                        // Hem isim hem de ID'ye göre kontrol et
+                                                        const member = activeTeam.find(t => t.id === assignee || t.name === assignee);
+                                                        const displayName = member?.name || assignee;
+                                                        const color = teamMemberColors[displayName] || teamMemberColors[assignee] || '#6B7B80';
+                                                        return (
+                                                            <span key={assignee} style={{
+                                                                padding: '4px 12px',
+                                                                backgroundColor: color + '20',
+                                                                color: color,
+                                                                borderRadius: 16,
+                                                                fontWeight: 500,
+                                                                fontSize: 13
+                                                            }}>
+                                                                {displayName}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         )}
 
