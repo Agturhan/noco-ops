@@ -264,7 +264,7 @@ export default function CalendarPage() {
                 actions={<Button variant="primary" onClick={openNewEventModal}>+ Etkinlik</Button>}
             />
 
-            <div style={{ padding: 'var(--space-3)', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--space-3)' }}>
+            <div className="calendar-layout" style={{ padding: 'var(--space-3)', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--space-3)' }}>
                 {/* Ana Takvim */}
                 <Card>
                     <CardContent>
@@ -325,7 +325,7 @@ export default function CalendarPage() {
                         </div>
 
                         {/* Takvim Grid */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, backgroundColor: 'var(--color-border)' }}>
+                        <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, backgroundColor: 'var(--color-border)' }}>
                             {dayNames.map(day => (
                                 <div key={day} style={{ padding: 'var(--space-1)', backgroundColor: 'var(--color-surface)', textAlign: 'center', fontWeight: 600, fontSize: 'var(--text-caption)' }}>{day}</div>
                             ))}
@@ -337,7 +337,7 @@ export default function CalendarPage() {
                                         onDragOver={(e) => day && e.preventDefault()}
                                         onDrop={() => day && handleDrop(day)}
                                         style={{
-                                            minHeight: 100,
+                                            minHeight: 90,
                                             padding: 'var(--space-1)',
                                             backgroundColor: day ? (isToday(day) ? 'var(--color-primary-light)' : 'var(--color-card)') : 'var(--color-surface)',
                                             borderRadius: isToday(day) ? 'var(--radius-sm)' : 0,

@@ -138,4 +138,46 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  /* Takvim mobil - hücreler daha kompakt */
+  .calendar-grid>div {
+    min-height: 60px !important;
+    padding: 4px !important;
+  }
+
+  .calendar-grid>div span {
+    font-size: 8px !important;
+  }
+}
+
+/* ===== TAKVIM RESPONSIVE ===== */
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-3);
+}
+
+@media (max-width: 1024px) {
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== FİYAT LİSTESİ RESPONSIVE ===== */
+.price-list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+@media (max-width: 900px) {
+  .price-list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .price-list-grid {
+    grid-template-columns: 1fr;
+  }
 }
