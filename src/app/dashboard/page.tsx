@@ -276,7 +276,8 @@ export default function DashboardPage() {
                         title: t.title,
                         date: new Date(t.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
                         brand: t.project || 'Genel',
-                        daysLeft: Math.ceil((new Date(t.dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                        daysLeft: Math.ceil((new Date(t.dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+                        assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
                     })).slice(0, 5);
 
                     setWeekDeadlines(deadlines);
@@ -450,9 +451,21 @@ export default function DashboardPage() {
                                             borderLeft: `3px solid ${getBrandColor(dl.brand)}`
                                         }}>
                                             <p style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>{dl.title}</p>
-                                            <p style={{ fontSize: 'var(--text-caption)', color: dl.daysLeft <= 2 ? '#FF4242' : 'var(--color-muted)' }}>
-                                                {dl.date} • {dl.daysLeft} gün kaldı
-                                            </p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                                                <span style={{ fontSize: 'var(--text-caption)', color: dl.daysLeft <= 2 ? '#FF4242' : 'var(--color-muted)' }}>
+                                                    {dl.date} • {dl.daysLeft} gün kaldı
+                                                </span>
+                                                {dl.assigneeIds && dl.assigneeIds.length > 0 && (
+                                                    <div style={{ display: 'flex', gap: 4 }}>
+                                                        {dl.assigneeIds.slice(0, 3).map((name: string) => (
+                                                            <span key={name} style={{ fontSize: 9, padding: '2px 6px', backgroundColor: 'var(--color-primary)', color: 'white', borderRadius: 8 }}>
+                                                                {name.split(' ')[0]}
+                                                            </span>
+                                                        ))}
+                                                        {dl.assigneeIds.length > 3 && <span style={{ fontSize: 9, color: 'var(--color-muted)' }}>+{dl.assigneeIds.length - 3}</span>}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

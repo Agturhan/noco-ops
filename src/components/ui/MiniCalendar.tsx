@@ -135,7 +135,7 @@ export function MiniCalendar({ selectedDate, onSelectDate }: MiniCalendarProps) 
                         onClick={() => day && handleSelectDay(day)}
                         style={{
                             textAlign: 'center',
-                            padding: '8px 4px',
+                            padding: '10px 6px',
                             fontSize: 'var(--text-body-sm)',
                             fontWeight: day && isSelected(day) ? 700 : 400,
                             backgroundColor: day && isSelected(day)
