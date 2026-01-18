@@ -10,3 +10,4 @@ export { ErrorBoundary, ErrorPage } from './ErrorBoundary';
 export { FileUpload } from './FileUpload';
 export { MiniCalendar } from './MiniCalendar';
 export { MultiSelect } from './MultiSelect';
+export { ColorPicker } from './ColorPicker';

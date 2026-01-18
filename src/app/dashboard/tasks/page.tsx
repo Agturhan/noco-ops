@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MultiSelect } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MultiSelect, ColorPicker } from '@/components/ui';
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
 import type { TaskStatus as TaskStatusType, TaskPriority as TaskPriorityType } from '@/lib/actions/tasks';
 import { ClipboardList, RefreshCw, Eye, CheckCircle2, XCircle, type LucideIcon } from 'lucide-react';
@@ -58,15 +58,15 @@ const priorityConfig = {
     URGENT: { label: 'Acil', color: '#FF4242' },
 };
 
-// Takım üyeleri ve renkleri
-const teamMemberColors: Record<string, string> = {
+// Takım üyeleri ve varsayılan renkleri
+const defaultMemberColors: Record<string, string> = {
     'Şeyma Bora': '#E91E63',
     'Fatih Ustaosmanoğlu': '#329FF5',
     'Ayşegül Güler': '#00F5B0',
     'Ahmet Gürkan Turhan': '#9C27B0'
 };
 
-const teamMembers = Object.keys(teamMemberColors);
+const teamMembers = Object.keys(defaultMemberColors);
 
 export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -74,12 +74,15 @@ export default function TasksPage() {
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
+    const [showColorSettings, setShowColorSettings] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [filterPriority, setFilterPriority] = useState<string>('ALL');
     const [filterAssignee, setFilterAssignee] = useState<string>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Kişi renkleri state (localStorage'dan yükle)
+    const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
     // Form state
     const [formTitle, setFormTitle] = useState('');
     const [formDescription, setFormDescription] = useState('');
@@ -132,6 +135,25 @@ export default function TasksPage() {
             localStorage.setItem('noco_tasks', JSON.stringify(tasks));
         }
     }, [tasks, loading]);
+
+    // Renkleri localStorage'dan yükle
+    React.useEffect(() => {
+        const savedColors = localStorage.getItem('noco_member_colors');
+        if (savedColors) {
+            try {
+                setTeamMemberColors(JSON.parse(savedColors));
+            } catch (e) {
+                console.error('Renk ayarları yüklenemedi:', e);
+            }
+        }
+    }, []);
+
+    // Renk değiştiğinde localStorage'a kaydet
+    const updateMemberColor = (member: string, color: string) => {
+        const newColors = { ...teamMemberColors, [member]: color };
+        setTeamMemberColors(newColors);
+        localStorage.setItem('noco_member_colors', JSON.stringify(newColors));
+    };
 
     // Filtrelenmiş görevler
     const filteredTasks = tasks.filter(task => {
@@ -338,6 +360,13 @@ export default function TasksPage() {
                                 ...teamMembers.map(m => ({ value: m, label: m }))
                             ]}
                         />
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowColorSettings(true)}
+                            title="Renk Ayarları"
+                        >
+                            🎨
+                        </Button>
                         <Button variant="primary" onClick={() => openAddModal()}>+ Yeni Görev</Button>
                     </div>
                 }
@@ -715,6 +744,40 @@ export default function TasksPage() {
                         )}
                     </div>
                 )}
+            </Modal>
+
+            {/* ===== RENK AYARLARI MODAL ===== */}
+            <Modal
+                isOpen={showColorSettings}
+                onClose={() => setShowColorSettings(false)}
+                title="🎨 Kişi Renk Ayarları"
+                size="md"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>
+                        Her takım üyesi için bir renk seçin. Değişiklikler otomatik kaydedilir.
+                    </p>
+                    {teamMembers.map(member => (
+                        <div
+                            key={member}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 16px',
+                                backgroundColor: 'var(--color-surface)',
+                                borderRadius: 'var(--radius-sm)',
+                                borderLeft: `4px solid ${teamMemberColors[member]}`
+                            }}
+                        >
+                            <span style={{ fontWeight: 500 }}>{member}</span>
+                            <ColorPicker
+                                value={teamMemberColors[member]}
+                                onChange={(color) => updateMemberColor(member, color)}
+                            />
+                        </div>
+                    ))}
+                </div>
             </Modal>
         </>
     );
