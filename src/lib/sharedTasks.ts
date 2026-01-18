@@ -152,7 +152,7 @@ export const getTasksForKanban = () => {
         description: t.description,
         status: t.status,
         priority: t.priority,
-        assignee: t.assignee,
+        assignees: t.assignee ? [t.assignee] : [],
         project: t.project,
         dueDate: t.dueDate,
         subtasks: [],

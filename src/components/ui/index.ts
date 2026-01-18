@@ -9,3 +9,4 @@ export { ToastProvider, useToast } from './Toast';
 export { ErrorBoundary, ErrorPage } from './ErrorBoundary';
 export { FileUpload } from './FileUpload';
 export { MiniCalendar } from './MiniCalendar';
+export { MultiSelect } from './MultiSelect';

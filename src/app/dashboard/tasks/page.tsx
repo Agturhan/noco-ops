@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MultiSelect } from '@/components/ui';
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
 import type { TaskStatus as TaskStatusType, TaskPriority as TaskPriorityType } from '@/lib/actions/tasks';
 import { ClipboardList, RefreshCw, Eye, CheckCircle2, XCircle, type LucideIcon } from 'lucide-react';
@@ -20,7 +20,7 @@ interface Task {
     description: string;
     status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
     priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
-    assignee: string;
+    assignees: string[];
     project: string;
     dueDate: string;
     subtasks: Subtask[];
@@ -76,7 +76,7 @@ export default function TasksPage() {
     const [formTitle, setFormTitle] = useState('');
     const [formDescription, setFormDescription] = useState('');
     const [formPriority, setFormPriority] = useState<Task['priority']>('NORMAL');
-    const [formAssignee, setFormAssignee] = useState('');
+    const [formAssignees, setFormAssignees] = useState<string[]>([]);
     const [formProject, setFormProject] = useState('');
     const [formDueDate, setFormDueDate] = useState('');
     const [formTags, setFormTags] = useState('');
@@ -97,7 +97,7 @@ export default function TasksPage() {
                     description: t.description || '',
                     status: t.status,
                     priority: t.priority,
-                    assignee: t.assignee?.name || '',
+                    assignees: t.assignee?.name ? [t.assignee.name] : [],
                     project: t.project?.name || '',
                     dueDate: t.dueDate ? t.dueDate.split('T')[0] : '',
                     subtasks: [],
@@ -128,7 +128,7 @@ export default function TasksPage() {
     // Filtrelenmiş görevler
     const filteredTasks = tasks.filter(task => {
         if (filterPriority !== 'ALL' && task.priority !== filterPriority) return false;
-        if (filterAssignee !== 'ALL' && task.assignee !== filterAssignee) return false;
+        if (filterAssignee !== 'ALL' && !task.assignees.includes(filterAssignee)) return false;
         if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
     });
@@ -184,7 +184,7 @@ export default function TasksPage() {
         setFormTitle('');
         setFormDescription('');
         setFormPriority('NORMAL');
-        setFormAssignee('');
+        setFormAssignees([]);
         setFormProject('');
         setFormDueDate('');
         setFormTags('');
@@ -196,7 +196,7 @@ export default function TasksPage() {
         setFormTitle(task.title);
         setFormDescription(task.description);
         setFormPriority(task.priority);
-        setFormAssignee(task.assignee);
+        setFormAssignees(task.assignees);
         setFormProject(task.project);
         setFormDueDate(task.dueDate);
         setFormTags(task.tags.join(', '));
@@ -228,7 +228,7 @@ export default function TasksPage() {
                     title: formTitle,
                     description: formDescription,
                     priority: formPriority,
-                    assignee: formAssignee,
+                    assignees: formAssignees,
                     project: formProject,
                     dueDate: formDueDate,
                     tags,
@@ -248,7 +248,7 @@ export default function TasksPage() {
                     description: formDescription,
                     status: 'TODO',
                     priority: formPriority,
-                    assignee: formAssignee,
+                    assignees: formAssignees,
                     project: formProject,
                     dueDate: formDueDate,
                     subtasks: [],
@@ -492,7 +492,7 @@ export default function TasksPage() {
                                                 {/* Footer */}
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
-                                                        👤 {task.assignee}
+                                                        👤 {task.assignees.length > 0 ? task.assignees.join(', ') : '-'}
                                                     </span>
                                                     {task.dueDate && (
                                                         <span style={{
@@ -556,11 +556,12 @@ export default function TasksPage() {
                             onChange={(e) => setFormPriority(e.target.value as Task['priority'])}
                             options={Object.entries(priorityConfig).map(([k, v]) => ({ value: k, label: v.label }))}
                         />
-                        <Select
-                            label="Atanan Kişi"
-                            value={formAssignee}
-                            onChange={(e) => setFormAssignee(e.target.value)}
-                            options={[{ value: '', label: 'Seçiniz...' }, ...teamMembers.map(m => ({ value: m, label: m }))]}
+                        <MultiSelect
+                            label="Atanan Kişiler"
+                            value={formAssignees}
+                            onChange={setFormAssignees}
+                            options={teamMembers.map(m => ({ value: m, label: m }))}
+                            placeholder="Kişi seçiniz..."
                         />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
@@ -610,8 +611,8 @@ export default function TasksPage() {
                                 <p>📁 {selectedTask.project || '-'}</p>
                             </div>
                             <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Atanan</p>
-                                <p>👤 {selectedTask.assignee || '-'}</p>
+                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Atananlar</p>
+                                <p>👤 {selectedTask.assignees.length > 0 ? selectedTask.assignees.join(', ') : '-'}</p>
                             </div>
                             <div>
                                 <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Bitiş Tarihi</p>
