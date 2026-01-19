@@ -252,7 +252,7 @@ export async function getContentsAsCalendarEvents() {
             title: task.title,
             description: task.notes || task.description || '',
             date: task.dueDate,
-            type: task.contentType ? 'CONTENT' : 'EVENT' as const,
+            type: task.contentType ? 'CONTENT' : 'TASK' as const,
             allDay: true,
             brandId: task.brandName || task.clientId || '',
             sourceType: task.sourceType || 'task' as const,

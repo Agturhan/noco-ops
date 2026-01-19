@@ -349,7 +349,7 @@ export default function CalendarPage() {
                                                 <div style={{ fontWeight: isToday(day) ? 700 : 500, color: isToday(day) ? 'var(--color-primary)' : 'inherit', marginBottom: 4 }}>{day}</div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                                     {dayEvents.slice(0, 3).map(event => {
-                                                        const brandColor = event.brandId ? getBrandColor(event.brandId) : calendarEventTypes[event.type].color;
+                                                        const brandColor = event.brandId ? getBrandColor(event.brandId) : (calendarEventTypes[event.type]?.color || '#6B7B80');
                                                         return (
                                                             <div
                                                                 key={event.id}
@@ -401,7 +401,7 @@ export default function CalendarPage() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {upcomingEvents.map(event => {
-                                        const brandColor = event.brandId ? getBrandColor(event.brandId) : calendarEventTypes[event.type].color;
+                                        const brandColor = event.brandId ? getBrandColor(event.brandId) : (calendarEventTypes[event.type]?.color || '#6B7B80');
                                         return (
                                             <div key={event.id} onClick={() => openEventDetail(event)} style={{ padding: 10, backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${brandColor}`, cursor: 'pointer' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
