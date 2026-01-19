@@ -3,6 +3,40 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 
+// Content status'larını Task status'larına dönüştür
+// Task tablosu: TODO | IN_PROGRESS | IN_REVIEW | DONE | BLOCKED
+// Content status: PLANLANDI | CEKILDI | KURGULANIYOR | PAYLASILD | TESLIM
+const contentStatusToTaskStatus: Record<string, string> = {
+    'PLANLANDI': 'TODO',
+    'CEKILDI': 'IN_PROGRESS',
+    'KURGULANIYOR': 'IN_PROGRESS',
+    'PAYLASILD': 'DONE',
+    'TESLIM': 'DONE',
+    // Task status'larını da kabul et
+    'TODO': 'TODO',
+    'IN_PROGRESS': 'IN_PROGRESS',
+    'IN_REVIEW': 'IN_REVIEW',
+    'DONE': 'DONE',
+    'BLOCKED': 'BLOCKED',
+};
+
+// Task status'larını Content status'larına dönüştür (gösterim için)
+const taskStatusToContentStatus: Record<string, string> = {
+    'TODO': 'PLANLANDI',
+    'IN_PROGRESS': 'KURGULANIYOR',
+    'IN_REVIEW': 'KURGULANIYOR',
+    'DONE': 'PAYLASILD',
+    'BLOCKED': 'PLANLANDI',
+};
+
+function mapContentStatusToTask(status: string): string {
+    return contentStatusToTaskStatus[status] || 'TODO';
+}
+
+function mapTaskStatusToContent(status: string): string {
+    return taskStatusToContentStatus[status] || status;
+}
+
 // ContentItem tipi (geriye uyumluluk)
 export interface ContentItem {
     id: string;
@@ -20,6 +54,7 @@ export interface ContentItem {
     createdAt?: string;
     updatedAt?: string;
 }
+
 
 // Content olarak işaretli Task'ları getir
 export async function getContents(): Promise<ContentItem[]> {
@@ -42,7 +77,7 @@ export async function getContents(): Promise<ContentItem[]> {
             brandId: task.brandName || task.clientId || '',
             brandName: task.brandName,
             clientId: task.clientId,
-            status: task.status,
+            status: mapTaskStatusToContent(task.status),
             type: task.contentType || 'VIDEO',
             notes: task.notes || task.description || '',
             deliveryDate: task.dueDate,
@@ -66,7 +101,7 @@ export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt
             .insert([{
                 title: content.title,
                 description: content.notes,
-                status: content.status || 'PLANLANDI',  // ContentStatus kullan
+                status: mapContentStatusToTask(content.status || 'PLANLANDI'),  // ContentStatus → TaskStatus dönüşümü
                 priority: 'NORMAL',
                 dueDate: content.deliveryDate || null,
                 assigneeId: content.assigneeId || (content.assigneeIds?.[0]) || null,
@@ -123,7 +158,7 @@ export async function updateContent(id: string, updates: Partial<ContentItem>): 
         if (updates.title) taskUpdates.title = updates.title;
         if (updates.notes !== undefined) taskUpdates.notes = updates.notes;
         if (updates.notes !== undefined) taskUpdates.description = updates.notes;
-        if (updates.status) taskUpdates.status = updates.status;
+        if (updates.status) taskUpdates.status = mapContentStatusToTask(updates.status);
         if (updates.type) taskUpdates.contentType = updates.type;
         if (updates.deliveryDate !== undefined) taskUpdates.dueDate = updates.deliveryDate;
         if (updates.publishDate !== undefined) taskUpdates.publishDate = updates.publishDate;
