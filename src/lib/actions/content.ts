@@ -231,22 +231,39 @@ export async function deleteContent(id: string): Promise<boolean> {
     }
 }
 
-// Takvim için: deliveryDate olan içerikleri CalendarEvent formatına dönüştür
+// Takvim için: dueDate olan TÜM Task'ları CalendarEvent formatına dönüştür
+// Artık sadece sourceType='content' değil, tüm içerikleri getiriyor
 export async function getContentsAsCalendarEvents() {
-    const contents = await getContents();
-    return contents
-        .filter(c => c.deliveryDate)
-        .map(c => ({
-            id: `content-${c.id}`,
-            title: c.title,
-            description: c.notes || '',
-            date: c.deliveryDate!,
-            type: 'CONTENT' as const,
+    try {
+        // Tüm Task'ları getir (hem content hem task)
+        const { data, error } = await supabaseAdmin
+            .from('Task')
+            .select('*')
+            .not('dueDate', 'is', null)
+            .order('dueDate', { ascending: true });
+
+        if (error) {
+            console.error('Supabase getContentsAsCalendarEvents error:', error);
+            return [];
+        }
+
+        return (data || []).map(task => ({
+            id: `content-${task.id}`,
+            title: task.title,
+            description: task.notes || task.description || '',
+            date: task.dueDate,
+            type: task.contentType ? 'CONTENT' : 'EVENT' as const,
             allDay: true,
-            brandId: c.brandId,
-            sourceType: 'content-production' as const,
-            sourceId: c.id,
+            brandId: task.brandName || task.clientId || '',
+            sourceType: task.sourceType || 'task' as const,
+            sourceId: task.id,
+            status: task.status,
+            priority: task.priority,
         }));
+    } catch (error) {
+        console.error('getContentsAsCalendarEvents error:', error);
+        return [];
+    }
 }
 
 // ===== MARKA/MÜŞTERİ AUTOCOMPLETE =====
