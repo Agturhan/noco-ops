@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { sendEmail } from '@/lib/email';
 
 // ===== PAYMENT TRACKING & REMINDERS =====
 // Fatura vadesi takibi, gecikme faizi hesabı ve hatırlatma sistemi
@@ -21,6 +22,23 @@ interface PaymentDue {
 }
 
 // ===== GET PAYMENT DUE STATUS =====
+
+interface InvoiceWithRelations {
+    id: string;
+    number: string | null;
+    amount: number;
+    dueDate: string;
+    status: string;
+    project: {
+        name: string;
+        contract: {
+            client: {
+                name: string;
+                email: string;
+            } | null;
+        } | null;
+    } | null;
+}
 
 export async function getPaymentDueStatus(): Promise<{
     overdue: PaymentDue[];
@@ -53,7 +71,7 @@ export async function getPaymentDueStatus(): Promise<{
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const processed = invoices.map((inv: any) => {
+    const processed = (invoices as unknown as InvoiceWithRelations[]).map((inv) => {
         const dueDate = new Date(inv.dueDate);
         dueDate.setHours(0, 0, 0, 0);
 
@@ -165,8 +183,9 @@ export async function createPaymentReminder(invoiceId: string, reminderType: 'FR
         return { success: false, error: 'Fatura bulunamadı' };
     }
 
-    const clientName = (invoice as any).project?.contract?.client?.name || 'Değerli Müşterimiz';
-    const clientEmail = (invoice as any).project?.contract?.client?.email;
+    const inv = invoice as unknown as InvoiceWithRelations;
+    const clientName = inv.project?.contract?.client?.name || 'Değerli Müşterimiz';
+    const clientEmail = inv.project?.contract?.client?.email;
     const { lateFee, totalWithFee, daysOverdue } = await calculateLateFee(invoiceId);
 
     const formatCurrency = (amount: number) =>
@@ -188,6 +207,23 @@ export async function createPaymentReminder(invoiceId: string, reminderType: 'FR
             subject = `🚨 SON UYARI: Gecikmiş Ödeme - ${invoice.number}`;
             message = `Sayın ${clientName},\n\n${invoice.number} numaralı faturanız ${daysOverdue} gündür ödenmemiştir. Bu faturanın 7 gün içinde ödenmemesi halinde yasal süreç başlatılacaktır.\n\nAsıl Tutar: ${formatCurrency(invoice.amount)}\nGecikme Faizi: ${formatCurrency(lateFee)}\nToplam: ${formatCurrency(totalWithFee)}\n\nAcil iletişim: muhasebe@noco.com.tr\n\nSaygılarımızla,\nNoco Creative`;
             break;
+    }
+
+    // Send Email
+    if (clientEmail) {
+        await sendEmail({
+            to: clientEmail,
+            subject,
+            template: 'payment_reminder',
+            data: {
+                clientName,
+                invoiceNumber: inv.number || 'Belirtilmemiş',
+                projectName: inv.project?.name || 'Proje',
+                amount: formatCurrency(invoice.amount),
+                dueDate: new Date(invoice.dueDate).toLocaleDateString('tr-TR'),
+                message
+            }
+        });
     }
 
     // Log the reminder

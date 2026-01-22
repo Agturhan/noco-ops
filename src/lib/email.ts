@@ -6,24 +6,29 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ===== EMAIL TYPES =====
-export type EmailTemplate =
-    | 'welcome'
-    | 'payment_reminder'
-    | 'payment_received'
-    | 'deliverable_ready'
-    | 'revision_requested'
-    | 'deadline_approaching'
-    | 'project_completed';
+// ===== EMAIL TYPES =====
 
-interface EmailOptions {
+type EmailTemplateData = {
+    welcome: { name: string; email: string; role: string; loginUrl?: string };
+    payment_reminder: { clientName: string; invoiceNumber: string; projectName: string; amount: string; dueDate: string; message?: string };
+    payment_received: { clientName: string; invoiceNumber: string; projectName: string; amount: string };
+    deliverable_ready: { clientName: string; deliverableName: string; projectName: string; remainingRevisions: number; portalUrl: string };
+    revision_requested: { assigneeName: string; deliverableName: string; projectName: string; revisionNumber: number; feedback: string };
+    deadline_approaching: { assigneeName: string; deliverableName: string; projectName: string; daysRemaining: number; deadline: string };
+    project_completed: { clientName: string; projectName: string; deliverableCount: number | string };
+};
+
+export type EmailTemplate = keyof EmailTemplateData;
+
+interface EmailOptions<T extends EmailTemplate> {
     to: string | string[];
     subject: string;
-    template: EmailTemplate;
-    data: Record<string, any>;
+    template: T;
+    data: EmailTemplateData[T];
 }
 
 // ===== EMAIL TEMPLATES =====
-const templates: Record<EmailTemplate, (data: any) => string> = {
+const templates: { [K in EmailTemplate]: (data: EmailTemplateData[K]) => string } = {
     welcome: (data) => `
         <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #329FF5 0%, #00F5B0 100%); padding: 30px; border-radius: 12px; text-align: center; color: white;">
@@ -52,7 +57,7 @@ const templates: Record<EmailTemplate, (data: any) => string> = {
             </div>
             <div style="padding: 30px; background: #ffffff; border-radius: 12px; margin-top: 20px; border: 1px solid #e0e0e0;">
                 <p>Sayın <strong>${data.clientName}</strong>,</p>
-                <p><strong>${data.invoiceNumber}</strong> numaralı faturanızın vadesi yaklaşıyor.</p>
+                <p>${data.message ? data.message.replace(/\n/g, '<br/>') : `<strong>${data.invoiceNumber}</strong> numaralı faturanızın vadesi yaklaşıyor.`}</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                     <tr style="background: #f5f5f5;">
                         <td style="padding: 12px; border: 1px solid #e0e0e0;">Proje</td>
@@ -154,14 +159,15 @@ const templates: Record<EmailTemplate, (data: any) => string> = {
 };
 
 // ===== SEND EMAIL =====
-export async function sendEmail(options: EmailOptions) {
+export async function sendEmail<T extends EmailTemplate>(options: EmailOptions<T>) {
     try {
         if (!process.env.RESEND_API_KEY) {
             console.warn('RESEND_API_KEY bulunamadı, e-posta gönderilmedi');
             return { success: false, error: 'API key eksik' };
         }
 
-        const html = templates[options.template](options.data);
+        const templateFn = templates[options.template] as (data: EmailTemplateData[T]) => string;
+        const html = templateFn(options.data);
 
         const { data, error } = await resend.emails.send({
             from: process.env.EMAIL_FROM || 'NOCO Ops <noreply@nocoops.com>',
@@ -177,9 +183,10 @@ export async function sendEmail(options: EmailOptions) {
 
         console.log('E-posta gönderildi:', data?.id);
         return { success: true, id: data?.id };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('E-posta gönderme hatası:', error);
-        return { success: false, error: error.message };
+        const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+        return { success: false, error: errorMessage };
     }
 }
 

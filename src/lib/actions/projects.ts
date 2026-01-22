@@ -250,6 +250,8 @@ export async function createContract(data: {
     paymentTerms?: string;
     rawAssetsIncluded?: boolean;
     retainerHours?: number;
+    monthlyVideoQuota?: number;
+    monthlyPostQuota?: number;
     notes?: string;
 }) {
     const { data: contract, error } = await supabaseAdmin
@@ -261,6 +263,8 @@ export async function createContract(data: {
             paymentTerms: data.paymentTerms || 'NET30',
             rawAssetsIncluded: data.rawAssetsIncluded || false,
             retainerHours: data.retainerHours || null,
+            monthlyVideoQuota: data.monthlyVideoQuota || 0,
+            monthlyPostQuota: data.monthlyPostQuota || 0,
             notes: data.notes || null,
         }])
         .select()
@@ -299,6 +303,11 @@ export async function updateContract(id: string, data: {
     if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms;
     if (data.rawAssetsIncluded !== undefined) updateData.rawAssetsIncluded = data.rawAssetsIncluded;
     if (data.retainerHours !== undefined) updateData.retainerHours = data.retainerHours;
+    if (data.retainerHours !== undefined) updateData.retainerHours = data.retainerHours;
+    // @ts-ignore
+    if (data.monthlyVideoQuota !== undefined) updateData.monthlyVideoQuota = data.monthlyVideoQuota;
+    // @ts-ignore
+    if (data.monthlyPostQuota !== undefined) updateData.monthlyPostQuota = data.monthlyPostQuota;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
     const { data: contract, error } = await supabaseAdmin
@@ -335,6 +344,9 @@ export async function getProjects(status?: string) {
             contract:Contract (
                 id,
                 name,
+                monthlyVideoQuota,
+                monthlyPostQuota,
+                retainerAmount,
                 client:Client (
                     id,
                     name
@@ -515,6 +527,10 @@ export async function getInvoices(projectId?: string) {
                 id,
                 name,
                 contract:Contract (
+                    id,
+                    name,
+                    monthlyVideoQuota,
+                    monthlyPostQuota,
                     client:Client (
                         id,
                         name
@@ -599,4 +615,36 @@ export async function markInvoicePaid(invoiceId: string, userId?: string) {
     revalidatePath('/dashboard/invoices');
     revalidatePath('/dashboard/deliverables');
     return updated;
+}
+// ===== Usage Stats =====
+
+export async function getContractUsage(clientId: string) {
+    // Current month range
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+    // Fetch COMPLETED tasks for this client in this month
+    const { data: tasks, error } = await supabaseAdmin
+        .from('Task')
+        .select('id, contentType, status, dueDate')
+        .eq('clientId', clientId)
+        .in('status', ['DONE', 'PAYLASILD', 'TESLIM'])
+        .gte('dueDate', startOfMonth)
+        .lte('dueDate', endOfMonth);
+
+    if (error) {
+        console.error('Error fetching usage:', error);
+        return { video: 0, post: 0, total: 0 };
+    }
+
+    const video = tasks?.filter(t => t.contentType === 'VIDEO' || t.contentType === 'REELS').length || 0;
+    const post = tasks?.filter(t => t.contentType === 'POST' || t.contentType === 'CAROUSEL').length || 0;
+
+    return {
+        video,
+        post,
+        total: (tasks?.length || 0)
+    };
+
 }

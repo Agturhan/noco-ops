@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Textarea } from '@/components/ui';
 import Link from 'next/link';
-import { brands, getBrandColor, teamMembers } from '@/lib/data';
+import { brands, getBrandColor } from '@/lib/data';
 import { getAllRetainerSummaries, logRetainerHours, getRetainerById } from '@/lib/actions/retainers';
 
 // ===== RETAINER TRACKING SİSTEMİ =====

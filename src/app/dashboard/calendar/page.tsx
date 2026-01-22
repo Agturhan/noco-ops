@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
-import { brands, getBrandById, getBrandColor, getBrandName, eventTypes, teamMembers, getActiveTeamMembers } from '@/lib/data';
-import { getContentsAsCalendarEvents } from '@/lib/actions/content';
+import { brands, getBrandById, getBrandColor, getBrandName, eventTypes } from '@/lib/data';
+import { getContentsAsCalendarEvents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB } from '@/lib/actions/content';
+import { getMemberColors } from '@/lib/actions/userSettings';
 
 // ===== TİPLER =====
 interface CalendarEvent {
@@ -19,6 +20,10 @@ interface CalendarEvent {
     relatedProject?: string;
     brandId?: string;
     assigneeId?: string;
+    assigneeIds?: string[];
+    sourceId?: string;
+    sourceType?: 'task' | 'content';
+    status?: string;
 }
 
 const calendarEventTypes = {
@@ -33,55 +38,7 @@ const calendarEventTypes = {
 };
 
 // GERÇEK VERİLER - Takvim etkinlikleri (Aralık 2025 - Ocak 2026)
-const initialEvents: CalendarEvent[] = [
-    // Ocak 2026 - Gerçek planlamalar
-    { id: '1', title: 'Tevfik Usta Video 1', type: 'CONTENT', date: '2026-01-20', allDay: true, description: 'Aralık dönemi 1. video', brandId: 'tevfik' },
-    { id: '2', title: 'Tevfik Usta Video 2', type: 'CONTENT', date: '2026-01-25', allDay: true, description: 'Aralık dönemi 2. video', brandId: 'tevfik' },
-    { id: '3', title: 'Tevfik Usta Video 3', type: 'CONTENT', date: '2026-01-30', allDay: true, description: 'Aralık dönemi 3. video', brandId: 'tevfik' },
-
-    { id: '10', title: 'ByKasap Video 1', type: 'CONTENT', date: '2026-01-20', allDay: true, description: 'Aralık dönemi 1. video', brandId: 'bykasap' },
-    { id: '11', title: 'ByKasap Video 2', type: 'CONTENT', date: '2026-01-24', allDay: true, description: 'Aralık dönemi 2. video', brandId: 'bykasap' },
-    { id: '12', title: 'ByKasap Video 3', type: 'CONTENT', date: '2026-01-28', allDay: true, description: 'Aralık dönemi 3. video', brandId: 'bykasap' },
-
-    { id: '20', title: 'İkra Video 1', type: 'CONTENT', date: '2026-01-07', allDay: true, description: 'Ocak 1. video', brandId: 'ikra' },
-    { id: '21', title: 'İkra Video 2', type: 'CONTENT', date: '2026-01-11', allDay: true, description: 'Ocak 2. video', brandId: 'ikra' },
-    { id: '22', title: 'İkra Video 3', type: 'CONTENT', date: '2026-01-16', allDay: true, description: 'Ocak 3. video', brandId: 'ikra' },
-    { id: '23', title: 'İkra Video 4', type: 'CONTENT', date: '2026-01-21', allDay: true, description: 'Ocak 4. video', brandId: 'ikra' },
-
-    { id: '30', title: 'Zeytindalı Stüdyo Çekim', type: 'SHOOT', date: '2026-01-15', time: '10:00', allDay: false, description: 'Ürün fotoğraf çekimi', brandId: 'zeytindali' },
-    { id: '31', title: 'Zeytindalı Video 1', type: 'CONTENT', date: '2026-01-18', allDay: true, description: 'Ocak 1. video', brandId: 'zeytindali' },
-    { id: '32', title: 'Zeytindalı Video 2', type: 'CONTENT', date: '2026-01-25', allDay: true, description: 'Ocak 2. video', brandId: 'zeytindali' },
-
-    { id: '40', title: 'Valora Post 1', type: 'CONTENT', date: '2026-01-10', allDay: true, description: 'Ocak 1. post', brandId: 'valora' },
-    { id: '41', title: 'Valora Post 2', type: 'CONTENT', date: '2026-01-14', allDay: true, description: 'Ocak 2. post', brandId: 'valora' },
-    { id: '42', title: 'Valora Video 1', type: 'CONTENT', date: '2026-01-17', allDay: true, description: 'Ocak 1. video', brandId: 'valora' },
-    { id: '43', title: 'Valora Post 3', type: 'CONTENT', date: '2026-01-22', allDay: true, description: 'Ocak 3. post', brandId: 'valora' },
-
-    { id: '50', title: 'Zoks Video 1', type: 'CONTENT', date: '2026-01-08', allDay: true, description: 'Ocak 1. video', brandId: 'zoks' },
-    { id: '51', title: 'Zoks Video 2', type: 'CONTENT', date: '2026-01-15', allDay: true, description: 'Ocak 2. video', brandId: 'zoks' },
-    { id: '52', title: 'Zoks Video 3', type: 'CONTENT', date: '2026-01-22', allDay: true, description: 'Ocak 3. video', brandId: 'zoks' },
-
-    { id: '60', title: 'Ali Haydar Video 1', type: 'CONTENT', date: '2026-01-12', allDay: true, description: 'Ocak 1. video', brandId: 'alihaydar' },
-    { id: '61', title: 'Ali Haydar Çekim', type: 'SHOOT', date: '2026-01-19', time: '14:00', allDay: false, description: 'Mekan içi çekim', brandId: 'alihaydar' },
-
-    // Genel etkinlikler
-    { id: '90', title: 'Haftalık Ekip Toplantısı', type: 'MEETING', date: '2026-01-06', time: '09:00', allDay: false, description: 'Haftalık durum değerlendirme', brandId: 'noco' },
-    { id: '91', title: 'Haftalık Ekip Toplantısı', type: 'MEETING', date: '2026-01-13', time: '09:00', allDay: false, description: 'Haftalık durum değerlendirme', brandId: 'noco' },
-    { id: '92', title: 'Haftalık Ekip Toplantısı', type: 'MEETING', date: '2026-01-20', time: '09:00', allDay: false, description: 'Haftalık durum değerlendirme', brandId: 'noco' },
-    { id: '93', title: 'Haftalık Ekip Toplantısı', type: 'MEETING', date: '2026-01-27', time: '09:00', allDay: false, description: 'Haftalık durum değerlendirme', brandId: 'noco' },
-
-    { id: '95', title: 'Raporlar Teslim', type: 'DEADLINE', date: '2026-01-16', allDay: true, description: 'Tevfik Usta | ByKasap | Zeytindalı raporları', brandId: 'noco' },
-    { id: '96', title: 'Fatura Kesim', type: 'DEADLINE', date: '2026-01-05', allDay: true, description: 'Aylık faturaların kesilmesi', brandId: 'noco' },
-    { id: '97', title: 'Muhasebe & Kira', type: 'DEADLINE', date: '2026-01-05', allDay: true, description: 'Muhasebe ve kira ödemeleri', brandId: 'noco' },
-
-    // 🎬 STÜDYO REZERVASYONLARı (Stüdyo sayfasıyla senkronize)
-    { id: 's1', title: '🎬 Stüdyo: Valora Psikoloji', type: 'STUDIO', date: '2026-01-15', time: '10:00', allDay: false, description: 'Ürün Fotoğrafları - 10:00-14:00', brandId: 'valora' },
-    { id: 's2', title: '🎬 Stüdyo: Zoks Studio', type: 'STUDIO', date: '2026-01-17', time: '09:00', allDay: false, description: 'Konsept Çekim - Full gün', brandId: 'zoks' },
-    { id: 's3', title: '🎬 Stüdyo: Hair Chef', type: 'STUDIO', date: '2026-01-20', time: '14:00', allDay: false, description: 'Podcast Kaydı - 14:00-16:00', brandId: 'hairchef' },
-    { id: 's4', title: '🎬 Stüdyo: Zeytindalı Gıda', type: 'STUDIO', date: '2026-01-22', time: '10:00', allDay: false, description: 'Kurumsal Fotoğraf - 10:00-12:00', brandId: 'zeytindali' },
-    { id: 's5', title: '🎬 Stüdyo: İkra Giyim', type: 'STUDIO', date: '2026-01-25', time: '10:00', allDay: false, description: 'Ürün Çekimi - 10:00-14:00', brandId: 'ikra' },
-    { id: 's6', title: '🎬 Stüdyo: Tevfik Usta', type: 'STUDIO', date: '2026-01-28', time: '09:00', allDay: false, description: 'Mekan Çekimi - 09:00-13:00', brandId: 'tevfik' },
-];
+const initialEvents: CalendarEvent[] = [];
 
 export default function CalendarPage() {
     const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
@@ -96,18 +53,47 @@ export default function CalendarPage() {
     const [filterBrand, setFilterBrand] = useState<string>('all');
     const [filterType, setFilterType] = useState<string>('all');
 
+    // Kişi renkleri (atanan kişiye göre renklendirme için)
+    const [memberColors, setMemberColors] = useState<Record<string, string>>({});
+
+    // Kişi renklerini yükle
+    useEffect(() => {
+        getMemberColors().then(colors => {
+            setMemberColors(colors || {});
+        }).catch(() => {
+            setMemberColors({});
+        });
+    }, []);
+
+    // Etkinlik rengini belirle - ATANAN KİŞİ(LER)E GÖRE
+    const getEventColor = (event: CalendarEvent): string => {
+        // Atanan kişi(ler) varsa, onların rengini kullan
+        const assignees = event.assigneeIds || (event.assigneeId ? [event.assigneeId] : []);
+        if (assignees.length > 0) {
+            // İlk atanan kişinin rengini kullan
+            const firstAssignee = assignees[0];
+            return memberColors[firstAssignee] || '#6B7B80';
+        }
+        // Atanan yoksa, tip rengini kullan (fallback)
+        return calendarEventTypes[event.type]?.color || '#6B7B80';
+    };
+
     // İş Yönetimi (Content Production) verilerini yükle - Supabase'ten
     useEffect(() => {
         const loadContentEvents = async () => {
             try {
+                console.log('[Calendar] Loading content events from Supabase...');
                 const contentEvents = await getContentsAsCalendarEvents();
+                console.log('[Calendar] Loaded content events:', contentEvents.length, contentEvents);
                 // Mevcut takvim events + Content Production içerikleri
                 setEvents(prev => {
                     // Duplicate önleme - content- prefix ile
-                    return [...prev.filter(e => !e.id.startsWith('content-')), ...contentEvents.map(e => ({
+                    const newEvents = [...prev.filter(e => !e.id.startsWith('content-')), ...contentEvents.map(e => ({
                         ...e,
                         description: e.description || '',
                     })) as CalendarEvent[]];
+                    console.log('[Calendar] Total events after merge:', newEvents.length);
+                    return newEvents;
                 });
             } catch (error) {
                 console.error('Content events yüklenemedi:', error);
@@ -124,6 +110,7 @@ export default function CalendarPage() {
     const [formType, setFormType] = useState<CalendarEvent['type']>('TASK');
     const [formProject, setFormProject] = useState('');
     const [formBrand, setFormBrand] = useState('');
+    const [formStatus, setFormStatus] = useState<string>('PLANLANDI');
     const [formAllDay, setFormAllDay] = useState(true);
 
     const [nextId, setNextId] = useState(200);
@@ -180,6 +167,7 @@ export default function CalendarPage() {
         setFormTime('');
         setFormType('TASK');
         setFormBrand('');
+        setFormStatus('PLANLANDI');
         setFormAllDay(true);
         setShowModal(true);
     };
@@ -192,50 +180,126 @@ export default function CalendarPage() {
         setFormTime(event.time || '');
         setFormType(event.type);
         setFormBrand(event.brandId || '');
+        setFormStatus(event.status || 'PLANLANDI');
         setFormAllDay(event.allDay);
         setShowModal(true);
     };
 
-    const saveEvent = () => {
+    const saveEvent = async () => {
         if (!formTitle || !formDate) return;
 
         const brandColor = formBrand ? getBrandColor(formBrand) : calendarEventTypes[formType].color;
 
-        const eventData: CalendarEvent = {
-            id: editingEvent?.id || getId(),
-            title: formTitle,
-            description: formDescription,
-            date: formDate,
-            time: formAllDay ? undefined : formTime,
-            type: formType,
-            allDay: formAllDay,
-            relatedProject: formProject,
-            brandId: formBrand || undefined,
-        };
+        try {
+            // Optimistic Id
+            const tempId = editingEvent?.id || getId();
 
-        if (editingEvent) {
-            setEvents(events.map(e => e.id === editingEvent.id ? eventData : e));
-        } else {
-            setEvents([...events, eventData]);
+            // Server Action Data Preparation
+            const contentData = {
+                title: formTitle,
+                notes: formDescription,
+                description: formDescription,
+                deliveryDate: formDate,
+                type: formType === 'TASK' ? 'VIDEO' : 'VIDEO', // Default to VIDEO or map correctly if we have types
+                // Map calendar types to content types if possible, or just store as is if DB supports it.
+                // Our DB `Task` table `contentType` is string.
+                status: formStatus,
+                brandId: formBrand,
+                assigneeId: undefined, // Add user selection if needed later
+            };
+
+            // DB IDs
+            const dbId = editingEvent?.sourceId || (editingEvent?.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent?.id);
+
+            if (editingEvent && dbId) {
+                // UPDATE
+                await updateContentDB(dbId, contentData);
+
+                // Update Local State
+                const updatedEvent: CalendarEvent = {
+                    ...editingEvent,
+                    title: formTitle,
+                    description: formDescription,
+                    date: formDate,
+                    time: formAllDay ? undefined : formTime,
+                    type: formType,
+                    allDay: formAllDay,
+                    brandId: formBrand || undefined,
+                };
+                setEvents(events.map(e => e.id === editingEvent.id ? updatedEvent : e));
+            } else {
+                // CREATE
+                const newContent = await createContent(contentData as any); // Cast as any to bypass strict type check for now if needed, or match interface
+                if (newContent) {
+                    const newEvent: CalendarEvent = {
+                        id: `content-${newContent.id}`,
+                        sourceId: newContent.id,
+                        title: newContent.title,
+                        description: newContent.notes || '',
+                        date: newContent.deliveryDate || formDate,
+                        time: formAllDay ? undefined : formTime,
+                        type: 'TASK', // Default or derived
+                        allDay: formAllDay,
+                        brandId: newContent.brandId || undefined,
+                        status: newContent.status,
+                    };
+                    setEvents([...events, newEvent]);
+                }
+            }
+            setShowModal(false);
+        } catch (error) {
+            console.error('Save event error:', error);
+            alert('Kaydedilirken bir hata oluştu.');
         }
-        setShowModal(false);
     };
 
-    const deleteEvent = () => {
+    const deleteEvent = async () => {
         if (editingEvent) {
-            setEvents(events.filter(e => e.id !== editingEvent.id));
-            setShowModal(false);
+            try {
+                const dbId = editingEvent.sourceId || (editingEvent.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent.id);
+                if (dbId) {
+                    await deleteContentDB(dbId);
+                }
+                setEvents(events.filter(e => e.id !== editingEvent.id));
+                setShowModal(false);
+            } catch (error) {
+                console.error('Delete error', error);
+                alert('Silinirken hata oluştu');
+            }
         }
     };
 
     // Drag & Drop
     const handleDragStart = (event: CalendarEvent) => setDraggedEvent(event);
     const handleDragEnd = () => setDraggedEvent(null);
-    const handleDrop = (day: number) => {
-        if (draggedEvent && day) {
-            const newDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            setEvents(events.map(e => e.id === draggedEvent.id ? { ...e, date: newDate } : e));
-            setDraggedEvent(null);
+    const handleDrop = async (day: number) => {
+        if (!draggedEvent || !day) return;
+
+        console.log('Dropping event', draggedEvent, 'to day', day);
+        const newDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        // Optimistic update
+        const updatedEvent = { ...draggedEvent, date: newDate };
+        // Update local state immediately
+        setEvents(prev => prev.map(e => e.id === draggedEvent.id ? updatedEvent : e));
+
+        const eventToUpdate = draggedEvent; // Capture for async
+        setDraggedEvent(null);
+
+        // DB Update
+        try {
+            const dbId = eventToUpdate.sourceId || (eventToUpdate.id.startsWith('content-') ? eventToUpdate.id.replace('content-', '') : eventToUpdate.id);
+            if (dbId) {
+                console.log('Updating DB for', dbId, newDate);
+                await updateContentDB(dbId, { deliveryDate: newDate });
+                console.log('DB Update success');
+            } else {
+                console.warn('No DB ID found for event', eventToUpdate);
+            }
+        } catch (error) {
+            console.error('Drag drop save error:', error);
+            alert('Tarih güncellenirken hata oluştu. Lütfen sayfayı yenileyin.');
+            // Revert could go here, but reload is better advice if state de-synced
         }
     };
 
@@ -325,7 +389,7 @@ export default function CalendarPage() {
                         </div>
 
                         {/* Takvim Grid */}
-                        <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, backgroundColor: 'var(--color-border)' }}>
+                        <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 1, backgroundColor: 'var(--color-border)' }}>
                             {dayNames.map(day => (
                                 <div key={day} style={{ padding: 'var(--space-1)', backgroundColor: 'var(--color-surface)', textAlign: 'center', fontWeight: 600, fontSize: 'var(--text-caption)' }}>{day}</div>
                             ))}
@@ -334,10 +398,20 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={index}
-                                        onDragOver={(e) => day && e.preventDefault()}
-                                        onDrop={() => day && handleDrop(day)}
+                                        onDragOver={(e) => {
+                                            if (day) {
+                                                e.preventDefault();
+                                                e.dataTransfer.dropEffect = 'move';
+                                            }
+                                        }}
+                                        onDrop={(e) => {
+                                            if (day) {
+                                                e.preventDefault();
+                                                handleDrop(day);
+                                            }
+                                        }}
                                         style={{
-                                            minHeight: 90,
+                                            minHeight: 120, // Increased height
                                             padding: 'var(--space-1)',
                                             backgroundColor: day ? (isToday(day) ? 'var(--color-primary-light)' : 'var(--color-card)') : 'var(--color-surface)',
                                             borderRadius: isToday(day) ? 'var(--radius-sm)' : 0,
@@ -348,8 +422,8 @@ export default function CalendarPage() {
                                             <>
                                                 <div style={{ fontWeight: isToday(day) ? 700 : 500, color: isToday(day) ? 'var(--color-primary)' : 'inherit', marginBottom: 4 }}>{day}</div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                    {dayEvents.slice(0, 3).map(event => {
-                                                        const brandColor = event.brandId ? getBrandColor(event.brandId) : (calendarEventTypes[event.type]?.color || '#6B7B80');
+                                                    {dayEvents.slice(0, 4).map(event => {
+                                                        const eventColor = getEventColor(event);
                                                         return (
                                                             <div
                                                                 key={event.id}
@@ -359,7 +433,7 @@ export default function CalendarPage() {
                                                                 onClick={() => openEventDetail(event)}
                                                                 style={{
                                                                     padding: '3px 6px',
-                                                                    backgroundColor: brandColor,
+                                                                    backgroundColor: eventColor,
                                                                     color: 'white',
                                                                     borderRadius: 4,
                                                                     fontSize: 10,
@@ -369,16 +443,18 @@ export default function CalendarPage() {
                                                                     whiteSpace: 'nowrap',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
-                                                                    gap: 4
+                                                                    gap: 4,
+                                                                    maxWidth: '100%'
                                                                 }}
+                                                                title={event.title}
                                                             >
                                                                 <span>{calendarEventTypes[event.type].icon}</span>
-                                                                <span>{event.title}</span>
+                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</span>
                                                             </div>
                                                         );
                                                     })}
-                                                    {dayEvents.length > 3 && (
-                                                        <div style={{ fontSize: 10, color: 'var(--color-muted)' }}>+{dayEvents.length - 3} daha</div>
+                                                    {dayEvents.length > 4 && (
+                                                        <div style={{ fontSize: 10, color: 'var(--color-muted)' }}>+{dayEvents.length - 4} daha</div>
                                                     )}
                                                 </div>
                                             </>
@@ -401,9 +477,9 @@ export default function CalendarPage() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     {upcomingEvents.map(event => {
-                                        const brandColor = event.brandId ? getBrandColor(event.brandId) : (calendarEventTypes[event.type]?.color || '#6B7B80');
+                                        const eventColor = getEventColor(event);
                                         return (
-                                            <div key={event.id} onClick={() => openEventDetail(event)} style={{ padding: 10, backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${brandColor}`, cursor: 'pointer' }}>
+                                            <div key={event.id} onClick={() => openEventDetail(event)} style={{ padding: 10, backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${eventColor}`, cursor: 'pointer' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                                     <span style={{ fontWeight: 600, fontSize: 13 }}>{event.title}</span>
                                                     <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>{new Date(event.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
@@ -411,7 +487,7 @@ export default function CalendarPage() {
                                                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                                     <Badge style={{ backgroundColor: calendarEventTypes[event.type].color, color: 'white', fontSize: 9 }}>{calendarEventTypes[event.type].label}</Badge>
                                                     {event.brandId && (
-                                                        <span style={{ fontSize: 10, color: brandColor, fontWeight: 500 }}>
+                                                        <span style={{ fontSize: 10, color: eventColor, fontWeight: 500 }}>
                                                             {getBrandName(event.brandId)}
                                                         </span>
                                                     )}
@@ -462,8 +538,20 @@ export default function CalendarPage() {
                     </label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
                         <Select label="Tip" value={formType} onChange={(e) => setFormType(e.target.value as CalendarEvent['type'])} options={Object.entries(calendarEventTypes).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))} />
-                        <Select label="Marka" value={formBrand} onChange={(e) => setFormBrand(e.target.value)} options={[{ value: '', label: 'Seçiniz...' }, ...brands.filter(b => b.active).map(b => ({ value: b.id, label: b.name }))]} />
+                        <Select
+                            label="Durum"
+                            value={formStatus}
+                            onChange={(e) => setFormStatus(e.target.value)}
+                            options={[
+                                { value: 'PLANLANDI', label: '📅 Planlandı' },
+                                { value: 'CEKILDI', label: '📸 Çekildi' },
+                                { value: 'KURGULANIYOR', label: '🎬 Kurgulanıyor' },
+                                { value: 'PAYLASILD', label: '✅ Paylaşıldı' },
+                                { value: 'TESLIM', label: '📦 Teslim' },
+                            ]}
+                        />
                     </div>
+                    <Select label="Marka" value={formBrand} onChange={(e) => setFormBrand(e.target.value)} options={[{ value: '', label: 'Seçiniz...' }, ...brands.filter(b => b.active).map(b => ({ value: b.id, label: b.name }))]} />
                     <Textarea label="Açıklama" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} />
                 </div>
             </Modal>

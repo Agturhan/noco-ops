@@ -27,6 +27,8 @@ interface Client {
         maxRevisions: number;
         paymentTerms: string;
         retainerHours: number | null;
+        monthlyVideoQuota: number;
+        monthlyPostQuota: number;
         createdAt: string;
         projects: {
             id: string;
@@ -75,6 +77,8 @@ export default function ClientDetailPage() {
     const [contractPaymentTerms, setContractPaymentTerms] = useState('NET30');
     const [contractRawAssets, setContractRawAssets] = useState(false);
     const [contractRetainerHours, setContractRetainerHours] = useState('');
+    const [contractVideoQuota, setContractVideoQuota] = useState('');
+    const [contractPostQuota, setContractPostQuota] = useState('');
     const [contractNotes, setContractNotes] = useState('');
 
     const openEditModal = () => {
@@ -136,6 +140,8 @@ export default function ClientDetailPage() {
                 paymentTerms: contractPaymentTerms,
                 rawAssetsIncluded: contractRawAssets,
                 retainerHours: contractRetainerHours ? parseInt(contractRetainerHours) : undefined,
+                monthlyVideoQuota: contractVideoQuota ? parseInt(contractVideoQuota) : undefined,
+                monthlyPostQuota: contractPostQuota ? parseInt(contractPostQuota) : undefined,
                 notes: contractNotes || undefined,
             });
 
@@ -146,6 +152,8 @@ export default function ClientDetailPage() {
             setContractPaymentTerms('NET30');
             setContractRawAssets(false);
             setContractRetainerHours('');
+            setContractVideoQuota('');
+            setContractPostQuota('');
             setContractNotes('');
             // Reload client data
             const data = await getClientById(client.id);
@@ -437,7 +445,13 @@ export default function ClientDetailPage() {
                                             <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)', fontSize: 'var(--text-body-sm)' }}>
                                                 <span>📝 Maks Revizyon: {contract.maxRevisions}</span>
                                                 <span>💰 Ödeme: {contract.paymentTerms}</span>
+                                                <span>💰 Ödeme: {contract.paymentTerms}</span>
                                                 {contract.retainerHours && <span>⏱️ Retainer: {contract.retainerHours} saat</span>}
+                                                {(contract.monthlyVideoQuota || contract.monthlyPostQuota) ? (
+                                                    <span style={{ color: 'var(--color-primary)' }}>
+                                                        🎯 Kota: {contract.monthlyVideoQuota || 0} Video / {contract.monthlyPostQuota || 0} Post
+                                                    </span>
+                                                ) : null}
                                             </div>
                                         </div>
                                     ))}
@@ -639,6 +653,20 @@ Google Ads hesabı: xxxxxx`}
                             value={contractRetainerHours}
                             onChange={(e) => setContractRetainerHours(e.target.value)}
                             placeholder="Aylık saat"
+                        />
+                        <Input
+                            label="Aylık Video Kotası"
+                            type="number"
+                            value={contractVideoQuota}
+                            onChange={(e) => setContractVideoQuota(e.target.value)}
+                            placeholder="Örn: 10"
+                        />
+                        <Input
+                            label="Aylık Post Kotası"
+                            type="number"
+                            value={contractPostQuota}
+                            onChange={(e) => setContractPostQuota(e.target.value)}
+                            placeholder="Örn: 20"
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', paddingTop: '24px' }}>
                             <input

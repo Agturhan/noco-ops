@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Badge, Button, ProjectStatusBadge, Modal, Input, Select, Textarea } from '@/components/ui';
-import { getProjects, createProject, getClients } from '@/lib/actions/projects';
+import { getProjects, createProject, getClients, getContractUsage } from '@/lib/actions/projects';
 
 // Tipler
 interface Project {
@@ -16,6 +16,8 @@ interface Project {
     contract: {
         id: string;
         name: string;
+        monthlyVideoQuota?: number;
+        monthlyPostQuota?: number;
         client: {
             id: string;
             name: string;
@@ -30,6 +32,8 @@ interface Contract {
     id: string;
     name: string;
     clientId: string;
+    monthlyVideoQuota?: number;
+    monthlyPostQuota?: number;
 }
 
 interface Client {
@@ -49,6 +53,7 @@ const statusFilters = [
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
+    const [usageStats, setUsageStats] = useState<Record<string, { video: number; post: number; total: number }>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState('');
@@ -258,8 +263,65 @@ export default function ProjectsPage() {
                                 />
                                 <CardContent>
                                     {/* Progress Bar */}
-                                    {project.deliverables.length > 0 && (
+                                    {/* Monthly Quota Progress */}
+                                    {project.contract?.monthlyVideoQuota ? (
                                         <div style={{ marginBottom: 'var(--space-2)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)', marginBottom: 4 }}>
+                                                <span style={{ color: 'var(--color-muted)' }}>🎬 Video Kotası ({new Date().toLocaleString('tr-TR', { month: 'long' })})</span>
+                                                <span style={{ fontWeight: 600 }}>{usageStats[project.id]?.video || 0} / {project.contract.monthlyVideoQuota}</span>
+                                            </div>
+                                            <div style={{ height: 6, backgroundColor: 'var(--color-surface)', borderRadius: 3, overflow: 'hidden' }}>
+                                                <div style={{
+                                                    height: '100%',
+                                                    width: `${Math.min(((usageStats[project.id]?.video || 0) / project.contract.monthlyVideoQuota) * 100, 100)}%`,
+                                                    backgroundColor: (() => {
+                                                        const current = usageStats[project.id]?.video || 0;
+                                                        const max = project.contract.monthlyVideoQuota || 0;
+                                                        if (current > max) return '#F44336'; // Red
+                                                        if (current === max) return '#4CAF50'; // Green
+                                                        if (current >= max * 0.8) return '#FF9800'; // Orange
+                                                        return '#2196F3'; // Blue
+                                                    })(),
+                                                    borderRadius: 3
+                                                }} />
+                                            </div>
+                                            {(usageStats[project.id]?.video || 0) > project.contract.monthlyVideoQuota! && (
+                                                <Badge variant="error" style={{ marginTop: 4, height: 20, fontSize: 10 }}>KOTA AŞILDI</Badge>
+                                            )}
+                                        </div>
+                                    ) : null}
+
+                                    {project.contract?.monthlyPostQuota ? (
+                                        <div style={{ marginBottom: 'var(--space-2)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)', marginBottom: 4 }}>
+                                                <span style={{ color: 'var(--color-muted)' }}>🖼️ Post Kotası ({new Date().toLocaleString('tr-TR', { month: 'long' })})</span>
+                                                <span style={{ fontWeight: 600 }}>{usageStats[project.id]?.post || 0} / {project.contract.monthlyPostQuota}</span>
+                                            </div>
+                                            <div style={{ height: 6, backgroundColor: 'var(--color-surface)', borderRadius: 3, overflow: 'hidden' }}>
+                                                <div style={{
+                                                    height: '100%',
+                                                    width: `${Math.min(((usageStats[project.id]?.post || 0) / project.contract.monthlyPostQuota) * 100, 100)}%`,
+                                                    backgroundColor: (() => {
+                                                        const current = usageStats[project.id]?.post || 0;
+                                                        const max = project.contract.monthlyPostQuota || 0;
+                                                        if (current > max) return '#F44336'; // Red
+                                                        if (current === max) return '#4CAF50'; // Green
+                                                        if (current >= max * 0.8) return '#FF9800'; // Orange
+                                                        return '#2196F3'; // Blue
+                                                    })(),
+                                                    borderRadius: 3
+                                                }} />
+                                            </div>
+                                            {(usageStats[project.id]?.post || 0) > project.contract.monthlyPostQuota! && (
+                                                <Badge variant="error" style={{ marginTop: 4, height: 20, fontSize: 10 }}>KOTA AŞILDI</Badge>
+                                            )}
+                                        </div>
+                                    ) : null}
+
+                                    {/* Deliverable Progress - Optional fallback */}
+                                    {!project.contract?.monthlyVideoQuota && !project.contract?.monthlyPostQuota && project.deliverables.length > 0 && (
+                                        <div style={{ marginBottom: 'var(--space-2)' }}>
+                                            {/* Original Deliverables logic kept as fallback */}
                                             <div style={{
                                                 display: 'flex',
                                                 justifyContent: 'space-between',
@@ -337,12 +399,13 @@ export default function ProjectsPage() {
                                 </CardContent>
                             </Card>
                         ))}
-                    </div>
-                )}
-            </div>
+                    </div >
+                )
+                }
+            </div >
 
             {/* Yeni Proje Modal */}
-            <Modal
+            < Modal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
                 title="➕ Yeni Proje"
@@ -401,7 +464,7 @@ export default function ProjectsPage() {
                         </>
                     )}
                 </div>
-            </Modal>
+            </Modal >
         </>
     );
 }

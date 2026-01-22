@@ -24,7 +24,7 @@ interface Booking {
 }
 
 // Gerçek marka rezervasyonları
-const bookings: Booking[] = [
+const initialBookings: Booking[] = [
     { id: 'b1', date: '2026-01-15', startTime: '10:00', endTime: '14:00', client: 'Valora Psikoloji', brandId: 'valora', project: 'Ürün Fotoğrafları', type: 'PHOTO', status: 'CONFIRMED', notes: 'Beyaz fon, ürün standları gerekli', waiverSigned: true, equipment: ['Softbox', 'Backdrop', 'Tripod'] },
     { id: 'b2', date: '2026-01-17', startTime: '09:00', endTime: '18:00', client: 'Zoks Studio', brandId: 'zoks', project: 'Konsept Çekim', type: 'VIDEO', status: 'CONFIRMED', notes: 'Full gün çekim, yemek dahil', waiverSigned: true, equipment: ['Kamera', 'Işık Seti', 'Mikrofon', 'Gimbal'] },
     { id: 'b3', date: '2026-01-20', startTime: '14:00', endTime: '16:00', client: 'Hair Chef', brandId: 'hairchef', project: 'Podcast Kaydı', type: 'PODCAST', status: 'PENDING', notes: '2 kişilik podcast kaydı', waiverSigned: false, equipment: ['Mikrofon x2', 'Mixer', 'Kulaklık x2'] },
@@ -54,11 +54,26 @@ type StudioTab = 'calendar' | 'checkin' | 'equipment';
 
 export default function StudioBookingPage() {
     const [activeTab, setActiveTab] = useState<StudioTab>('calendar');
-    const [currentWeekStart, setCurrentWeekStart] = useState(new Date(2026, 0, 13)); // 13 Ocak 2026 Pazartesi
+
+    // Dinamik olarak haftanın başlangıcını (Pazartesi) hesapla
+    const getCurrentWeekStart = () => {
+        const d = new Date();
+        const day = d.getDay(); // 0 (Pazar) - 6 (Cmt)
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Pazar ise -6, diğerleri için +1 (Pzt)
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(0, 0, 0, 0); // Saati sıfırla
+        return monday;
+    };
+
+    const [currentWeekStart, setCurrentWeekStart] = useState(getCurrentWeekStart());
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [selectedSlot, setSelectedSlot] = useState<{ date: string; time: string } | null>(null);
+
+    // Bookings State (DnD için)
+    const [bookingList, setBookingList] = useState<Booking[]>(initialBookings);
+    const [draggedBooking, setDraggedBooking] = useState<Booking | null>(null);
 
     // Check-in states
     const [equipmentList, setEquipmentList] = useState<any[]>([]);
@@ -68,10 +83,33 @@ export default function StudioBookingPage() {
     const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
     const [studioStatus, setStudioStatus] = useState<any>(null);
 
+    // Helper for correct local date string "YYYY-MM-DD"
+    const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Load data on mount
     useEffect(() => {
         const loadData = async () => {
             try {
+                // LocalStorage'dan verileri çek
+                if (typeof window !== 'undefined') {
+                    const savedBookings = localStorage.getItem('studioBookings');
+                    if (savedBookings) {
+                        try {
+                            const parsed = JSON.parse(savedBookings);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                setBookingList(parsed);
+                            }
+                        } catch (e) {
+                            console.error('LocalStorage parse error:', e);
+                        }
+                    }
+                }
+
                 const [equipment, checkIns, status] = await Promise.all([
                     getEquipment(),
                     getStudioCheckIns(),
@@ -87,6 +125,23 @@ export default function StudioBookingPage() {
         loadData();
     }, []);
 
+    // Save to localStorage on change
+    useEffect(() => {
+        if (typeof window !== 'undefined' && bookingList !== initialBookings) {
+            localStorage.setItem('studioBookings', JSON.stringify(bookingList));
+        }
+    }, [bookingList]);
+
+    const handleDeleteBooking = (id: string) => {
+        if (confirm('Bu rezervasyonu silmek istediğinize emin misiniz?')) {
+            const newList = bookingList.filter(b => b.id !== id);
+            setBookingList(newList);
+            localStorage.setItem('studioBookings', JSON.stringify(newList));
+            setShowDetailModal(false);
+            setSelectedBooking(null);
+        }
+    };
+
     // Form state
     const [formClient, setFormClient] = useState('');
     const [formProject, setFormProject] = useState('');
@@ -94,6 +149,37 @@ export default function StudioBookingPage() {
     const [formStartTime, setFormStartTime] = useState('');
     const [formEndTime, setFormEndTime] = useState('');
     const [formNotes, setFormNotes] = useState('');
+
+    // DnD Handlers
+    const handleDragStart = (booking: Booking) => {
+        setDraggedBooking(booking);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (date: string, time: string) => {
+        if (!draggedBooking) return;
+
+        // Süreyi koruyarak yeni saat aralığını hesapla
+        const startHour = parseInt(draggedBooking.startTime.split(':')[0]);
+        const endHour = parseInt(draggedBooking.endTime.split(':')[0]);
+        const duration = endHour - startHour;
+
+        const newStartHour = parseInt(time.split(':')[0]);
+        const newEndHour = newStartHour + duration;
+
+        const newStartTime = `${newStartHour.toString().padStart(2, '0')}:00`;
+        const newEndTime = `${newEndHour.toString().padStart(2, '0')}:00`;
+
+        setBookingList(prev => prev.map(b =>
+            b.id === draggedBooking.id
+                ? { ...b, date, startTime: newStartTime, endTime: newEndTime }
+                : b
+        ));
+        setDraggedBooking(null);
+    };
 
     // Hafta günlerini oluştur
     interface WeekDay {
@@ -107,7 +193,7 @@ export default function StudioBookingPage() {
         const date = new Date(currentWeekStart);
         date.setDate(date.getDate() + i);
         weekDays.push({
-            date: date.toISOString().split('T')[0],
+            date: formatLocalDate(date),
             dayName: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
             dayNum: date.getDate(),
             isToday: date.toDateString() === new Date().toDateString(),
@@ -115,7 +201,7 @@ export default function StudioBookingPage() {
     }
 
     const getBookingsForSlot = (date: string, time: string) => {
-        return bookings.filter(b => {
+        return bookingList.filter(b => {
             if (b.date !== date) return false;
             const start = parseInt(b.startTime.split(':')[0]);
             const end = parseInt(b.endTime.split(':')[0]);
@@ -152,8 +238,8 @@ export default function StudioBookingPage() {
         setCurrentWeekStart(newDate);
     };
 
-    const pendingCount = bookings.filter(b => b.status === 'PENDING').length;
-    const todayBookings = bookings.filter(b => b.date === new Date().toISOString().split('T')[0]);
+    const pendingCount = bookingList.filter(b => b.status === 'PENDING').length;
+    const todayBookings = bookingList.filter(b => b.date === formatLocalDate(new Date()));
 
     return (
         <>
@@ -163,7 +249,7 @@ export default function StudioBookingPage() {
                 actions={
                     <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
                         <Button variant="secondary" size="sm" onClick={prevWeek}>◀ Önceki</Button>
-                        <Button variant="secondary" size="sm" onClick={() => setCurrentWeekStart(new Date(2026, 0, 13))}>Bu Hafta</Button>
+                        <Button variant="secondary" size="sm" onClick={() => setCurrentWeekStart(getCurrentWeekStart())}>Bu Hafta</Button>
                         <Button variant="secondary" size="sm" onClick={nextWeek}>Sonraki ▶</Button>
                         <Button variant="primary" onClick={() => { setSelectedSlot(null); setShowBookingModal(true); }}>+ Yeni Rezervasyon</Button>
                     </div>
@@ -192,7 +278,7 @@ export default function StudioBookingPage() {
                         <div style={{ textAlign: 'center' }}>
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>BU HAFTA</p>
                             <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-primary)' }}>
-                                {bookings.filter(b => weekDays.some(d => d.date === b.date)).length}
+                                {bookingList.filter(b => weekDays.some(d => d.date === b.date)).length}
                             </p>
                             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>rezervasyon</p>
                         </div>
@@ -255,16 +341,21 @@ export default function StudioBookingPage() {
                                             <div
                                                 key={`${day.date}-${time}`}
                                                 onClick={() => slotBookings.length === 0 && openBookingModal(day.date, time)}
+                                                onDragOver={handleDragOver}
+                                                onDrop={() => handleDrop(day.date, time)}
                                                 style={{
                                                     padding: '4px',
                                                     backgroundColor: 'var(--color-card)',
                                                     minHeight: 40,
-                                                    cursor: slotBookings.length === 0 ? 'pointer' : 'default'
+                                                    cursor: slotBookings.length === 0 ? 'pointer' : 'default',
+                                                    transition: 'background-color 0.2s'
                                                 }}
                                             >
                                                 {slotBookings.map(booking => (
                                                     <div
                                                         key={booking.id}
+                                                        draggable
+                                                        onDragStart={() => handleDragStart(booking)}
                                                         onClick={(e) => { e.stopPropagation(); openDetailModal(booking); }}
                                                         style={{
                                                             padding: '4px 6px',
@@ -273,10 +364,12 @@ export default function StudioBookingPage() {
                                                             borderRadius: '4px',
                                                             fontSize: '10px',
                                                             fontWeight: 500,
-                                                            cursor: 'pointer',
+                                                            cursor: 'move',
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            gap: '4px'
+                                                            gap: '4px',
+                                                            marginBottom: '2px',
+                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                                                         }}
                                                     >
                                                         {!booking.waiverSigned && <span>⚠️</span>}
@@ -316,7 +409,25 @@ export default function StudioBookingPage() {
                 footer={
                     <>
                         <Button variant="secondary" onClick={() => setShowBookingModal(false)}>İptal</Button>
-                        <Button variant="primary" onClick={() => { alert('Rezervasyon oluşturuldu!'); setShowBookingModal(false); }}>Kaydet</Button>
+                        <Button variant="primary" onClick={() => {
+                            if (!formClient) { alert('Müşteri adı zorunludur'); return; }
+
+                            const newBooking: Booking = {
+                                id: `b${Date.now()}`,
+                                date: selectedSlot ? selectedSlot.date : (document.querySelector('input[type="date"]') as HTMLInputElement)?.value || formatLocalDate(new Date()),
+                                startTime: selectedSlot ? selectedSlot.time : formStartTime,
+                                endTime: selectedSlot ? `${parseInt(selectedSlot.time.split(':')[0]) + 2}:00` : formEndTime,
+                                client: formClient,
+                                project: formProject || 'Genel Çekim',
+                                type: formType,
+                                status: 'PENDING',
+                                notes: formNotes,
+                                waiverSigned: false,
+                                equipment: []
+                            };
+                            setBookingList([...bookingList, newBooking]);
+                            setShowBookingModal(false);
+                        }}>Hızlı Kaydet</Button>
                     </>
                 }
             >
@@ -362,6 +473,9 @@ export default function StudioBookingPage() {
                 footer={
                     <>
                         <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
+                        {selectedBooking && (
+                            <Button variant="ghost" style={{ color: '#d32f2f', marginRight: 'auto' }} onClick={() => handleDeleteBooking(selectedBooking.id)}>Sil</Button>
+                        )}
                         {selectedBooking?.status === 'PENDING' && !selectedBooking.waiverSigned && (
                             <Button variant="warning">Feragatname Gönder</Button>
                         )}

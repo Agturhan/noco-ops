@@ -52,8 +52,9 @@ export const getActiveBrands = (): Brand[] => brands.filter(b => b.active);
 export const getSocialMediaBrands = (): Brand[] => brands.filter(b => b.category === 'SOSYAL_MEDYA' && b.active);
 
 // ========================================
-// EKİP ÜYELERİ
+// EKİP ÜYELERİ (DEPRECATED - Use lib/actions/users.ts)
 // ========================================
+/*
 export interface TeamMember {
     id: string;
     name: string;
@@ -75,67 +76,84 @@ export const teamMembers: TeamMember[] = [
 export const getTeamMember = (id: string): TeamMember | undefined => teamMembers.find(m => m.id === id);
 export const getTeamMemberByName = (name: string): TeamMember | undefined => teamMembers.find(m => m.name === name);
 export const getActiveTeamMembers = (): TeamMember[] => teamMembers.filter(m => m.active && m.role !== 'OWNER');
+*/
 
 // ========================================
 // İÇERİK TÜRLERİ VE DURUMLARI (Dinamik Aşamalar)
 // ========================================
+// ========================================
+// İÇERİK TÜRLERİ VE DURUMLARI (Dinamik Aşamalar)
+// ========================================
 export type ContentStatus =
+    | 'PLANLANDI'       // Planlanacak (En baş)
+    | 'ICERIK_HAZIRLANDI' // Metin/Copy
     | 'CEKILDI'
+    | 'FOTOGRAF_RETOUCH'
     | 'TASARLANIYOR'
     | 'TASARLANDI'
     | 'KURGULANIYOR'
     | 'KURGULANDI'
-    | 'ICERIK_HAZIRLANDI'
-    | 'ONAY'
-    | 'PLANLANDI'
-    | 'FOTOGRAF_RETOUCH'
-    | 'PAYLASILD'
-    | 'TESLIM';
+    | 'ONAY'            // Onay Bekliyor
+    | 'PAYLASILD'       // Sonuç
+    | 'TESLIM';         // Sonuç
 
 export type ContentType = 'VIDEO' | 'POST' | 'FOTOGRAF' | 'REKLAM' | 'RAPOR' | 'TEKLIF' | 'WEB' | 'PODCAST';
 
 export const contentStatuses: Record<string, { label: string; color: string; icon: string }> = {
     // Content statuses
+    PLANLANDI: { label: 'Planlanacak', color: '#6B7B80', icon: '📅' },
+    ICERIK_HAZIRLANDI: { label: 'İçerik Hazırlandı', color: '#795548', icon: '📝' },
     CEKILDI: { label: 'Çekildi', color: '#2196F3', icon: '📷' },
-    TASARLANIYOR: { label: 'Tasarlanıyor', color: '#FF9800', icon: '🎨' },
-    TASARLANDI: { label: 'Tasarlandı', color: '#F6D73C', icon: '✏️' },
+    FOTOGRAF_RETOUCH: { label: 'Fotoğraf Retouch', color: '#9C27B0', icon: '🎨' },
+    TASARLANIYOR: { label: 'Tasarlanıyor', color: '#FF9800', icon: '🖌️' },
+    TASARLANDI: { label: 'Tasarlandı', color: '#F6D73C', icon: '🖼️' },
     KURGULANIYOR: { label: 'Kurgulanıyor', color: '#2196F3', icon: '✂️' },
     KURGULANDI: { label: 'Kurgulandı', color: '#4CAF50', icon: '🎬' },
-    ICERIK_HAZIRLANDI: { label: 'İçerik Hazırlandı', color: '#9E9E9E', icon: '📝' },
-    ONAY: { label: 'Onay Bekliyor', color: '#F6D73C', icon: '⏳' },
-    PLANLANDI: { label: 'Planlanacak', color: '#E91E63', icon: '📅' },
-    FOTOGRAF_RETOUCH: { label: 'Fotoğraf Retouch', color: '#2196F3', icon: '🖼️' },
+    ONAY: { label: 'Onay Bekliyor', color: '#FF5722', icon: '⏳' },
     PAYLASILD: { label: 'Paylaşıldı', color: '#00F5B0', icon: '✅' },
-    TESLIM: { label: 'Teslim Edildi', color: '#9E9E9E', icon: '📦' },
+    TESLIM: { label: 'Teslim Edildi', color: '#00F5B0', icon: '📦' },
+
     // Task statuses (fallback - birleşik tablo için)
     TODO: { label: 'Yapılacak', color: '#6B7B80', icon: '📋' },
     IN_PROGRESS: { label: 'Devam Ediyor', color: '#FF9800', icon: '🔄' },
     IN_REVIEW: { label: 'İnceleniyor', color: '#9C27B0', icon: '👀' },
-    DONE: { label: 'Tamamlandı', color: '#00F5B0', icon: '✓' },
     BLOCKED: { label: 'Engellendi', color: '#E91E63', icon: '🚫' },
+};
+
+// Basitleştirilmiş Status Helper
+export const getSimpleStatus = (status: ContentStatus): 'TODO' | 'DONE' => {
+    const doneStatuses: string[] = ['PAYLASILD', 'TESLIM'];
+    return doneStatuses.includes(status) ? 'DONE' : 'TODO';
 };
 
 export const contentTypes: Record<ContentType, { label: string; icon: string; color: string }> = {
     VIDEO: { label: 'Video', icon: '🎬', color: '#9C27B0' },
-    POST: { label: 'Post', icon: '📸', color: '#329FF5' },
+    PODCAST: { label: 'Podcast', icon: '🎙️', color: '#795548' },
     FOTOGRAF: { label: 'Fotoğraf', icon: '📷', color: '#FF9800' },
+    POST: { label: 'Post', icon: '📸', color: '#329FF5' },
     REKLAM: { label: 'Reklam', icon: '📢', color: '#F44336' },
     RAPOR: { label: 'Rapor', icon: '📊', color: '#00F5B0' },
     TEKLIF: { label: 'Teklif', icon: '📝', color: '#607D8B' },
     WEB: { label: 'Web Sitesi', icon: '🌐', color: '#3F51B5' },
-    PODCAST: { label: 'Podcast', icon: '🎙️', color: '#795548' },
 };
 
 // Türe göre aşama akışı (dinamik workflow)
 export const contentTypeStages: Record<ContentType, ContentStatus[]> = {
-    VIDEO: ['PLANLANDI', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'ONAY', 'PAYLASILD', 'TESLIM'],
-    POST: ['PLANLANDI', 'TASARLANIYOR', 'TASARLANDI', 'ICERIK_HAZIRLANDI', 'ONAY', 'PAYLASILD'],
-    FOTOGRAF: ['PLANLANDI', 'CEKILDI', 'FOTOGRAF_RETOUCH', 'ONAY', 'PAYLASILD', 'TESLIM'],
-    REKLAM: ['PLANLANDI', 'TASARLANIYOR', 'TASARLANDI', 'ICERIK_HAZIRLANDI', 'ONAY', 'PAYLASILD'],
-    RAPOR: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'ONAY', 'TESLIM'],
-    TEKLIF: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'ONAY', 'TESLIM'],
-    WEB: ['PLANLANDI', 'TASARLANIYOR', 'TASARLANDI', 'ONAY', 'TESLIM'],
-    PODCAST: ['PLANLANDI', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'ONAY', 'PAYLASILD', 'TESLIM'],
+    // 1. Video & Podcast: Çekim ve kurgu odaklı
+    VIDEO: ['PLANLANDI', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'ONAY', 'PAYLASILD'],
+    PODCAST: ['PLANLANDI', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'ONAY', 'PAYLASILD'],
+
+    // 2. Fotoğraf: Görsel işleme odaklı
+    FOTOGRAF: ['PLANLANDI', 'CEKILDI', 'FOTOGRAF_RETOUCH', 'ONAY', 'PAYLASILD'],
+
+    // 3. Post & Reklam: Tasarım ve planlama odaklı
+    POST: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'TASARLANIYOR', 'TASARLANDI', 'ONAY', 'PAYLASILD'],
+    REKLAM: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'TASARLANIYOR', 'TASARLANDI', 'ONAY', 'PAYLASILD'],
+
+    // 4. Rapor, Teklif & Web: Dokümantasyon
+    RAPOR: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'TASARLANIYOR', 'TASARLANDI', 'TESLIM'],
+    TEKLIF: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'TASARLANIYOR', 'TASARLANDI', 'TESLIM'],
+    WEB: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'TASARLANIYOR', 'TASARLANDI', 'TESLIM'],
 };
 
 // İçerik türüne göre mevcut aşamaları getir

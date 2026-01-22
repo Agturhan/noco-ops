@@ -6,10 +6,18 @@ import { revalidatePath } from 'next/cache';
 // Content status'larını Task status'larına dönüştür
 // Task tablosu: TODO | IN_PROGRESS | IN_REVIEW | DONE | BLOCKED
 // Content status: PLANLANDI | CEKILDI | KURGULANIYOR | PAYLASILD | TESLIM
+// Content status'larını Task status'larına dönüştür
+// Task tablosu: TODO | IN_PROGRESS | IN_REVIEW | DONE | BLOCKED
 const contentStatusToTaskStatus: Record<string, string> = {
     'PLANLANDI': 'TODO',
+    'ICERIK_HAZIRLANDI': 'IN_PROGRESS',
     'CEKILDI': 'IN_PROGRESS',
+    'FOTOGRAF_RETOUCH': 'IN_PROGRESS',
+    'TASARLANIYOR': 'IN_PROGRESS',
+    'TASARLANDI': 'IN_REVIEW',
     'KURGULANIYOR': 'IN_PROGRESS',
+    'KURGULANDI': 'IN_REVIEW',
+    'ONAY': 'IN_REVIEW',
     'PAYLASILD': 'DONE',
     'TESLIM': 'DONE',
     // Task status'larını da kabul et
@@ -20,11 +28,11 @@ const contentStatusToTaskStatus: Record<string, string> = {
     'BLOCKED': 'BLOCKED',
 };
 
-// Task status'larını Content status'larına dönüştür (gösterim için)
+// Task status'larını Content status'larına dönüştür (gösterim için - basitleştirilmiş)
 const taskStatusToContentStatus: Record<string, string> = {
     'TODO': 'PLANLANDI',
-    'IN_PROGRESS': 'KURGULANIYOR',
-    'IN_REVIEW': 'KURGULANIYOR',
+    'IN_PROGRESS': 'TASARLANIYOR', // Varsayılan ara durum
+    'IN_REVIEW': 'ONAY',
     'DONE': 'PAYLASILD',
     'BLOCKED': 'PLANLANDI',
 };
@@ -62,7 +70,7 @@ export async function getContents(): Promise<ContentItem[]> {
         const { data, error } = await supabaseAdmin
             .from('Task')
             .select('*')
-            .eq('sourceType', 'content')
+            .not('contentType', 'is', null)
             .order('dueDate', { ascending: true });
 
         if (error) {
@@ -251,7 +259,8 @@ export async function getContentsAsCalendarEvents() {
             id: `content-${task.id}`,
             title: task.title,
             description: task.notes || task.description || '',
-            date: task.dueDate,
+            // Ensure YYYY-MM-DD format - avoid timezone shifts by using string manipulation if possible
+            date: task.dueDate ? (typeof task.dueDate === 'string' ? task.dueDate.substring(0, 10) : new Date(task.dueDate).toISOString().split('T')[0]) : '',
             type: task.contentType ? 'CONTENT' : 'TASK' as const,
             allDay: true,
             brandId: task.brandName || task.clientId || '',
@@ -259,6 +268,8 @@ export async function getContentsAsCalendarEvents() {
             sourceId: task.id,
             status: task.status,
             priority: task.priority,
+            assigneeId: task.assigneeId || null,
+            assigneeIds: task.assigneeIds || (task.assigneeId ? [task.assigneeId] : []),
         }));
     } catch (error) {
         console.error('getContentsAsCalendarEvents error:', error);

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui';
+import { Card, CardHeader, CardContent, Badge, Button, Modal } from '@/components/ui';
 import { brands, getBrandName, getBrandColor } from '@/lib/data';
 import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib/actions/dashboard';
 import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
@@ -51,10 +51,7 @@ const revenueData = {
     projectChange: '+₺18K',
 };
 
-const stats = [
-    { label: 'Aktif Projeler', value: '12', icon: FolderOpen, trend: '+2', color: '#329FF5' },
-    { label: 'Bekleyen Teslimatlar', value: '8', icon: ListChecks, trend: '-3', color: '#F6D73C' },
-];
+
 
 // Bugünkü Stüdyo Doluluk - Gerçek markalar
 const todayStudio = {
@@ -183,8 +180,12 @@ export default function DashboardPage() {
     const [actions, setActions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [todayTasks, setTodayTasks] = useState<any[]>([]);
+    const [upcomingStudio, setUpcomingStudio] = useState<any[]>([]);
     const [weekDeadlines, setWeekDeadlines] = useState<any[]>([]);
     const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
+    const [taskViewMode, setTaskViewMode] = useState<'today' | 'upcoming'>('today');
+    const [debugCounts, setDebugCounts] = useState({ server: 0, client: 0 });
+    const [selectedTask, setSelectedTask] = useState<any>(null);
 
     // Görev tamamla/geri al toggle - DB'ye kaydet
     const handleToggleTask = async (taskId: string) => {
@@ -241,35 +242,42 @@ export default function DashboardPage() {
                 let userTasks = dbTasks || [];
 
                 // DB boşsa, sharedTasks'ten fallback kullan
-                if (userTasks.length === 0) {
-                    const sharedTasksData = getSharedTasks();
-                    userTasks = sharedTasksData.map(t => ({
-                        id: t.id,
-                        title: t.title,
-                        description: '',
-                        status: 'TODO',
-                        priority: t.priority,
-                        dueDate: (t as any).dueDate || '',
-                        deadline: t.deadline || '',
-                        projectId: null,
-                        assigneeId: null,
-                        brand: t.brand,
-                        project: t.brand,
-                        completed: false
-                    })) as any;
-                }
+                // if (userTasks.length === 0) { ... } -> Removed to avoid showing successful static tasks that fail on interaction
 
-                // Kullanıcıya göre filtrele (opsiyonel)
-                if (userName) {
+
+                // Kullanıcıya göre filtrele
+                if (userId || userName) {
                     const filtered = userTasks.filter((t: any) => {
-                        const assignee = (t.assignee || t.assigneeId || '').toLowerCase();
-                        if (!assignee) return true;
-                        const userFirstName = userName.toLowerCase().split(' ')[0];
-                        return assignee.includes(userFirstName);
+                        const assignees = t.assigneeIds || [];
+                        if (t.assigneeId && !assignees.includes(t.assigneeId)) assignees.push(t.assigneeId);
+
+                        // Atanmamış görevleri herkese göster
+                        if (assignees.length === 0) return true;
+
+                        // 1. ID Kontrolü (Öncelikli)
+                        if (userId && assignees.includes(userId)) return true;
+
+                        // 2. İsim Kontrolü (Gelişmiş)
+                        if (userName) {
+                            const lowerUserName = userName.toLowerCase();
+                            const userParts = lowerUserName.split(' ');
+                            const firstName = userParts[0].trim();
+
+                            return assignees.some((a: string) => {
+                                if (!a) return false;
+                                const lowerA = a.toLowerCase();
+                                // Çapraz kontrol: İsimler birbirini içeriyor mu?
+                                return lowerA.includes(firstName) || lowerUserName.includes(lowerA);
+                            });
+                        }
+
+                        return false;
                     });
-                    if (filtered.length > 0) {
-                        userTasks = filtered;
-                    }
+                    // Filtrelenmiş görev varsa kullan
+                    setDebugCounts({ server: userTasks.length, client: filtered.length });
+                    userTasks = filtered;
+                } else {
+                    setDebugCounts({ server: userTasks.length, client: userTasks.length });
                 }
 
                 // Deadline'ları set et
@@ -301,14 +309,43 @@ export default function DashboardPage() {
                 const formattedTasks = userTasks.map((t: any) => ({
                     id: t.id,
                     title: t.title,
-                    brand: t.project || t.brand || 'Genel',
+                    description: t.description,
+                    brand: t.project?.name || t.brand || 'Genel',
                     priority: t.priority,
                     deadline: t.dueDate ? new Date(t.dueDate).toLocaleDateString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : 'Belirsiz',
                     completed: t.status === 'DONE',
-                    assignee: t.assignee || t.assigneeId || ''
+                    assignee: t.assignee || t.assigneeId || '',
+                    assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
                 })).slice(0, 10);
 
                 setTodayTasks(formattedTasks);
+
+                // Studio Verileri (LocalStorage)
+                let studioData: any[] = [];
+                if (typeof window !== 'undefined') {
+                    const saved = localStorage.getItem('studioBookings');
+                    if (saved) {
+                        try {
+                            studioData = JSON.parse(saved);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+
+                // Fallback: Eğer hiç veri yoksa, varsayılanları (initialBookings benzeri) kullan ki dashboard boş görünmesin
+                // Ancak senkronizasyon sorunu yaşamamak için, Studio sayfası açıldığında localstorage dolacaktır.
+                // Burada sadece varsa gösterelim.
+
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+
+                const filteredStudio = studioData
+                    .filter((b: any) => new Date(b.date) >= now)
+                    .sort((a: any, b: any) => new Date(a.date + 'T' + a.startTime).getTime() - new Date(b.date + 'T' + b.startTime).getTime())
+                    .slice(0, 2);
+
+                setUpcomingStudio(filteredStudio);
 
                 // Diğer dashboard verileri
                 const [stats, pendingActions] = await Promise.all([
@@ -377,13 +414,19 @@ export default function DashboardPage() {
                     })}
                 </div>
 
-                {/* KİŞİSEL BÖLÜM: Bugünkü Görevlerim + Bu Hafta Deadline */}
+
                 {currentUser && (
                     <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
                         {/* Bugünkü Görevlerim */}
                         <Card style={{ borderTop: '4px solid #329FF5' }}>
                             <CardHeader
-                                title={`Bugünkü Görevlerim (${todayTasks.filter(t => !t.completed).length}/${todayTasks.length})`}
+                                title={
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>{taskViewMode === 'today' ? 'Bugünkü Görevlerim' : 'Sıradaki İşler'}</span>
+                                        {taskViewMode === 'upcoming' && <Badge variant="success" style={{ fontSize: 10 }}>Bugün Boş 🎉</Badge>}
+                                    </div>
+                                }
+                                description={taskViewMode === 'today' ? `${todayTasks.filter(t => !t.completed).length} aktif görev` : 'Bugün teslim edilecek iş yok, sıradaki işler listeleniyor:'}
                                 action={<Link href="/dashboard/tasks"><Button size="sm" variant="ghost">Tümünü Gör</Button></Link>}
                             />
                             <CardContent>
@@ -391,7 +434,7 @@ export default function DashboardPage() {
                                     {todayTasks.map(task => (
                                         <div
                                             key={task.id}
-                                            onClick={() => handleToggleTask(task.id)}
+                                            onClick={() => setSelectedTask(task)}
                                             style={{
                                                 display: 'flex',
                                                 justifyContent: 'space-between',
@@ -399,26 +442,32 @@ export default function DashboardPage() {
                                                 padding: 'var(--space-1) var(--space-2)',
                                                 backgroundColor: task.completed ? 'rgba(107, 123, 128, 0.1)' : 'var(--color-surface)',
                                                 borderRadius: 'var(--radius-sm)',
-                                                borderLeft: `4px solid ${task.completed ? '#9CA3AF' : getBrandColor(task.brand)}`,
+                                                borderLeft: `4px solid ${task.completed ? '#9CA3AF' : (task.assigneeIds?.length > 0 ? (teamMemberColors[task.assigneeIds[0]] || '#6B7B80') : '#6B7B80')}`,
                                                 opacity: task.completed ? 0.6 : 1,
                                                 cursor: 'pointer',
                                                 transition: 'all 0.3s ease'
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{
-                                                    width: '20px',
-                                                    height: '20px',
-                                                    borderRadius: '4px',
-                                                    border: task.completed ? 'none' : '2px solid var(--color-border)',
-                                                    backgroundColor: task.completed ? '#00F5B0' : 'transparent',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: '12px',
-                                                    color: 'white',
-                                                    transition: 'all 0.2s'
-                                                }}>
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleTask(task.id);
+                                                    }}
+                                                    style={{
+                                                        width: '20px',
+                                                        height: '20px',
+                                                        borderRadius: '4px',
+                                                        border: task.completed ? 'none' : '2px solid var(--color-border)',
+                                                        backgroundColor: task.completed ? '#00F5B0' : 'transparent',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '12px',
+                                                        color: 'white',
+                                                        transition: 'all 0.2s',
+                                                        cursor: 'pointer'
+                                                    }}>
                                                     {task.completed && <Check size={12} strokeWidth={3} />}
                                                 </div>
                                                 <div>
@@ -462,7 +511,7 @@ export default function DashboardPage() {
                                             padding: 'var(--space-1)',
                                             backgroundColor: dl.daysLeft <= 2 ? 'rgba(255, 66, 66, 0.1)' : 'var(--color-surface)',
                                             borderRadius: 'var(--radius-sm)',
-                                            borderLeft: `3px solid ${getBrandColor(dl.brand)}`
+                                            borderLeft: `3px solid ${dl.assigneeIds?.length > 0 ? (teamMemberColors[dl.assigneeIds[0]] || '#6B7B80') : '#6B7B80'}`
                                         }}>
                                             <p style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>{dl.title}</p>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
@@ -500,162 +549,166 @@ export default function DashboardPage() {
 
                 {/* Not: Kişisel Performans bloğu kaldırıldı (Tamamlanan/Seri/Haftalık) */}
 
-                {/* BÖLÜM 2: Stats + Stüdyo Doluluk */}
-                <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
-                    {/* Sol: İstatistikler */}
-                    <div className="stats-grid">
-                        {stats.map((stat) => {
-                            const Icon = stat.icon;
-                            return (
-                                <Card key={stat.label}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                                        <div>
-                                            <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)', marginBottom: '4px' }}>{stat.label}</p>
-                                            <p style={{ fontSize: '28px', fontWeight: 700, color: stat.color }}>{stat.value}</p>
-                                            <span style={{ fontSize: 'var(--text-caption)', color: stat.trend.startsWith('+') ? 'var(--color-success)' : stat.trend.startsWith('-') ? 'var(--color-error)' : 'var(--color-muted)' }}>
-                                                {stat.trend} bu ay
-                                            </span>
-                                        </div>
-                                        <Icon size={32} color={stat.color} strokeWidth={1.5} />
-                                    </div>
-                                </Card>
-                            );
-                        })}
-                    </div>
 
-                    {/* Sağ: Bugünkü Stüdyo Doluluk */}
-                    <Card style={{ borderLeft: todayStudio.isOccupiedNow ? '4px solid #4CAF50' : '4px solid var(--color-border)' }}>
-                        <CardHeader title="Bugün Stüdyo" />
+
+                {/* BÖLÜM 5: Aktif Projeler */}
+                {/* BÖLÜM 5: Aktif Projeler ve Stüdyo Programı */}
+                <div className="dashboard-grid dashboard-grid-2-1">
+                    <Card>
+                        <CardHeader
+                            title="Aktif Projeler"
+                            action={<Link href="/dashboard/projects"><Button variant="secondary" size="sm">Tümünü Gör</Button></Link>}
+                        />
+                        <div className="table-container">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Proje</th>
+                                        <th>Müşteri</th>
+                                        <th>İlerleme</th>
+                                        <th>Son Tarih</th>
+                                        <th>Ödeme</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recentProjects.map((project) => (
+                                        <tr key={project.id}>
+                                            <td style={{ fontWeight: 500 }}>{project.name}</td>
+                                            <td>{project.client}</td>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <div style={{ flex: 1, maxWidth: 80, height: 6, backgroundColor: 'var(--color-border)', borderRadius: 3 }}>
+                                                        <div style={{ height: '100%', width: `${project.progress}%`, backgroundColor: 'var(--color-primary)', borderRadius: 3 }} />
+                                                    </div>
+                                                    <span style={{ fontSize: 'var(--text-caption)' }}>{project.progress}%</span>
+                                                </div>
+                                            </td>
+                                            <td>{new Date(project.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</td>
+                                            <td>
+                                                <Badge variant={
+                                                    project.paymentStatus === 'PAID' ? 'success' :
+                                                        project.paymentStatus === 'OVERDUE' ? 'error' : 'warning'
+                                                }>
+                                                    {project.paymentStatus === 'PAID' ? 'Ödendi' :
+                                                        project.paymentStatus === 'OVERDUE' ? 'Gecikmiş' : 'Bekliyor'}
+                                                </Badge>
+                                            </td>
+                                            <td>
+                                                <Link href={`/dashboard/projects/${project.id}`}>
+                                                    <Button variant="ghost" size="sm">Aç →</Button>
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+
+                    {/* Haftalık Stüdyo Programı */}
+                    <Card>
+                        <CardHeader
+                            title="Stüdyo Programı"
+                            action={
+                                <Link href="/dashboard/studio">
+                                    <Button variant="ghost" size="sm">Detay →</Button>
+                                </Link>
+                            }
+                        />
                         <CardContent>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                                <div style={{ width: '100%', height: 10, backgroundColor: 'var(--color-border)', borderRadius: 5 }}>
-                                    <div style={{ width: `${todayStudio.occupancyPercent}%`, height: '100%', backgroundColor: '#4CAF50', borderRadius: 5 }} />
-                                </div>
-                                <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{todayStudio.occupancyPercent}%</span>
-                            </div>
-                            {todayStudio.isOccupiedNow && (
-                                <div style={{ padding: '8px', backgroundColor: '#E8F5E9', borderRadius: 'var(--radius-sm)', marginBottom: '8px' }}>
-                                    <p style={{ fontSize: 'var(--text-caption)', color: '#2E7D32' }}>ŞU AN DOLU</p>
-                                    <p style={{ fontWeight: 600, color: '#1B5E20' }}>{todayStudio.currentBooking}</p>
-                                </div>
-                            )}
-                            {todayStudio.bookings.map((booking, idx) => (
-                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: idx < todayStudio.bookings.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
-                                    <div>
-                                        <p style={{ fontSize: 'var(--text-body-sm)', fontWeight: 500 }}>{booking.time}</p>
-                                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>{booking.client}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {upcomingStudio.length > 0 ? (
+                                    upcomingStudio.map((booking, index) => {
+                                        const bDate = new Date(booking.date);
+                                        const dayName = bDate.toLocaleDateString('tr-TR', { weekday: 'short' }).toUpperCase();
+                                        const dayNum = bDate.getDate();
+                                        const isToday = new Date().toDateString() === bDate.toDateString();
+
+                                        return (
+                                            <div key={booking.id || index} style={{ display: 'flex', gap: '12px', paddingBottom: index < upcomingStudio.length - 1 ? '12px' : 0, borderBottom: index < upcomingStudio.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+                                                <div style={{ width: '50px', textAlign: 'center' }}>
+                                                    <p style={{ fontWeight: 700, fontSize: '12px', color: isToday ? 'var(--color-primary)' : 'var(--color-muted)' }}>
+                                                        {isToday ? 'BUGÜN' : dayName}
+                                                    </p>
+                                                    <p style={{ fontSize: '18px', fontWeight: 600, color: isToday ? 'inherit' : 'var(--color-muted)' }}>{dayNum}</p>
+                                                </div>
+                                                <div>
+                                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>{booking.client}</p>
+                                                    <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>{booking.startTime} - {booking.endTime} • {booking.project}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div style={{ padding: '8px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '12px' }}>
+                                        Yaklaşan rezervasyon bulunmuyor.
                                     </div>
-                                    <Badge variant={booking.type === 'INTERNAL' ? 'info' : 'success'}>
-                                        {booking.type === 'INTERNAL' ? '🏠 İç' : '💵 Dış'}
-                                    </Badge>
-                                </div>
-                            ))}
-                            <Link href="/dashboard/studio">
-                                <Button variant="ghost" size="sm" style={{ marginTop: '8px', width: '100%' }}>
-                                    Takvimi Gör →
-                                </Button>
-                            </Link>
+                                )}
+                                {upcomingStudio.length > 0 && (
+                                    <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--color-surface)', borderRadius: '6px', fontSize: '12px', color: 'var(--color-muted)', textAlign: 'center' }}>
+                                        {upcomingStudio.length === 1 ? 'Bu hafta başka rezervasyon yok.' : 'Tüm program için detaya gidiniz.'}
+                                    </div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Not: Ödeme Riskleri artık Yönetim Paneli -> Faturalar altında */}
-
-                {/* BÖLÜM 4: Dikkat Gerektiren İşlemler */}
-                <Card style={{ marginBottom: 'var(--space-2)' }}>
-                    <CardHeader
-                        title="Dikkat Gerektiren İşlemler"
-                        description="Sistem tarafından engellenen veya bekleyen işlemler"
-                    />
-                    <CardContent>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-                            {pendingActions.map((action) => (
-                                <div
-                                    key={action.id}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        padding: 'var(--space-2)',
-                                        backgroundColor: action.severity === 'error'
-                                            ? 'rgba(239, 68, 68, 0.08)'
-                                            : action.severity === 'warning'
-                                                ? 'rgba(245, 158, 11, 0.08)'
-                                                : 'rgba(50, 159, 245, 0.08)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        borderLeft: `3px solid ${action.severity === 'error'
-                                            ? 'var(--color-error)'
-                                            : action.severity === 'warning'
-                                                ? 'var(--color-warning)'
-                                                : 'var(--color-primary)'
-                                            }`
-                                    }}
-                                >
-                                    <span style={{ fontSize: 'var(--text-body-sm)' }}>
-                                        {action.message}
-                                    </span>
-                                    <Link href={action.link}>
-                                        <Button variant="ghost" size="sm">{action.actionLabel} →</Button>
-                                    </Link>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* BÖLÜM 5: Aktif Projeler */}
-                <Card>
-                    <CardHeader
-                        title="Aktif Projeler"
-                        action={<Link href="/dashboard/projects"><Button variant="secondary" size="sm">Tümünü Gör</Button></Link>}
-                    />
-                    <div className="table-container">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Proje</th>
-                                    <th>Müşteri</th>
-                                    <th>İlerleme</th>
-                                    <th>Son Tarih</th>
-                                    <th>Ödeme</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentProjects.map((project) => (
-                                    <tr key={project.id}>
-                                        <td style={{ fontWeight: 500 }}>{project.name}</td>
-                                        <td>{project.client}</td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <div style={{ flex: 1, maxWidth: 80, height: 6, backgroundColor: 'var(--color-border)', borderRadius: 3 }}>
-                                                    <div style={{ height: '100%', width: `${project.progress}%`, backgroundColor: 'var(--color-primary)', borderRadius: 3 }} />
-                                                </div>
-                                                <span style={{ fontSize: 'var(--text-caption)' }}>{project.progress}%</span>
-                                            </div>
-                                        </td>
-                                        <td>{new Date(project.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</td>
-                                        <td>
-                                            <Badge variant={
-                                                project.paymentStatus === 'PAID' ? 'success' :
-                                                    project.paymentStatus === 'OVERDUE' ? 'error' : 'warning'
-                                            }>
-                                                {project.paymentStatus === 'PAID' ? 'Ödendi' :
-                                                    project.paymentStatus === 'OVERDUE' ? 'Gecikmiş' : 'Bekliyor'}
-                                            </Badge>
-                                        </td>
-                                        <td>
-                                            <Link href={`/dashboard/projects/${project.id}`}>
-                                                <Button variant="ghost" size="sm">Aç →</Button>
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
             </div>
+            {/* TASK DETAIL MODAL */}
+            <Modal
+                isOpen={!!selectedTask}
+                onClose={() => setSelectedTask(null)}
+                title={selectedTask?.title || 'Görev Detayı'}
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Header Info */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '14px', color: 'var(--color-muted)', fontWeight: 500 }}>
+                            {getBrandName(selectedTask?.brand)}
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {selectedTask?.priority && (
+                                <Badge variant={selectedTask?.priority === 'high' || selectedTask?.priority === 'urgent' ? 'error' : selectedTask?.priority === 'medium' ? 'warning' : 'info'}>
+                                    {selectedTask.priority === 'urgent' ? 'ACİL' : selectedTask.priority === 'high' ? 'YÜKSEK' : selectedTask.priority === 'medium' ? 'NORMAL' : 'DÜŞÜK'}
+                                </Badge>
+                            )}
+                            <Badge variant={selectedTask?.completed ? 'success' : 'neutral'}>
+                                {selectedTask?.completed ? 'TAMAMLANDI' : 'YAPILACAK'}
+                            </Badge>
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    <div style={{ padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                        <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)', marginBottom: '8px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <ListChecks size={14} />
+                            Açıklama / İçerik Detayı
+                        </h4>
+                        <p style={{ fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>
+                            {selectedTask?.description || 'Bu görev için girilmiş bir açıklama bulunmuyor.'}
+                        </p>
+                    </div>
+
+                    {/* Footer / Meta */}
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: 'var(--color-muted)', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={16} />
+                            <span>Son Tarih: {selectedTask?.deadline}</span>
+                        </div>
+                        {selectedTask?.assignee && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: teamMemberColors[selectedTask.assignee] || '#ccc' }} />
+                                <span>{selectedTask.assignee.split(' ')[0]}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                        <Button onClick={() => setSelectedTask(null)} variant="primary">Kapat</Button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 }

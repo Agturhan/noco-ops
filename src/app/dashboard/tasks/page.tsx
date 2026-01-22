@@ -6,7 +6,9 @@ import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Tex
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
 import type { TaskStatus as TaskStatusType, TaskPriority as TaskPriorityType } from '@/lib/actions/tasks';
 import { getMemberColors, saveMemberColors } from '@/lib/actions/userSettings';
-import { CheckCircle2, Circle, Trash2, Edit, Calendar, User } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Edit, Calendar, User as UserIcon } from 'lucide-react';
+import { ContentDetailPanel } from '@/components/content/ContentDetailPanel';
+import { getActiveTeamMembers, User as DBUser } from '@/lib/actions/users';
 
 // ===== TİPLER =====
 interface Task {
@@ -41,15 +43,9 @@ const priorityConfig = {
     URGENT: { label: 'Acil', color: '#FF4242' },
 };
 
-// Takım üyeleri ve varsayılan renkleri
-const defaultMemberColors: Record<string, string> = {
-    'Şeyma Bora': '#E91E63',
-    'Fatih Ustaosmanoğlu': '#329FF5',
-    'Ayşegül Güler': '#00F5B0',
-    'Ahmet Gürkan Turhan': '#9C27B0'
-};
-
-const teamMembers = Object.keys(defaultMemberColors);
+// Takım üyeleri (Dinamik yükleniyor)
+// const defaultMemberColors... (Removed)
+// const teamMembers... (Removed)
 
 export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,7 +61,18 @@ export default function TasksPage() {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Kişi renkleri state
-    const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
+    // Kişi renkleri state
+    const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>({});
+    const [currentUser, setCurrentUser] = useState<{ name: string; id: string } | null>(null);
+    const [noteHistory, setNoteHistory] = useState<any[]>([]); // Tasks için basitleştirilmiş history
+
+    // Kullanıcıyı yükle
+    useEffect(() => {
+        const userStr = localStorage.getItem('currentUser');
+        if (userStr) {
+            setCurrentUser(JSON.parse(userStr));
+        }
+    }, []);
 
     // Form state
     const [formTitle, setFormTitle] = useState('');
@@ -258,24 +265,24 @@ export default function TasksPage() {
     };
 
     // Filtreleme
-    const filteredTasks = tasks.filter(task => {
+    const filteredTasks = React.useMemo(() => tasks.filter(task => {
         if (filterStatus !== 'ALL' && task.status !== filterStatus) return false;
         if (filterPriority !== 'ALL' && task.priority !== filterPriority) return false;
         if (filterAssignee !== 'ALL' && !task.assignees.includes(filterAssignee)) return false;
         if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
-    });
+    }), [tasks, filterStatus, filterPriority, filterAssignee, searchQuery]);
 
     // İstatistikler
-    const stats = {
+    const stats = React.useMemo(() => ({
         total: tasks.length,
         todo: tasks.filter(t => t.status === 'TODO').length,
         done: tasks.filter(t => t.status === 'DONE').length,
         urgent: tasks.filter(t => t.priority === 'URGENT' && t.status === 'TODO').length
-    };
+    }), [tasks]);
 
     // Tarihe göre sırala (deadline yakın olanlar önce)
-    const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const sortedTasks = React.useMemo(() => [...filteredTasks].sort((a, b) => {
         // Tamamlananlar en sona
         if (a.status === 'DONE' && b.status !== 'DONE') return 1;
         if (a.status !== 'DONE' && b.status === 'DONE') return -1;
@@ -283,16 +290,64 @@ export default function TasksPage() {
         if (!a.dueDate) return 1;
         if (!b.dueDate) return -1;
         return a.dueDate.localeCompare(b.dueDate);
-    });
+    }), [filteredTasks]);
+
+    // Panel state
+    // Panel state
+    const [activeTeam, setActiveTeam] = useState<DBUser[]>([]);
+
+    useEffect(() => {
+        getActiveTeamMembers().then(setActiveTeam);
+    }, []);
+
+    // Not güncelleme handler 
+    // Not güncelleme handler 
+    const handleUpdateNotes = async (id: string, note: string) => {
+        // Optimistic update
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, notes: note, description: note } : t));
+
+        // Log to local history for UI
+        const timestamp = new Date().toISOString();
+        if (currentUser) {
+            setNoteHistory(prev => [...prev, {
+                id: Date.now().toString(),
+                contentId: id,
+                user: currentUser.name,
+                action: 'Not güncelledi',
+                note: note,
+                timestamp
+            }]);
+        }
+
+        try {
+            await updateTask(id, { notes: note, description: note });
+        } catch (error) {
+            console.error('Not güncellenemedi:', error);
+        }
+    };
+
+    // Status update handler for Panel
+    const handlePanelStatusUpdate = async (id: string, status: any) => {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+            const newStatus = status === 'PAYLASILD' || status === 'TESLIM' ? 'DONE' : 'TODO';
+            if (task.status !== newStatus) {
+                await toggleTaskStatus(task);
+            }
+        }
+    };
+
+
+
+    // ... (rest of the component logic)
 
     return (
         <>
             <Header
                 title="Görevler"
-                subtitle="Yapılacaklar Listesi"
+                subtitle="İş Takibi ve Yönetimi"
                 actions={
                     <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-                        {/* Status Filter */}
                         <div style={{
                             display: 'flex',
                             backgroundColor: 'var(--color-surface)',
@@ -300,15 +355,7 @@ export default function TasksPage() {
                             padding: '2px',
                             border: '1px solid var(--color-border)'
                         }}>
-                            <Button variant={filterStatus === 'ALL' ? 'primary' : 'ghost'} size="sm" onClick={() => setFilterStatus('ALL')}>
-                                Tümü ({stats.total})
-                            </Button>
-                            <Button variant={filterStatus === 'TODO' ? 'primary' : 'ghost'} size="sm" onClick={() => setFilterStatus('TODO')}>
-                                Yapılacak ({stats.todo})
-                            </Button>
-                            <Button variant={filterStatus === 'DONE' ? 'primary' : 'ghost'} size="sm" onClick={() => setFilterStatus('DONE')}>
-                                Tamamlandı ({stats.done})
-                            </Button>
+                            {/* Stats removed from header to keep simple or keep them if needed */}
                         </div>
                         <Button variant="secondary" size="sm" onClick={() => setShowColorSettings(true)}>🎨</Button>
                         <Button variant="primary" onClick={openAddModal}>+ Yeni Görev</Button>
@@ -316,411 +363,177 @@ export default function TasksPage() {
                 }
             />
 
-            <div style={{ padding: 'var(--space-3)' }}>
-                {/* İstatistik Kartları */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: 'var(--space-2)',
-                    marginBottom: 'var(--space-3)'
-                }}>
-                    <Card>
-                        <CardContent>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontSize: 32, fontWeight: 700, color: 'var(--color-primary)' }}>{stats.total}</p>
-                                <p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Toplam</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontSize: 32, fontWeight: 700, color: '#FF9800' }}>{stats.todo}</p>
-                                <p style={{ color: 'var(--color-muted)', fontSize: 12 }}>⏳ Yapılacak</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontSize: 32, fontWeight: 700, color: '#00F5B0' }}>{stats.done}</p>
-                                <p style={{ color: 'var(--color-muted)', fontSize: 12 }}>✅ Tamamlandı</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card style={{ borderLeft: stats.urgent > 0 ? '3px solid #FF4242' : undefined }}>
-                        <CardContent>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontSize: 32, fontWeight: 700, color: stats.urgent > 0 ? '#FF4242' : 'var(--color-muted)' }}>
-                                    {stats.urgent}
-                                </p>
-                                <p style={{ color: 'var(--color-muted)', fontSize: 12 }}>🚨 Acil</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+            <div style={{ padding: 'var(--space-3)', height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
+                {/* 2 Column Grid + Detail Panel */}
+                <div style={{ display: 'grid', gridTemplateColumns: selectedTask ? '1fr 1fr 400px' : '1fr 1fr', gap: 'var(--space-3)', height: '100%' }}>
 
-                {/* Filtreler */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input
-                        type="text"
-                        placeholder="🔍 Görev ara..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        style={{
-                            padding: '8px 12px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--color-border)',
-                            minWidth: 200
-                        }}
-                    />
-                    <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                        <option value="ALL">Tüm Öncelikler</option>
-                        {Object.entries(priorityConfig).map(([k, v]) => (
-                            <option key={k} value={k}>{v.label}</option>
-                        ))}
-                    </select>
-                    <select value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                        <option value="ALL">Tüm Sorumlular</option>
-                        {teamMembers.map(m => (
-                            <option key={m} value={m}>{m}</option>
-                        ))}
-                    </select>
-                </div>
+                    {/* SOL SÜTUN: HAZIRLANANLAR (TODO) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: 'var(--space-2)', backgroundColor: 'rgba(255, 152, 0, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 152, 0, 0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+                            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#FF9800', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                ⏳ Hazırlananlar <Badge style={{ backgroundColor: '#FF9800', color: 'white' }}>{stats.todo}</Badge>
+                            </h3>
+                        </div>
 
-                {/* Görev Listesi */}
-                {loading ? (
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ color: 'var(--color-muted)' }}>Görevler yükleniyor...</p>
-                        </div>
-                    </Card>
-                ) : sortedTasks.length === 0 ? (
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>📋</p>
-                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)' }}>Görev bulunamadı</p>
-                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>
-                                {filterStatus !== 'ALL' ? 'Filtre kriterlerini değiştirin' : 'Yeni bir görev ekleyin'}
-                            </p>
-                            <Button variant="primary" onClick={openAddModal}>+ Yeni Görev</Button>
-                        </div>
-                    </Card>
-                ) : (
-                    <Card>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {sortedTasks.map(task => {
-                                const priorityColor = priorityConfig[task.priority].color;
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                            {sortedTasks.filter(t => t.status === 'TODO').map(task => {
                                 const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status === 'TODO';
-
+                                const isSelected = selectedTask?.id === task.id;
                                 return (
                                     <div
                                         key={task.id}
+                                        onClick={() => setSelectedTask(task)}
                                         style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 'var(--space-2)',
                                             padding: 'var(--space-2)',
-                                            borderBottom: '1px solid var(--color-border)',
-                                            opacity: task.status === 'DONE' ? 0.6 : 1,
-                                            backgroundColor: isOverdue ? 'rgba(255, 66, 66, 0.05)' : 'transparent'
+                                            backgroundColor: 'var(--color-surface)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            borderTop: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                            borderRight: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                            borderBottom: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            borderLeft: isOverdue ? '4px solid #FF4242' : `4px solid ${priorityConfig[task.priority].color}`
                                         }}
                                     >
-                                        {/* Checkbox */}
-                                        <button
-                                            onClick={() => toggleTaskStatus(task)}
-                                            style={{
-                                                width: 28,
-                                                height: 28,
-                                                borderRadius: '50%',
-                                                border: `2px solid ${task.status === 'DONE' ? '#00F5B0' : '#ccc'}`,
-                                                backgroundColor: task.status === 'DONE' ? '#00F5B0' : 'transparent',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0
-                                            }}
-                                        >
-                                            {task.status === 'DONE' && <CheckCircle2 size={16} color="white" />}
-                                        </button>
-
-                                        {/* İçerik */}
-                                        <div
-                                            style={{ flex: 1, cursor: 'pointer' }}
-                                            onClick={() => openDetailModal(task)}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                                <span style={{
-                                                    fontWeight: 600,
-                                                    textDecoration: task.status === 'DONE' ? 'line-through' : 'none'
-                                                }}>
-                                                    {task.title}
-                                                </span>
-                                                {isOverdue && (
-                                                    <Badge style={{ backgroundColor: '#FF4242', color: 'white', fontSize: 10 }}>
-                                                        GECİKMİŞ
-                                                    </Badge>
-                                                )}
-                                                {task.priority === 'URGENT' && task.status === 'TODO' && (
-                                                    <Badge style={{ backgroundColor: priorityColor, color: 'white', fontSize: 10 }}>
-                                                        ACİL
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                                                {/* Marka/Proje */}
-                                                {task.project && (
-                                                    <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>
-                                                        📁 {task.project}
-                                                    </span>
-                                                )}
-                                                {/* Tarih */}
-                                                {task.dueDate && (
-                                                    <span style={{ fontSize: 12, color: isOverdue ? '#FF4242' : 'var(--color-muted)' }}>
-                                                        📅 {new Date(task.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                                                    </span>
-                                                )}
-                                                {/* Assignees */}
-                                                {task.assignees.length > 0 && (
-                                                    <div style={{ display: 'flex', gap: 4 }}>
-                                                        {task.assignees.slice(0, 2).map(a => {
-                                                            const color = teamMemberColors[a] || '#6B7B80';
-                                                            return (
-                                                                <span key={a} style={{
-                                                                    fontSize: 10,
-                                                                    padding: '2px 6px',
-                                                                    backgroundColor: color + '20',
-                                                                    color: color,
-                                                                    borderRadius: 8,
-                                                                    fontWeight: 500
-                                                                }}>
-                                                                    {a.split(' ')[0]}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                        {task.assignees.length > 2 && (
-                                                            <span style={{ fontSize: 10, color: 'var(--color-muted)' }}>
-                                                                +{task.assignees.length - 2}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div style={{ display: 'flex', gap: 4 }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                                             <button
-                                                onClick={() => openEditModal(task)}
+                                                onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
                                                 style={{
-                                                    padding: 6,
+                                                    marginTop: 2,
+                                                    width: 20,
+                                                    height: 20,
+                                                    borderRadius: '50%',
+                                                    border: '2px solid #ccc',
                                                     backgroundColor: 'transparent',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--color-muted)'
+                                                    cursor: 'pointer'
                                                 }}
-                                            >
-                                                <Edit size={16} />
-                                            </button>
+                                            />
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ fontWeight: 600, marginBottom: 4, color: isOverdue ? '#D32F2F' : 'inherit' }}>{task.title}</p>
+                                                {task.project && (
+                                                    <p style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4 }}>📁 {task.project}</p>
+                                                )}
+
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                                    {task.dueDate && (
+                                                        <span style={{ fontSize: 11, padding: '2px 6px', backgroundColor: 'var(--color-background)', borderRadius: 4, color: isOverdue ? '#D32F2F' : 'var(--color-muted)', border: '1px solid var(--color-border)' }}>
+                                                            📅 {new Date(task.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                                                        </span>
+                                                    )}
+                                                    {task.assignees.slice(0, 3).map(a => (
+                                                        <span key={a} style={{ fontSize: 10, padding: '2px 6px', backgroundColor: (teamMemberColors[a] || '#6B7B80') + '20', color: teamMemberColors[a] || '#6B7B80', borderRadius: 10 }}>
+                                                            {a.split(' ')[0]}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </Card>
-                )}
+                    </div>
+
+                    {/* SAĞ SÜTUN: TAMAMLANANLAR (DONE) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: 'var(--space-2)', backgroundColor: 'rgba(0, 245, 176, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0, 245, 176, 0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+                            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#00F5B0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                ✅ Tamamlananlar <Badge style={{ backgroundColor: '#00F5B0', color: 'white' }}>{stats.done}</Badge>
+                            </h3>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                            {sortedTasks.filter(t => t.status === 'DONE').map(task => {
+                                const isSelected = selectedTask?.id === task.id;
+                                return (
+                                    <div
+                                        key={task.id}
+                                        onClick={() => setSelectedTask(task)}
+                                        style={{
+                                            padding: 'var(--space-2)',
+                                            backgroundColor: 'var(--color-surface)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                            opacity: 0.6,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
+                                                style={{
+                                                    marginTop: 2,
+                                                    width: 20,
+                                                    height: 20,
+                                                    borderRadius: '50%',
+                                                    border: '2px solid #00F5B0',
+                                                    backgroundColor: '#00F5B0',
+                                                    cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}
+                                            >
+                                                <CheckCircle2 size={12} color="white" />
+                                            </button>
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ fontWeight: 600, marginBottom: 4, textDecoration: 'line-through', color: 'var(--color-muted)' }}>{task.title}</p>
+                                                <p style={{ fontSize: 11, color: '#00F5B0' }}>Tamamlandı: {new Date(task.updatedAt).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* DETAY PANELİ */}
+                    {selectedTask && (
+                        <ContentDetailPanel
+                            content={{
+                                id: selectedTask.id,
+                                title: selectedTask.title,
+                                brandId: selectedTask.brandId || '',
+                                status: selectedTask.status === 'DONE' ? 'PAYLASILD' : 'PLANLANDI', // Mapping issue here
+                                type: (selectedTask.contentType as any) || 'OTHER',
+                                notes: selectedTask.notes || selectedTask.description || '',
+                                deliveryDate: selectedTask.dueDate,
+                                assigneeIds: selectedTask.assignees,
+                                assigneeId: selectedTask.assignees[0]
+                            }}
+                            onClose={() => setSelectedTask(null)}
+                            onUpdateStatus={handlePanelStatusUpdate}
+                            onUpdateNotes={handleUpdateNotes}
+                            noteHistory={noteHistory}
+                            teamMemberColors={teamMemberColors}
+                            activeTeam={activeTeam}
+                            currentUser={currentUser}
+                        />
+                    )}
+                </div>
             </div>
 
-            {/* Görev Ekle/Düzenle Modal */}
-            <Modal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={editingTask ? '✏️ Görev Düzenle' : '📋 Yeni Görev'}
-                size="md"
-                footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button>
-                        <Button variant="primary" onClick={saveTask}>Kaydet</Button>
-                    </>
-                }
-            >
+            {/* Modals ... (keep existing modals logic) */}
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingTask ? '✏️ Görev Düzenle' : '📋 Yeni Görev'} size="md" footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button><Button variant="primary" onClick={saveTask}>Kaydet</Button></>}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                     <Input label="Başlık *" value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Görev adı" />
                     <Textarea label="Açıklama" value={formDescription} onChange={e => setFormDescription(e.target.value)} rows={2} />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                        <Select
-                            label="Öncelik"
-                            value={formPriority}
-                            onChange={e => setFormPriority(e.target.value as Task['priority'])}
-                            options={Object.entries(priorityConfig).map(([k, v]) => ({ value: k, label: v.label }))}
-                        />
+                        <Select label="Öncelik" value={formPriority} onChange={e => setFormPriority(e.target.value as any)} options={Object.entries(priorityConfig).map(([k, v]) => ({ value: k, label: v.label }))} />
                         <Input label="Tarih" type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} />
                     </div>
-                    <MultiSelect
-                        label="Sorumlular"
-                        value={formAssignees}
-                        onChange={setFormAssignees}
-                        options={teamMembers.map(m => ({ value: m, label: m, color: teamMemberColors[m] }))}
-                        placeholder="Kişi seçiniz..."
-                    />
+                    <MultiSelect label="Sorumlular" value={formAssignees} onChange={setFormAssignees} options={activeTeam.map(m => ({ value: m.name, label: m.name, color: teamMemberColors[m.name] }))} placeholder="Kişi seçiniz..." />
                     <Input label="Etiketler" value={formTags} onChange={e => setFormTags(e.target.value)} placeholder="virgülle ayırın" />
                 </div>
             </Modal>
 
-            {/* Görev Detay Modal */}
-            <Modal
-                isOpen={showDetailModal}
-                onClose={() => setShowDetailModal(false)}
-                title={selectedTask ? `📋 ${selectedTask.title}` : 'Görev Detayı'}
-                size="md"
-                footer={
-                    <>
-                        <Button
-                            variant="danger"
-                            onClick={() => selectedTask && handleDeleteTask(selectedTask)}
-                            style={{ marginRight: 'auto' }}
-                        >
-                            🗑️ Sil
-                        </Button>
-                        <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
-                        <Button variant="primary" onClick={() => { setShowDetailModal(false); selectedTask && openEditModal(selectedTask); }}>
-                            Düzenle
-                        </Button>
-                    </>
-                }
-            >
-                {selectedTask && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                        {/* Status Banner */}
-                        <div style={{
-                            padding: 'var(--space-2)',
-                            backgroundColor: statusConfig[selectedTask.status].color + '20',
-                            borderRadius: 'var(--radius-md)',
-                            borderLeft: `4px solid ${statusConfig[selectedTask.status].color}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                        }}>
-                            <span style={{ fontWeight: 600 }}>
-                                {selectedTask.status === 'DONE' ? '✅ Tamamlandı' : '⏳ Yapılacak'}
-                            </span>
-                            <Button
-                                variant={selectedTask.status === 'TODO' ? 'success' : 'secondary'}
-                                size="sm"
-                                onClick={() => {
-                                    toggleTaskStatus(selectedTask);
-                                    setSelectedTask({ ...selectedTask, status: selectedTask.status === 'TODO' ? 'DONE' : 'TODO' });
-                                }}
-                            >
-                                {selectedTask.status === 'TODO' ? '✓ Tamamla' : '↩ Geri Al'}
-                            </Button>
-                        </div>
-
-                        {/* Detaylar */}
-                        {selectedTask.description && (
-                            <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                                <p style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4 }}>📝 Açıklama</p>
-                                <p>{selectedTask.description}</p>
-                            </div>
-                        )}
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                            <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                                <p style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4 }}>🎯 Öncelik</p>
-                                <Badge style={{ backgroundColor: priorityConfig[selectedTask.priority].color, color: 'white' }}>
-                                    {priorityConfig[selectedTask.priority].label}
-                                </Badge>
-                            </div>
-                            <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                                <p style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4 }}>📅 Tarih</p>
-                                <p style={{ fontWeight: 600 }}>
-                                    {selectedTask.dueDate
-                                        ? new Date(selectedTask.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
-                                        : 'Belirlenmedi'
-                                    }
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Sorumlular */}
-                        <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                            <p style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 8 }}>👤 Sorumlular</p>
-                            {selectedTask.assignees.length > 0 ? (
-                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                    {selectedTask.assignees.map(a => {
-                                        const color = teamMemberColors[a] || '#6B7B80';
-                                        return (
-                                            <span key={a} style={{
-                                                padding: '4px 12px',
-                                                backgroundColor: color + '20',
-                                                color: color,
-                                                borderRadius: 16,
-                                                fontWeight: 500
-                                            }}>
-                                                {a}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <p style={{ color: 'var(--color-muted)' }}>Atanmamış</p>
-                            )}
-                        </div>
-
-                        {/* İçerik Bilgileri (varsa) */}
-                        {(selectedTask.brandName || selectedTask.notes) && (
-                            <div style={{
-                                padding: 'var(--space-2)',
-                                backgroundColor: 'rgba(50, 159, 245, 0.1)',
-                                borderRadius: 'var(--radius-sm)',
-                                borderLeft: '4px solid var(--color-primary)'
-                            }}>
-                                <p style={{ fontSize: 11, color: 'var(--color-primary)', marginBottom: 8 }}>📱 İçerik Bilgileri</p>
-                                {selectedTask.brandName && (
-                                    <p><strong>Marka:</strong> {selectedTask.brandName}</p>
-                                )}
-                                {selectedTask.contentType && (
-                                    <p><strong>Tür:</strong> {selectedTask.contentType}</p>
-                                )}
-                                {selectedTask.notes && (
-                                    <p style={{ marginTop: 8 }}>{selectedTask.notes}</p>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </Modal>
-
-            {/* Renk Ayarları Modal */}
-            <Modal
-                isOpen={showColorSettings}
-                onClose={() => setShowColorSettings(false)}
-                title="🎨 Kişi Renk Ayarları"
-                size="md"
-            >
+            {/* Color Settings Modal */}
+            <Modal isOpen={showColorSettings} onClose={() => setShowColorSettings(false)} title="🎨 Kişi Renk Ayarları" size="md">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: 8 }}>
-                        Her takım üyesi için bir renk seçin. Değişiklikler otomatik kaydedilir.
-                    </p>
-                    {teamMembers.map(member => (
-                        <div
-                            key={member}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '12px 16px',
-                                backgroundColor: 'var(--color-surface)',
-                                borderRadius: 'var(--radius-sm)',
-                                borderLeft: `4px solid ${teamMemberColors[member] || '#6B7B80'}`
-                            }}
-                        >
-                            <span style={{ fontWeight: 500 }}>{member}</span>
-                            <ColorPicker
-                                value={teamMemberColors[member] || '#6B7B80'}
-                                onChange={(color) => updateMemberColor(member, color)}
-                            />
+                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: 8 }}>Her takım üyesi için bir renk seçin.</p>
+                    {activeTeam.map(member => (
+                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: `4px solid ${teamMemberColors[member.name] || '#6B7B80'}` }}>
+                            <span style={{ fontWeight: 500 }}>{member.name}</span>
+                            <ColorPicker value={teamMemberColors[member.name] || '#6B7B80'} onChange={(color) => updateMemberColor(member.name, color)} />
                         </div>
                     ))}
                 </div>

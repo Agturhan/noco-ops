@@ -62,10 +62,24 @@ const navGroups: NavGroup[] = [
         title: 'ANA',
         items: [
             { href: '/dashboard', label: 'Gösterge Paneli', icon: LayoutDashboard },
-            { href: '/dashboard/content-production', label: 'İş Yönetimi', icon: Clapperboard, roles: ['OWNER', 'OPS', 'DIGITAL'] },
-            { href: '/dashboard/tasks', label: 'Görevler', icon: CheckSquare },
-            { href: '/dashboard/calendar', label: 'Takvim', icon: Calendar },
-            { href: '/dashboard/studio', label: 'Stüdyo', icon: Camera, roles: ['OWNER', 'OPS', 'STUDIO'] },
+        ]
+    },
+    {
+        title: 'OPERASYON',
+        items: [
+            {
+                href: '/dashboard/work',
+                label: 'İş Yönetimi',
+                icon: Clapperboard,
+                isSubmenu: true,
+                roles: ['OWNER', 'OPS', 'DIGITAL', 'STUDIO'],
+                submenuItems: [
+                    { href: '/dashboard/content-production', label: 'Üretim Paneli', icon: Clapperboard },
+                    { href: '/dashboard/tasks', label: 'Görevler', icon: CheckSquare },
+                    { href: '/dashboard/calendar', label: 'Takvim', icon: Calendar },
+                    { href: '/dashboard/studio', label: 'Stüdyo', icon: Camera },
+                ]
+            },
             { href: '/dashboard/clients', label: 'Müşteriler', icon: Users, roles: ['OWNER', 'OPS'] },
             { href: '/dashboard/retainers', label: 'Retainer', icon: Timer, roles: ['OWNER', 'OPS'] },
         ]
@@ -145,6 +159,18 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
         return pathname === href || pathname.startsWith(href + '/');
     };
 
+    const [expandedMenus, setExpandedMenus] = useState<string[]>(['İş Yönetimi']); // Default open
+
+    const toggleMenu = (label: string) => {
+        setExpandedMenus(prev =>
+            prev.includes(label)
+                ? prev.filter(l => l !== label)
+                : [...prev, label]
+        );
+    };
+
+    const isMenuOpen = (label: string) => expandedMenus.includes(label);
+
     return (
         <>
             {/* Mobil overlay */}
@@ -215,6 +241,62 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
                                 {visibleItems.map((item) => {
                                     const Icon = item.icon;
                                     const active = isActive(item.href);
+                                    const hasSubmenu = item.isSubmenu && item.submenuItems && item.submenuItems.length > 0;
+                                    const isOpen = isMenuOpen(item.label);
+
+                                    if (hasSubmenu) {
+                                        // Check if any child is active to auto-expand or mark parent active
+                                        const isChildActive = item.submenuItems?.some(sub => isActive(sub.href));
+
+                                        return (
+                                            <div key={item.label}>
+                                                <button
+                                                    onClick={() => toggleMenu(item.label)}
+                                                    className={`sidebar-link ${isChildActive ? 'active' : ''}`}
+                                                    style={{ gap: '10px', width: '100%', justifyContent: 'space-between' }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <Icon size={18} strokeWidth={isChildActive ? 2 : 1.5} />
+                                                        <span>{item.label}</span>
+                                                    </div>
+                                                    <ChevronDown
+                                                        size={16}
+                                                        style={{
+                                                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                            transition: 'transform 0.2s ease'
+                                                        }}
+                                                    />
+                                                </button>
+
+                                                {isOpen && (
+                                                    <div style={{
+                                                        paddingLeft: '34px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: '4px',
+                                                        marginBottom: '4px'
+                                                    }}>
+                                                        {item.submenuItems?.map(sub => {
+                                                            const SubIcon = sub.icon;
+                                                            const subActive = isActive(sub.href);
+                                                            return (
+                                                                <Link
+                                                                    key={sub.href}
+                                                                    href={sub.href}
+                                                                    className={`sidebar-link ${subActive ? 'active' : ''}`}
+                                                                    onClick={onClose}
+                                                                    style={{ gap: '10px', fontSize: '13px', height: '36px' }}
+                                                                >
+                                                                    {/* <SubIcon size={16} strokeWidth={subActive ? 2 : 1.5} /> */}
+                                                                    <span>{sub.label}</span>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
 
                                     return (
                                         <Link
