@@ -330,17 +330,7 @@ export async function toggleTaskStatus(id: string, userId?: string) {
 
 // ===== Get User's Today Tasks =====
 export async function getUserTodayTasks(userId: string) {
-    // HARDCODED KEY to bypass Env Var loading issue (Temporary)
-    const serviceKey = "sb_secret_GX-rdVgm_OVqiOks2xjvHA_DAhg26R6";
-    const supabaseUrl = "https://yogpepywcjpyjdveksgx.supabase.co";
-
-    let client = supabaseAdmin;
-
-    if (serviceKey && supabaseUrl) {
-        client = createClient(supabaseUrl, serviceKey, {
-            auth: { autoRefreshToken: false, persistSession: false },
-        });
-    }
+    const client = supabaseAdmin;
 
     console.log('[DEBUG] Querying SIMPLE tasks...');
 
