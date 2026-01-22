@@ -10,6 +10,7 @@ import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib
 import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
 import { getMemberColors } from '@/lib/actions/userSettings';
 import { getTodayTasks as getSharedTasks, getWeekDeadlines as getSharedDeadlines } from '@/lib/sharedTasks';
+import { getRetainerStatus } from '@/lib/actions/content';
 import { Clapperboard, TrendingDown, TrendingUp, Camera, Plus, LogOut, FolderOpen, ListChecks, AlertTriangle, Clock, CheckCircle, Check } from 'lucide-react';
 
 // Takım üyeleri varsayılan renkleri
@@ -181,6 +182,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [todayTasks, setTodayTasks] = useState<any[]>([]);
     const [upcomingStudio, setUpcomingStudio] = useState<any[]>([]);
+    const [retainerStats, setRetainerStats] = useState<any[]>([]);
     const [weekDeadlines, setWeekDeadlines] = useState<any[]>([]);
     const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
     const [taskViewMode, setTaskViewMode] = useState<'today' | 'upcoming'>('today');
@@ -348,12 +350,14 @@ export default function DashboardPage() {
                 setUpcomingStudio(filteredStudio);
 
                 // Diğer dashboard verileri
-                const [stats, pendingActions] = await Promise.all([
+                const [stats, pendingActions, rStats] = await Promise.all([
                     getDashboardStats(),
                     getPendingActions(),
+                    getRetainerStatus(),
                 ]);
                 setDashboardStats(stats);
                 setActions(pendingActions.length > 0 ? pendingActions : []);
+                setRetainerStats(rStats);
             } catch (error) {
                 console.error('Dashboard verileri yüklenirken hata:', error);
             } finally {
@@ -551,56 +555,59 @@ export default function DashboardPage() {
 
 
 
-                {/* BÖLÜM 5: Aktif Projeler */}
-                {/* BÖLÜM 5: Aktif Projeler ve Stüdyo Programı */}
+                {/* BÖLÜM 5: Hakediş Paneli */}
                 <div className="dashboard-grid dashboard-grid-2-1">
                     <Card>
                         <CardHeader
-                            title="Aktif Projeler"
-                            action={<Link href="/dashboard/projects"><Button variant="secondary" size="sm">Tümünü Gör</Button></Link>}
+                            title="Hakediş Paneli (Aylık Üretim)"
+                            description="Müşteri kotaları ve gerçekleşen üretimler (Ocak 2026)"
+                            action={<Link href="/dashboard/retainers"><Button variant="secondary" size="sm">Detaylı Rapor</Button></Link>}
                         />
                         <div className="table-container">
                             <table className="table">
                                 <thead>
                                     <tr>
-                                        <th>Proje</th>
                                         <th>Müşteri</th>
-                                        <th>İlerleme</th>
-                                        <th>Son Tarih</th>
-                                        <th>Ödeme</th>
-                                        <th></th>
+                                        <th>Hakediş Durumu</th>
+                                        <th>Yayına Hazır</th>
+                                        <th>Operasyon Notu</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {recentProjects.map((project) => (
-                                        <tr key={project.id}>
-                                            <td style={{ fontWeight: 500 }}>{project.name}</td>
-                                            <td>{project.client}</td>
+                                    {retainerStats.length > 0 ? retainerStats.map((item) => (
+                                        <tr key={item.id}>
+                                            <td style={{ fontWeight: 600 }}>{item.client}</td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <div style={{ flex: 1, maxWidth: 80, height: 6, backgroundColor: 'var(--color-border)', borderRadius: 3 }}>
-                                                        <div style={{ height: '100%', width: `${project.progress}%`, backgroundColor: 'var(--color-primary)', borderRadius: 3 }} />
+                                                    <div style={{ flex: 1, minWidth: 80, height: 8, backgroundColor: 'var(--color-border)', borderRadius: 4, overflow: 'hidden' }}>
+                                                        <div style={{
+                                                            height: '100%',
+                                                            width: `${Math.min(100, (item.progress / item.total) * 100)}%`,
+                                                            backgroundColor: item.warning ? 'var(--color-warning)' : 'var(--color-primary)',
+                                                            borderRadius: 4
+                                                        }} />
                                                     </div>
-                                                    <span style={{ fontSize: 'var(--text-caption)' }}>{project.progress}%</span>
+                                                    <span style={{ fontSize: '12px', fontWeight: 600, color: item.warning ? 'var(--color-warning)' : 'inherit' }}>{item.label}</span>
                                                 </div>
                                             </td>
-                                            <td>{new Date(project.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</td>
                                             <td>
-                                                <Badge variant={
-                                                    project.paymentStatus === 'PAID' ? 'success' :
-                                                        project.paymentStatus === 'OVERDUE' ? 'error' : 'warning'
-                                                }>
-                                                    {project.paymentStatus === 'PAID' ? 'Ödendi' :
-                                                        project.paymentStatus === 'OVERDUE' ? 'Gecikmiş' : 'Bekliyor'}
-                                                </Badge>
+                                                <span style={{
+                                                    fontSize: '13px',
+                                                    fontWeight: 500,
+                                                    color: item.stock > 0 ? 'var(--color-text)' : 'var(--color-muted)',
+                                                    display: 'flex', alignItems: 'center', gap: 8
+                                                }}>
+                                                    {item.stock > 0 && <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#00F5B0', boxShadow: '0 0 4px #00F5B0' }} />}
+                                                    {item.stock > 0 ? `${item.stock} Adet` : '-'}
+                                                </span>
                                             </td>
                                             <td>
-                                                <Link href={`/dashboard/projects/${project.id}`}>
-                                                    <Button variant="ghost" size="sm">Aç →</Button>
-                                                </Link>
+                                                <p style={{ fontSize: '12px', color: 'var(--color-muted)', lineHeight: 1.3 }}>{item.note}</p>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )) : (
+                                        <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-muted)' }}>Yükleniyor...</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

@@ -423,3 +423,67 @@ export async function createContentWithBrand(content: {
         return null;
     }
 }
+// Hakediş Durumunu Getir (Dashboard için)
+export async function getRetainerStatus() {
+    try {
+        const clients = [
+            { name: 'Louvess', quota: 9, type: 'Karma', note: 'Düzenli içerik üretimi ve tasarım.' },
+            { name: 'Hubeyb Karaca', quota: 8, type: 'Stüdyo', note: 'Stüdyo çekimi. Geliş başı 1-3 video.' },
+            { name: 'Tevfik Usta', quota: 7, type: 'Dış Çekim', note: 'Ayda 1 kez mekan çekimi.' },
+            { name: 'Zeytin Dalı', quota: 6, type: 'Dış Çekim', note: 'Ayda 1-2 kez dış çekim.' },
+            { name: 'İkranur', quota: 6, type: 'Stüdyo', note: 'Ürün stüdyo çekimi ve kurgusu.' },
+            { name: 'Valora', quota: 3, type: 'Stüdyo', note: 'Ayda 1 tam gün stüdyo.' },
+            { name: 'Ali Haydar Usta', quota: 1, type: 'Dış Çekim', note: '10-25 Ocak arası çekim bekleniyor.', warning: true },
+        ];
+
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+        // Bu ayın içeriklerini çek
+        const { data: contents, error } = await supabaseAdmin
+            .from('Task')
+            .select('id, brandName, status, contentType')
+            .not('contentType', 'is', null)
+            .gte('dueDate', startOfMonth)
+            .lte('dueDate', endOfMonth);
+
+        if (error) {
+            console.error('getRetainerStatus DB Error:', error);
+            // Fallback to empty stats but keep structure
+            return clients.map((c, i) => ({
+                id: `r${i}`, client: c.name, progress: 0, total: c.quota, label: `0/${c.quota}`, stock: 0, stockLabel: 'Veri Yok', note: c.note, warning: c.warning
+            }));
+        }
+
+        // İstatistikleri hesapla
+        return clients.map((client, index) => {
+            // Basit isim eşleştirme (ilk kelime)
+            const searchName = client.name.split(' ')[0].toLowerCase();
+
+            const clientContents = contents?.filter(c =>
+                c.brandName && c.brandName.toLowerCase().includes(searchName)
+            ) || [];
+
+            const total = clientContents.length;
+            // Stok: DONE statüsündekiler
+            const stock = clientContents.filter(c => c.status === 'DONE').length;
+
+            return {
+                id: `r${index}`,
+                client: client.name,
+                progress: total,
+                total: client.quota,
+                label: `${total}/${client.quota} ${client.type === 'Karma' ? 'İçerik' : 'Video'}`,
+                stock: stock,
+                stockLabel: stock > 0 ? `${stock} ${client.type === 'Karma' ? 'İçerik' : 'Video'} Hazır` : (client.warning ? 'Planlanıyor' : 'Hazırlanıyor'),
+                note: client.note,
+                warning: client.warning
+            };
+        });
+
+    } catch (error) {
+        console.error('getRetainerStatus error:', error);
+        return [];
+    }
+}
