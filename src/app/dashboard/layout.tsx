@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout';
+import { AuditTracker } from '@/components/audit/AuditTracker';
 import '@/styles/tokens.css';
 import '@/styles/components.css';
 
@@ -35,6 +36,7 @@ export default function DashboardLayout({
 
     return (
         <div className={`layout ${isDark ? 'dark' : ''}`}>
+            <AuditTracker />
             <Sidebar
                 userRole="OPS"
                 isOpen={sidebarOpen}

@@ -5,10 +5,12 @@ import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar, MultiSelect, ColorPicker } from '@/components/ui';
 import { brands, getBrandColor, getBrandName, contentStatuses, contentTypes, ContentStatus, ContentType, getSimpleStatus, getStagesForType } from '@/lib/data';
 import { ContentDetailPanel } from '@/components/content/ContentDetailPanel';
+import { NewContentModal } from '@/components/content/NewContentModal';
 
 import { getActiveTeamMembers, User as DBUser } from '@/lib/actions/users';
 import { getContents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB, ContentItem as DBContentItem, getBrandSuggestions, createContentWithBrand } from '@/lib/actions/content';
 import { getMemberColors, saveMemberColors } from '@/lib/actions/userSettings';
+import { StatusIcons, TypeIcons, Icons } from '@/components/content/icons';
 
 // ===== TİPLER =====
 interface ContentItem {
@@ -56,7 +58,7 @@ export default function ContentProductionPage() {
     const [contents, setContents] = useState<ContentItem[]>(initialContents);
     const [activities] = useState<ActivityLog[]>(initialActivities);
     const [showModal, setShowModal] = useState(false);
-    const [showBrandModal, setShowBrandModal] = useState(false);
+    // const [showBrandModal, setShowBrandModal] = useState(false); // Removed
     const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'TODO' | 'DONE'>('all');
@@ -74,21 +76,12 @@ export default function ContentProductionPage() {
     }, []);
 
     // Marka yönetimi
+    // Marka yönetimi
     const [customBrands, setCustomBrands] = useState<typeof brands>([]);
-    const [newBrandName, setNewBrandName] = useState('');
-    const [newBrandColor, setNewBrandColor] = useState('#329FF5');
+    // const [newBrandName, setNewBrandName] = useState(''); // Removed
+    // const [newBrandColor, setNewBrandColor] = useState('#329FF5'); // Removed
 
-    // Form states
-    const [formTitle, setFormTitle] = useState('');
-    const [formBrand, setFormBrand] = useState('');
-    const [brandSuggestions, setBrandSuggestions] = useState<{ id: string; name: string; clientId?: string }[]>([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [formType, setFormType] = useState<ContentType>('VIDEO');
-    const [formStatus, setFormStatus] = useState<ContentStatus>('PLANLANDI');
-    const [formNotes, setFormNotes] = useState('');
-    const [formDeliveryDate, setFormDeliveryDate] = useState('');
-    const [formPublishDate, setFormPublishDate] = useState('');
-    const [formAssignees, setFormAssignees] = useState<string[]>([]);  // Çoklu atama
+    // Form states moved to NewContentModal
 
     // Inline editing states
     const [editingNotes, setEditingNotes] = useState('');
@@ -96,8 +89,9 @@ export default function ContentProductionPage() {
 
     // Kişi renkleri (Supabase'ten yükle)
     // Kişi renkleri state
+    // Kişi renkleri state
     const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>({});
-    const [showColorSettings, setShowColorSettings] = useState(false);
+    // const [showColorSettings, setShowColorSettings] = useState(false); // Removed
     const [activeTeam, setActiveTeam] = useState<DBUser[]>([]);
 
     useEffect(() => {
@@ -127,33 +121,8 @@ export default function ContentProductionPage() {
         }
     }, [customBrands]);
 
-    // Marka ekleme
-    const addBrand = () => {
-        if (!newBrandName.trim()) return;
-        const newBrand = {
-            id: `custom_${Date.now()}`,
-            name: newBrandName,
-            color: newBrandColor,
-            category: 'SOSYAL_MEDYA' as const,
-            contractType: 'PROJECT' as const,
-            active: true
-        };
-        setCustomBrands([...customBrands, newBrand]);
-        setNewBrandName('');
-        setNewBrandColor('#329FF5');
-        setShowBrandModal(false);
-    };
-
-    // Marka arşivleme (silmek yerine inactive yap)
-    const archiveBrand = (id: string) => {
-        // Eğer custom marka ise
-        if (id.startsWith('custom_')) {
-            setCustomBrands(customBrands.map(b =>
-                b.id === id ? { ...b, active: false } : b
-            ));
-        }
-        // Varsayılan markalar arşivlenemez (data.ts'de sabit)
-    };
+    // Helper functions removed (moved to System)
+    // Brands loaded for display only.
 
     // Supabase'den veri yükle (sayfa açıldığında)
     const [isLoading, setIsLoading] = useState(true);
@@ -256,105 +225,18 @@ export default function ContentProductionPage() {
 
 
     const openModal = (content?: ContentItem) => {
-        if (content) {
-            setSelectedContent(content);
-            setFormTitle(content.title);
-            setFormBrand(content.brandId);
-            setFormType(content.type);
-            setFormStatus(content.status);
-            setFormNotes(content.notes);
-            setFormDeliveryDate(content.deliveryDate || '');
-            setFormPublishDate(content.publishDate || '');
-            setFormAssignees(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : []));
-        } else {
-            setSelectedContent(null);
-            setFormTitle('');
-            setFormBrand('');
-            setFormType('VIDEO');
-            setFormStatus('PLANLANDI');
-            setFormNotes('');
-            setFormDeliveryDate('');
-            setFormPublishDate('');
-            setFormAssignees([]);
-        }
+        setSelectedContent(content || null);
         setShowModal(true);
     };
 
-    // Marka autocomplete handler
     const handleBrandInput = useCallback(async (value: string) => {
-        setFormBrand(value);
-        if (value.length >= 2) {
-            const suggestions = await getBrandSuggestions(value);
-            setBrandSuggestions(suggestions);
-            setShowSuggestions(true);
-        } else {
-            setBrandSuggestions([]);
-            setShowSuggestions(false);
-        }
+        // ... (unused handlers can be removed later but keeping for safety if referenced elsewhere, checking...)
+        // Actually handleBrandInput is passed to Input which is removed. Removing handlers too.
     }, []);
 
-    const selectBrandSuggestion = (suggestion: { id: string; name: string }) => {
-        setFormBrand(suggestion.name);
-        setBrandSuggestions([]);
-        setShowSuggestions(false);
-    };
+    // Handlers moved to NewContentModal
 
-    const saveContent = async () => {
-        if (!formTitle || !formBrand) return;
-        const data = {
-            title: formTitle,
-            brandId: formBrand,
-            brandName: formBrand, // Yeni: marka adı
-            type: formType,
-            status: formStatus,
-            notes: formNotes,
-            deliveryDate: formDeliveryDate || undefined,
-            publishDate: formPublishDate || undefined,
-            assigneeIds: formAssignees.length > 0 ? formAssignees : undefined,
-            assigneeId: formAssignees[0] || undefined,  // Geriye uyumluluk
-        };
-
-        try {
-            if (selectedContent) {
-                // Güncelleme
-                const result = await updateContentDB(selectedContent.id, data);
-                if (result) {
-                    setContents(contents.map(c => c.id === selectedContent.id ? { ...c, ...data, id: selectedContent.id } : c));
-                }
-            } else {
-                // Yeni oluştur - createContentWithBrand kullan (otomatik Client bağlantısı)
-                const result = await createContentWithBrand({
-                    title: formTitle,
-                    brandName: formBrand,
-                    status: formStatus,
-                    type: formType,
-                    notes: formNotes,
-                    deliveryDate: formDeliveryDate || undefined,
-                    publishDate: formPublishDate || undefined,
-                    assigneeId: formAssignees[0] || undefined,
-                    assigneeIds: formAssignees.length > 0 ? formAssignees : undefined,
-                });
-                if (result) {
-                    setContents([{ ...data, id: result.id, notes: data.notes || '' } as ContentItem, ...contents]);
-                }
-            }
-            setShowModal(false);
-        } catch (error) {
-            console.error('İçerik kaydedilemedi:', error);
-            // Fallback: lokal state'i güncelle
-            const localData: ContentItem = {
-                id: selectedContent?.id || Date.now().toString(),
-                ...data,
-                notes: data.notes || '',
-            };
-            if (selectedContent) {
-                setContents(contents.map(c => c.id === selectedContent.id ? localData : c));
-            } else {
-                setContents([localData, ...contents]);
-            }
-            setShowModal(false);
-        }
-    };
+    // saveContent moved to NewContentModal
 
     const updateNotes = async (id: string, note: string) => {
         // Optimistic update
@@ -427,10 +309,10 @@ export default function ContentProductionPage() {
                             <Button variant={viewMode === 'archive' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('archive')} style={{ opacity: 0.7 }}>Arşiv</Button>
                         </div>
                         {/* Separator */}
+                        {/* Separator */}
                         <div style={{ width: 1, height: 24, backgroundColor: 'var(--color-border)' }} />
                         {/* Actions */}
-                        <Button variant="secondary" size="sm" onClick={() => setShowColorSettings(true)} title="Renk Ayarları">🎨</Button>
-                        <Button variant="secondary" size="sm" onClick={() => setShowBrandModal(true)}>Marka Ekle</Button>
+                        {/* Renk ve Marka ayarları System paneline taşındı */}
                         <Button variant="primary" onClick={() => openModal()}>+ Yeni İçerik</Button>
                     </div>
                 }
@@ -459,8 +341,8 @@ export default function ContentProductionPage() {
                     </select>
                     {/* Sorumlu filtresi */}
                     <select value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: filterAssignee === 'me' ? '2px solid #00F5B0' : '1px solid var(--color-border)', backgroundColor: filterAssignee === 'me' ? 'rgba(0, 245, 176, 0.1)' : 'transparent' }}>
-                        <option value="all">👥 Tüm Sorumlular</option>
-                        <option value="me">👤 Bana Atananlar</option>
+                        <option value="all">Tüm Sorumlular</option>
+                        <option value="me">Bana Atananlar</option>
                         {activeTeam.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                     {/* Hızlı marka filtreleri */}
@@ -483,12 +365,12 @@ export default function ContentProductionPage() {
                                 return (
                                     <div key={content.id} onClick={() => setSelectedContent(content)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: isSelected ? 'var(--color-surface)' : 'var(--color-card)', borderRadius: 'var(--radius-sm)', marginBottom: 8, cursor: 'pointer', borderLeft: `4px solid ${brandColor}`, outline: isSelected ? '2px solid var(--color-primary)' : 'none' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <span>{contentTypes[content.type].icon}</span>
+                                            <span style={{ color: 'var(--color-muted)' }}>{TypeIcons[content.type as ContentType] || TypeIcons['VIDEO']}</span>
                                             <div>
                                                 <p style={{ fontWeight: 600 }}>{content.title}</p>
                                                 <p style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                                     <span style={{ backgroundColor: brandColor, color: 'white', padding: '1px 6px', borderRadius: 10, fontSize: 10 }}>{brandName}</span>
-                                                    {content.deliveryDate && <span>📅 {new Date(content.deliveryDate).toLocaleDateString('tr-TR')}</span>}
+                                                    {content.deliveryDate && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{Icons.Calendar} {new Date(content.deliveryDate).toLocaleDateString('tr-TR')}</span>}
                                                     {/* Atanan kişiler */}
                                                     {(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map(assignee => (
                                                         <span
@@ -510,10 +392,7 @@ export default function ContentProductionPage() {
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             {isOverdue(content) && <Badge style={{ backgroundColor: '#E13A3A', color: 'white', fontWeight: 700 }}>ACİL</Badge>}
-                                            <Badge style={{ backgroundColor: contentStatuses[content.status].color, color: 'white' }}>{contentStatuses[content.status].icon} {contentStatuses[content.status].label}</Badge>
-                                            <select value={content.status} onClick={(e) => e.stopPropagation()} onChange={(e) => updateStatus(content.id, e.target.value as ContentStatus)} style={{ padding: '4px', fontSize: 11, borderRadius: 4, border: '1px solid var(--color-border)' }}>
-                                                {Object.entries(contentStatuses).map(([k, v]) => <option key={k} value={k}>{v.icon}</option>)}
-                                            </select>
+                                            <Badge style={{ backgroundColor: contentStatuses[content.status].color, color: 'white' }}>{contentStatuses[content.status].label}</Badge>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); openModal(content); }}
                                                 title="Düzenle"
@@ -524,9 +403,12 @@ export default function ContentProductionPage() {
                                                     borderRadius: 4,
                                                     cursor: 'pointer',
                                                     fontSize: 12,
-                                                    color: 'var(--color-muted)'
+                                                    color: 'var(--color-muted)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
                                                 }}
-                                            >✏️</button>
+                                            >{Icons.Edit}</button>
                                         </div>
                                     </div>
                                 );
@@ -549,7 +431,7 @@ export default function ContentProductionPage() {
 
                 {viewMode === 'calendar' && (
                     <Card>
-                        <CardHeader title="📅 Teslim Takvimi" />
+                        <CardHeader title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{Icons.Calendar} Teslim Takvimi</div>} />
                         <CardContent>
                             {filteredContents.filter(c => c.deliveryDate).sort((a, b) => (a.deliveryDate || '').localeCompare(b.deliveryDate || '')).map(c => {
                                 const brandColor = getBrandColor(c.brandId);
@@ -566,7 +448,7 @@ export default function ContentProductionPage() {
                                                 {isOverdue(c) && <Badge style={{ backgroundColor: '#E13A3A', color: 'white', fontSize: 10, fontWeight: 700 }}>ACİL</Badge>}
                                                 <Badge style={{ backgroundColor: contentStatuses[c.status].color, color: 'white', fontSize: 10 }}>{contentStatuses[c.status].label}</Badge>
                                             </div>
-                                            <p style={{ fontWeight: 600 }}>{contentTypes[c.type].icon} {c.title}</p>
+                                            <p style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>{TypeIcons[c.type as ContentType]} {c.title}</p>
                                             {c.notes && <p style={{ fontSize: 12, color: 'var(--color-muted)' }}>{c.notes}</p>}
                                         </div>
                                     </div>
@@ -593,7 +475,9 @@ export default function ContentProductionPage() {
                                                         <span style={{ fontWeight: 500, fontSize: 13 }}>{t.title}</span>
                                                         <Badge style={{ backgroundColor: brandColor, color: 'white', fontSize: 10 }}>{brandName.split(' ')[0]}</Badge>
                                                     </div>
-                                                    <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>{contentStatuses[t.status].icon} {contentStatuses[t.status].label} {t.deliveryDate && `• 📅 ${new Date(t.deliveryDate).toLocaleDateString('tr-TR')}`}</p>
+                                                    <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        {StatusIcons[t.status as ContentStatus] || Icons.Activity} {contentStatuses[t.status].label} {t.deliveryDate && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>• {Icons.Calendar} {new Date(t.deliveryDate).toLocaleDateString('tr-TR')}</span>}
+                                                    </p>
                                                 </div>
                                             );
                                         })}
@@ -606,256 +490,22 @@ export default function ContentProductionPage() {
                 )}
             </div>
 
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={selectedContent ? '✏️ İçerik Düzenlese' : '🎬 Yeni İçerik'} size="lg" footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button><Button variant="primary" onClick={saveContent}>Kaydet</Button></>}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-                    {/* Sol Kolon - Form */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <Input label="Başlık *" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-                        {/* Marka Autocomplete */}
-                        <div style={{ position: 'relative' }}>
-                            <Input
-                                label="Marka *"
-                                value={formBrand}
-                                onChange={(e) => handleBrandInput(e.target.value)}
-                                placeholder="Marka adı yazın..."
-                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                onFocus={() => formBrand.length >= 2 && setBrandSuggestions.length > 0 && setShowSuggestions(true)}
-                            />
-                            {showSuggestions && brandSuggestions.length > 0 && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    left: 0,
-                                    right: 0,
-                                    backgroundColor: 'var(--color-card)',
-                                    border: '1px solid var(--color-border)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    boxShadow: 'var(--shadow-lg)',
-                                    zIndex: 100,
-                                    maxHeight: 200,
-                                    overflowY: 'auto',
-                                }}>
-                                    {brandSuggestions.map((s) => (
-                                        <div
-                                            key={s.id}
-                                            onClick={() => selectBrandSuggestion(s)}
-                                            style={{
-                                                padding: '10px 12px',
-                                                cursor: 'pointer',
-                                                borderBottom: '1px solid var(--color-border)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 8,
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                        >
-                                            <span style={{
-                                                width: 10,
-                                                height: 10,
-                                                borderRadius: '50%',
-                                                backgroundColor: s.clientId ? 'var(--color-success)' : 'var(--color-warning)',
-                                            }} />
-                                            <span>{s.name}</span>
-                                            {s.clientId && <span style={{ fontSize: 10, color: 'var(--color-muted)' }}>✓ Müşteri</span>}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {formBrand && brandSuggestions.length === 0 && formBrand.length >= 2 && (
-                                <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>
-                                    💡 "{formBrand}" yeni marka olarak oluşturulacak
-                                </p>
-                            )}
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <Select
-                                label="Tür"
-                                value={formType}
-                                onChange={(e) => {
-                                    const newType = e.target.value as ContentType;
-                                    setFormType(newType);
-                                    // Türe göre otomatik aşama belirleme - ilk aşama PLANLANDI
-                                    setFormStatus('PLANLANDI');
-                                }}
-                                options={Object.entries(contentTypes).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))}
-                            />
-                            <Select
-                                label="Durum"
-                                value={formStatus}
-                                onChange={(e) => setFormStatus(e.target.value as ContentStatus)}
-                                options={getStagesForType(formType).map(stage => ({
-                                    value: stage,
-                                    label: `${contentStatuses[stage].icon} ${contentStatuses[stage].label}`
-                                }))}
-                            />
-                        </div>
-                        <MultiSelect
-                            label="Sorumlular"
-                            value={formAssignees}
-                            onChange={setFormAssignees}
-                            options={activeTeam.map(m => ({ value: m.name, label: m.name, color: teamMemberColors[m.name] }))}
-                            placeholder="Kişi seçiniz..."
-                        />
-                        <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={3} />
-                    </div>
+            <NewContentModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                onSuccess={(savedContent) => {
+                    // Update local state based on saved content
+                    if (selectedContent) {
+                        setContents(prev => prev.map(c => c.id === savedContent.id ? { ...savedContent, notes: savedContent.notes || '' } as ContentItem : c));
+                    } else {
+                        setContents(prev => [savedContent as ContentItem, ...prev]);
+                    }
+                }}
+                initialContent={selectedContent}
+            />
 
-                    {/* Sağ Kolon - Mini Takvim */}
-                    <div>
-                        <p style={{ fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--color-sub-ink)' }}>
-                            📅 Teslim Tarihi Seç
-                        </p>
-                        <MiniCalendar
-                            selectedDate={formDeliveryDate}
-                            onSelectDate={(date) => setFormDeliveryDate(date)}
-                        />
-
-                        {/* Video/Teslimat akış grafikleri kaldırıldı - Revizyon notu uyarınca */}
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Marka Ekleme Modal */}
-            <Modal
-                isOpen={showBrandModal}
-                onClose={() => setShowBrandModal(false)}
-                title="🏷️ Yeni Marka Ekle"
-                size="sm"
-                footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setShowBrandModal(false)}>İptal</Button>
-                        <Button variant="primary" onClick={addBrand}>Marka Ekle</Button>
-                    </>
-                }
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    <Input
-                        label="Marka Adı *"
-                        placeholder="Örn: Yeni Müşteri"
-                        value={newBrandName}
-                        onChange={(e) => setNewBrandName(e.target.value)}
-                    />
-                    <div>
-                        <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: '8px' }}>
-                            Marka Rengi
-                        </label>
-                        <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
-                            {['#329FF5', '#00F5B0', '#F6D73C', '#FF4242', '#9C27B0', '#FF9800', '#795548', '#607D8B', '#E91E63', '#4CAF50'].map(color => (
-                                <button
-                                    key={color}
-                                    onClick={() => setNewBrandColor(color)}
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: '50%',
-                                        backgroundColor: color,
-                                        border: newBrandColor === color ? '3px solid var(--color-ink)' : '2px solid transparent',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.15s'
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Eklenen Markalar Listesi */}
-                    {customBrands.filter(b => b.active).length > 0 && (
-                        <div style={{ marginTop: 'var(--space-2)' }}>
-                            <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: '8px' }}>
-                                📋 Eklediğiniz Markalar
-                            </label>
-                            <div style={{
-                                backgroundColor: 'var(--color-surface)',
-                                borderRadius: 'var(--radius-sm)',
-                                padding: 'var(--space-1)',
-                                maxHeight: '150px',
-                                overflowY: 'auto'
-                            }}>
-                                {customBrands.filter(b => b.active).map(brand => (
-                                    <div key={brand.id} style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        padding: '8px',
-                                        borderBottom: '1px solid var(--color-border)'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{
-                                                width: 16,
-                                                height: 16,
-                                                borderRadius: '50%',
-                                                backgroundColor: brand.color,
-                                                display: 'inline-block'
-                                            }} />
-                                            <span style={{ fontSize: 'var(--text-body-sm)' }}>{brand.name}</span>
-                                        </div>
-                                        <button
-                                            onClick={() => archiveBrand(brand.id)}
-                                            title="Markayı Kaldır"
-                                            style={{
-                                                padding: '4px 8px',
-                                                backgroundColor: 'rgba(255, 66, 66, 0.1)',
-                                                color: '#FF4242',
-                                                border: 'none',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer',
-                                                fontSize: '11px'
-                                            }}
-                                        >🗑️ Kaldır</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginTop: 'var(--space-1)' }}>
-                        💡 Eklediğiniz markalar içerik seçiminde görünecektir.
-                    </p>
-                </div>
-            </Modal>
-
-            {/* ===== RENK AYARLARI MODAL ===== */}
-            <Modal
-                isOpen={showColorSettings}
-                onClose={() => setShowColorSettings(false)}
-                title="🎨 Kişi Renk Ayarları"
-                size="md"
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>
-                        Her takım üyesi için bir renk seçin. Değişiklikler otomatik kaydedilir.
-                    </p>
-                    {activeTeam.map(member => (
-                        <div
-                            key={member.id}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '12px 16px',
-                                backgroundColor: 'var(--color-surface)',
-                                borderRadius: 'var(--radius-sm)',
-                                borderLeft: `4px solid ${teamMemberColors[member.name] || '#6B7B80'}`
-                            }}
-                        >
-                            <span style={{ fontWeight: 500 }}>{member.name}</span>
-                            <ColorPicker
-                                value={teamMemberColors[member.name] || '#6B7B80'}
-                                onChange={async (color) => {
-                                    const newColors = { ...teamMemberColors, [member.name]: color };
-                                    setTeamMemberColors(newColors);
-                                    // Supabase'e kaydet
-                                    try {
-                                        await saveMemberColors(newColors);
-                                    } catch (e) {
-                                        console.error('Renk kaydedilemedi:', e);
-                                    }
-                                }}
-                            />
-                        </div>
-                    ))}
-                </div>
-            </Modal>
+            {/* Marka ve Renk Modalleri Kaldırıldı (Moved to System) */}
         </>
     );
+
 }

@@ -1,12 +1,17 @@
+
 'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
+import { revalidatePath } from 'next/cache';
+import { logAction } from './audit';
 
 export interface User {
     id: string;
     name: string;
     email: string;
     role: 'OWNER' | 'OPS' | 'STUDIO' | 'DIGITAL' | 'CLIENT';
+    phone?: string;
+    notes?: string;
     createdAt: string;
 }
 
@@ -58,4 +63,21 @@ export async function getUserById(id: string) {
     }
 
     return data as User;
+}
+
+export async function updateUserDetails(id: string, data: { phone?: string; notes?: string }) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('User')
+            .update(data)
+            .eq('id', id);
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard/system/users');
+        return true;
+    } catch (error) {
+        console.error('Error updating user details:', error);
+        return false;
+    }
 }

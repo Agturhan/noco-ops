@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { logAction } from './audit';
 
 // Content status'larını Task status'larına dönüştür
 // Task tablosu: TODO | IN_PROGRESS | IN_REVIEW | DONE | BLOCKED
@@ -124,6 +125,10 @@ export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt
             .select()
             .single();
 
+        if (task) {
+            await logAction('CREATE', 'CONTENT', task.id, { title: content.title, type: content.type }, task.title);
+        }
+
         if (error) {
             console.error('Supabase createContent error:', error);
             return null;
@@ -183,6 +188,10 @@ export async function updateContent(id: string, updates: Partial<ContentItem>): 
             .select()
             .single();
 
+        if (data) {
+            await logAction('UPDATE', 'CONTENT', id, updates, data.title);
+        }
+
         if (error) {
             console.error('Supabase updateContent error:', error);
             return null;
@@ -222,6 +231,8 @@ export async function deleteContent(id: string): Promise<boolean> {
             .from('Task')
             .delete()
             .eq('id', id);
+
+        await logAction('DELETE', 'CONTENT', id, {}, 'İçerik');
 
         if (error) {
             console.error('Supabase deleteContent error:', error);
@@ -440,10 +451,15 @@ export async function getRetainerStatus() {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
+        // Tüm müşterileri çek (ID eşleştirmesi için)
+        const { data: dbClients } = await supabaseAdmin
+            .from('Client')
+            .select('id, name');
+
         // Bu ayın içeriklerini çek
         const { data: contents, error } = await supabaseAdmin
             .from('Task')
-            .select('id, brandName, status, contentType')
+            .select('id, brandName, status, contentType, clientId')
             .not('contentType', 'is', null)
             .gte('dueDate', startOfMonth)
             .lte('dueDate', endOfMonth);
@@ -452,17 +468,25 @@ export async function getRetainerStatus() {
             console.error('getRetainerStatus DB Error:', error);
             // Fallback to empty stats but keep structure
             return clients.map((c, i) => ({
-                id: `r${i}`, client: c.name, progress: 0, total: c.quota, label: `0/${c.quota}`, stock: 0, stockLabel: 'Veri Yok', note: c.note, warning: c.warning
+                id: `r${i}`, client: c.name, clientId: null, progress: 0, total: c.quota, label: `0/${c.quota}`, stock: 0, stockLabel: 'Veri Yok', note: c.note, warning: c.warning
             }));
         }
 
         // İstatistikleri hesapla
         return clients.map((client, index) => {
-            // Basit isim eşleştirme (ilk kelime)
+            // Basit isim eşleştirme (ilk kelime veya tam eşleşme)
             const searchName = client.name.split(' ')[0].toLowerCase();
 
+            // DB'den Client ID bul
+            const matchedClient = dbClients?.find(c =>
+                c.name.toLowerCase().includes(searchName) ||
+                client.name.toLowerCase().includes(c.name.toLowerCase())
+            );
+            const clientId = matchedClient?.id;
+
             const clientContents = contents?.filter(c =>
-                c.brandName && c.brandName.toLowerCase().includes(searchName)
+                (c.brandName && c.brandName.toLowerCase().includes(searchName)) ||
+                (clientId && c.clientId === clientId)
             ) || [];
 
             const total = clientContents.length;
@@ -472,6 +496,7 @@ export async function getRetainerStatus() {
             return {
                 id: `r${index}`,
                 client: client.name,
+                clientId: clientId, // Link için ID
                 progress: total,
                 total: client.quota,
                 label: `${total}/${client.quota} ${client.type === 'Karma' ? 'İçerik' : 'Video'}`,

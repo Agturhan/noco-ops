@@ -3,6 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { logAction } from './audit';
 
 // ===== Task Types =====
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
@@ -140,14 +141,10 @@ export async function createTask(data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'CREATE',
-        entityType: 'TASK',
-        entityId: task.id,
-        details: { title: data.title },
-    }]);
+    await logAction('CREATE', 'TASK', task.id, { title: data.title }, task.title);
 
     revalidatePath('/dashboard/tasks');
+    revalidatePath('/dashboard');
     return task;
 }
 
@@ -209,14 +206,10 @@ export async function updateTask(id: string, data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'UPDATE',
-        entityType: 'TASK',
-        entityId: id,
-        details: updateData,
-    }]);
+    await logAction('UPDATE', 'TASK', id, updateData, task.title);
 
     revalidatePath('/dashboard/tasks');
+    revalidatePath('/dashboard');
     return task;
 }
 
@@ -233,14 +226,10 @@ export async function deleteTask(id: string) {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'DELETE',
-        entityType: 'TASK',
-        entityId: id,
-        details: {},
-    }]);
+    await logAction('DELETE', 'TASK', id, {}, 'Görev');
 
     revalidatePath('/dashboard/tasks');
+    revalidatePath('/dashboard');
 }
 
 // ===== Update Task Status (Quick action) =====
@@ -305,18 +294,13 @@ export async function toggleTaskStatus(id: string, userId?: string) {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: newStatus === 'DONE' ? 'TASK_COMPLETED' : 'TASK_REOPENED',
-        entityType: 'TASK',
-        entityId: id,
-        userId: userId || null,
-        details: {
-            title: task.title,
-            oldStatus,
-            newStatus,
-            completedAt
-        },
-    }]);
+    // Audit log
+    await logAction(newStatus === 'DONE' ? 'TASK_COMPLETED' : 'TASK_REOPENED', 'TASK', id, {
+        title: task.title,
+        oldStatus,
+        newStatus,
+        completedAt
+    }, task.title);
 
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/tasks');
@@ -347,10 +331,21 @@ export async function getUserTodayTasks(userId: string) {
     }
 
     // DONE olanları sona koy
+    // Sıralama: Önce tamamlanmamışlar, sonra tarihe göre artan
     const sortedData = (data || []).sort((a: any, b: any) => {
-        if (a.status === 'DONE' && b.status !== 'DONE') return 1;
-        if (a.status !== 'DONE' && b.status === 'DONE') return -1;
-        return 0;
+        const isDoneA = a.status === 'DONE';
+        const isDoneB = b.status === 'DONE';
+
+        // 1. Duruma göre sırala (Tamamlananlar en sona)
+        if (isDoneA && !isDoneB) return 1;
+        if (!isDoneA && isDoneB) return -1;
+
+        // 2. Tarihe göre sırala (Eskiden yeniye) - Eğer tarih yoksa en sona at
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     });
 
     // Map standard data
@@ -376,39 +371,43 @@ export async function getUserWeekDeadlines(userId: string) {
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
-    // Tüm görevleri getir (kullanıcı filtresi olmadan - dashboard'da hepsini göster)
-    const { data, error } = await supabaseAdmin
+    // 1. Get Overdue Tasks (Last 30 days)
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 30);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const { data: overdueData } = await supabaseAdmin
         .from('Task')
-        .select(`
-            id, 
-            title, 
-            dueDate,
-            priority,
-            assigneeId,
-            assigneeIds,
-            brandName,
-            project:Project (
-                name,
-                contract:Contract (
-                    client:Client (
-                        name
-                    )
-                )
-            )
-        `)
-        .neq('status', 'DONE')
+        .select('id, title, dueDate, priority, status, assigneeId, assigneeIds, brandName, project:Project(name, contract:Contract(client:Client(name)))')
+        .not('dueDate', 'is', null)
+        .gte('dueDate', startDate.toISOString().split('T')[0])
+        .lte('dueDate', yesterday.toISOString().split('T')[0])
+        .neq('status', 'DONE') // Overdue'da sadece yapılmamışlar
+        .limit(20);
+
+    // 2. Get Upcoming Tasks (Next 7 days)
+    const { data: upcomingData } = await supabaseAdmin
+        .from('Task')
+        .select('id, title, dueDate, priority, status, assigneeId, assigneeIds, brandName, project:Project(name, contract:Contract(client:Client(name)))')
         .not('dueDate', 'is', null)
         .gte('dueDate', today.toISOString().split('T')[0])
         .lte('dueDate', weekEnd.toISOString().split('T')[0])
-        .order('dueDate', { ascending: true })
-        .limit(10);
+        .limit(30);
 
-    if (error) {
-        console.error('Error fetching week deadlines:', error);
-        return [];
-    }
+    // Combine
+    const allData = [...(overdueData || []), ...(upcomingData || [])];
 
-    return (data || []).map((t: any) => {
+    // Sort: Date Ascending
+    const sortedData = allData.sort((a: any, b: any) => {
+        const isDoneA = a.status === 'DONE';
+        const isDoneB = b.status === 'DONE';
+        if (isDoneA && !isDoneB) return 1;
+        if (!isDoneA && isDoneB) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+
+    return sortedData.map((t: any) => {
         const dueDate = new Date(t.dueDate);
         const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         return {
@@ -417,6 +416,7 @@ export async function getUserWeekDeadlines(userId: string) {
             date: dueDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
             daysLeft,
             priority: t.priority,
+            status: t.status,
             brand: t.brandName || t.project?.name || t.project?.contract?.client?.name || 'Genel',
             assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
         };

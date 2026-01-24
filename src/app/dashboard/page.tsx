@@ -188,6 +188,7 @@ export default function DashboardPage() {
     const [taskViewMode, setTaskViewMode] = useState<'today' | 'upcoming'>('today');
     const [debugCounts, setDebugCounts] = useState({ server: 0, client: 0 });
     const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
     // Görev tamamla/geri al toggle - DB'ye kaydet
     const handleToggleTask = async (taskId: string) => {
@@ -343,11 +344,26 @@ export default function DashboardPage() {
                 now.setHours(0, 0, 0, 0);
 
                 const filteredStudio = studioData
-                    .filter((b: any) => new Date(b.date) >= now)
-                    .sort((a: any, b: any) => new Date(a.date + 'T' + a.startTime).getTime() - new Date(b.date + 'T' + b.startTime).getTime())
-                    .slice(0, 2);
+                    .filter((b: any) => {
+                        const bDate = new Date(b.date);
+                        const diffTime = bDate.getTime() - now.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        return diffDays >= 0 && diffDays <= 7;
+                    })
+                    .sort((a: any, b: any) => new Date(a.date + 'T' + a.startTime).getTime() - new Date(b.date + 'T' + b.startTime).getTime());
+                // Group by date
+                const groupedStudio: any[] = [];
+                filteredStudio.forEach((b: any) => {
+                    const dateStr = b.date;
+                    let group = groupedStudio.find(g => g.date === dateStr);
+                    if (!group) {
+                        group = { date: dateStr, bookings: [] };
+                        groupedStudio.push(group);
+                    }
+                    group.bookings.push(b);
+                });
 
-                setUpcomingStudio(filteredStudio);
+                setUpcomingStudio(groupedStudio);
 
                 // Diğer dashboard verileri
                 const [stats, pendingActions, rStats] = await Promise.all([
@@ -511,16 +527,30 @@ export default function DashboardPage() {
                             <CardContent>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                                     {weekDeadlines.map(dl => (
-                                        <div key={dl.id} style={{
-                                            padding: 'var(--space-1)',
-                                            backgroundColor: dl.daysLeft <= 2 ? 'rgba(255, 66, 66, 0.1)' : 'var(--color-surface)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            borderLeft: `3px solid ${dl.assigneeIds?.length > 0 ? (teamMemberColors[dl.assigneeIds[0]] || '#6B7B80') : '#6B7B80'}`
-                                        }}>
-                                            <p style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>{dl.title}</p>
+                                        <div
+                                            key={dl.id}
+                                            onClick={() => setSelectedTask(dl)}
+                                            style={{
+                                                padding: 'var(--space-1)',
+                                                backgroundColor: dl.status === 'DONE' ? 'rgba(107, 123, 128, 0.1)' : (dl.daysLeft <= 2 ? 'rgba(255, 66, 66, 0.1)' : 'var(--color-surface)'),
+                                                borderRadius: 'var(--radius-sm)',
+                                                borderLeft: `3px solid ${dl.status === 'DONE' ? '#9CA3AF' : (dl.assigneeIds?.length > 0 ? (teamMemberColors[dl.assigneeIds[0]] || '#6B7B80') : '#6B7B80')}`,
+                                                opacity: dl.status === 'DONE' ? 0.7 : 1,
+                                                cursor: 'pointer',
+                                                transition: 'transform 0.2s',
+                                            }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <p style={{
+                                                    fontWeight: 600,
+                                                    fontSize: 'var(--text-body-sm)',
+                                                    textDecoration: dl.status === 'DONE' ? 'line-through' : 'none',
+                                                    color: dl.status === 'DONE' ? 'var(--color-muted)' : 'inherit'
+                                                }}>{dl.title}</p>
+                                                {dl.status === 'DONE' && <Badge variant="neutral" style={{ fontSize: 9, height: 18 }}>OK</Badge>}
+                                            </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                                <span style={{ fontSize: 'var(--text-caption)', color: dl.daysLeft <= 2 ? '#FF4242' : 'var(--color-muted)' }}>
-                                                    {dl.date} • {dl.daysLeft} gün kaldı
+                                                <span style={{ fontSize: 'var(--text-caption)', color: dl.status === 'DONE' ? 'var(--color-muted)' : (dl.daysLeft <= 2 ? '#FF4242' : 'var(--color-muted)') }}>
+                                                    {dl.date} • {dl.status === 'DONE' ? 'Tamamlandı' : `${dl.daysLeft} gün kaldı`}
                                                 </span>
                                                 {dl.assigneeIds && dl.assigneeIds.length > 0 && (
                                                     <div style={{ display: 'flex', gap: 4 }}>
@@ -576,7 +606,15 @@ export default function DashboardPage() {
                                 <tbody>
                                     {retainerStats.length > 0 ? retainerStats.map((item) => (
                                         <tr key={item.id}>
-                                            <td style={{ fontWeight: 600 }}>{item.client}</td>
+                                            <td style={{ fontWeight: 600 }}>
+                                                {item.clientId ? (
+                                                    <Link href={`/dashboard/system/clients/${item.clientId}`} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
+                                                        <span className="hover:text-primary transition-colors">{item.client}</span>
+                                                    </Link>
+                                                ) : (
+                                                    item.client
+                                                )}
+                                            </td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <div style={{ flex: 1, minWidth: 80, height: 8, backgroundColor: 'var(--color-border)', borderRadius: 4, overflow: 'hidden' }}>
@@ -624,37 +662,64 @@ export default function DashboardPage() {
                             }
                         />
                         <CardContent>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {upcomingStudio.length > 0 ? (
-                                    upcomingStudio.map((booking, index) => {
-                                        const bDate = new Date(booking.date);
-                                        const dayName = bDate.toLocaleDateString('tr-TR', { weekday: 'short' }).toUpperCase();
+                                    upcomingStudio.map((group, groupIndex) => {
+                                        const bDate = new Date(group.date);
+                                        const dayName = bDate.toLocaleDateString('tr-TR', { weekday: 'long' });
                                         const dayNum = bDate.getDate();
+                                        const monthName = bDate.toLocaleDateString('tr-TR', { month: 'long' });
                                         const isToday = new Date().toDateString() === bDate.toDateString();
+                                        const isTomorrow = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString() === bDate.toDateString();
+
+                                        const label = isToday ? 'Bugün' : isTomorrow ? 'Yarın' : `${dayNum} ${monthName}, ${dayName}`;
 
                                         return (
-                                            <div key={booking.id || index} style={{ display: 'flex', gap: '12px', paddingBottom: index < upcomingStudio.length - 1 ? '12px' : 0, borderBottom: index < upcomingStudio.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
-                                                <div style={{ width: '50px', textAlign: 'center' }}>
-                                                    <p style={{ fontWeight: 700, fontSize: '12px', color: isToday ? 'var(--color-primary)' : 'var(--color-muted)' }}>
-                                                        {isToday ? 'BUGÜN' : dayName}
-                                                    </p>
-                                                    <p style={{ fontSize: '18px', fontWeight: 600, color: isToday ? 'inherit' : 'var(--color-muted)' }}>{dayNum}</p>
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>{booking.client}</p>
-                                                    <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>{booking.startTime} - {booking.endTime} • {booking.project}</p>
+                                            <div key={group.date}>
+                                                <p style={{
+                                                    fontSize: '11px',
+                                                    fontWeight: 600,
+                                                    color: isToday ? 'var(--color-primary)' : 'var(--color-muted)',
+                                                    marginBottom: '8px',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px'
+                                                }}>
+                                                    {label}
+                                                </p>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    {group.bookings.map((booking: any, index: number) => (
+                                                        <div
+                                                            key={booking.id || index}
+                                                            onClick={() => setSelectedBooking({ ...booking, date: group.date })}
+                                                            style={{
+                                                                display: 'flex',
+                                                                gap: '12px',
+                                                                padding: '10px',
+                                                                backgroundColor: 'var(--color-surface)',
+                                                                borderRadius: '6px',
+                                                                borderLeft: `3px solid ${booking.type === 'EXTERNAL' ? '#E91E63' : '#329FF5'}`,
+                                                                cursor: 'pointer',
+                                                                transition: 'transform 0.2s',
+                                                            }}>
+                                                            <div style={{ minWidth: '80px', fontSize: '12px', fontWeight: 600, color: 'var(--color-text)' }}>
+                                                                {booking.startTime} - {booking.endTime}
+                                                            </div>
+                                                            <div style={{ flex: 1 }}>
+                                                                <p style={{ fontWeight: 600, fontSize: '13px', marginBottom: '2px' }}>{booking.client}</p>
+                                                                <p style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{booking.project} {booking.type === 'EXTERNAL' && '• Dış Çekim'}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         );
                                     })
                                 ) : (
-                                    <div style={{ padding: '8px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '12px' }}>
-                                        Yaklaşan rezervasyon bulunmuyor.
-                                    </div>
-                                )}
-                                {upcomingStudio.length > 0 && (
-                                    <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--color-surface)', borderRadius: '6px', fontSize: '12px', color: 'var(--color-muted)', textAlign: 'center' }}>
-                                        {upcomingStudio.length === 1 ? 'Bu hafta başka rezervasyon yok.' : 'Tüm program için detaya gidiniz.'}
+                                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '13px', backgroundColor: 'var(--color-surface)', borderRadius: '8px' }}>
+                                        <p>📅 Önümüzdeki 7 gün için stüdyo boş.</p>
+                                        <Link href="/dashboard/studio">
+                                            <Button variant="ghost" size="sm" style={{ marginTop: '8px' }}>Rezervasyon Yap</Button>
+                                        </Link>
                                     </div>
                                 )}
                             </div>
@@ -713,6 +778,35 @@ export default function DashboardPage() {
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
                         <Button onClick={() => setSelectedTask(null)} variant="primary">Kapat</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* STUDIO DETAIL MODAL */}
+            <Modal
+                isOpen={!!selectedBooking}
+                onClose={() => setSelectedBooking(null)}
+                title={selectedBooking?.client || 'Rezervasyon Detayı'}
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '8px', borderLeft: `4px solid ${selectedBooking?.type === 'EXTERNAL' ? '#E91E63' : '#329FF5'}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontWeight: 600, fontSize: '16px' }}>{selectedBooking?.project}</span>
+                            <Badge variant={selectedBooking?.type === 'EXTERNAL' ? 'warning' : 'info'}>
+                                {selectedBooking?.type === 'EXTERNAL' ? 'DIŞ ÇEKİM' : 'STÜDYO'}
+                            </Badge>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-muted)', fontSize: '14px' }}>
+                            <Clock size={16} />
+                            <span>{selectedBooking?.date ? new Date(selectedBooking.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : ''}  •  {selectedBooking?.startTime} - {selectedBooking?.endTime}</span>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                        <Link href="/dashboard/studio">
+                            <Button variant="secondary" size="sm" style={{ marginRight: '8px' }}>Takvime Git</Button>
+                        </Link>
+                        <Button onClick={() => setSelectedBooking(null)} variant="primary" size="sm">Kapat</Button>
                     </div>
                 </div>
             </Modal>

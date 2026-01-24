@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, Button, Badge } from '@/components/ui';
 import { getBrandName, contentStatuses, contentTypes, ContentStatus, ContentType, getSimpleStatus, getStagesForType } from '@/lib/data';
+import { StatusIcons, TypeIcons, Icons } from './icons';
+import {
+    Clock
+} from 'lucide-react';
 
 interface ContentItem {
     id: string;
@@ -80,10 +84,14 @@ export function ContentDetailPanel({
     const statusInfo = contentStatuses[content.status] || { icon: '○', label: content.status, color: '#999' };
     const brandName = getBrandName(content.brandId) || content.project || 'Genel';
 
+    // Icon resolve
+    const TypeIcon = TypeIcons[content.type as ContentType] || TypeIcons['TEKLIF'];
+    const StatusIcon = StatusIcons[content.status as ContentStatus] || <Clock size={18} />;
+
     return (
         <Card style={{ position: 'sticky', top: 'var(--space-2)', height: 'fit-content', maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
             <CardHeader
-                title={`${typeInfo.icon} ${content.title}`}
+                title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{TypeIcon} <span>{content.title}</span></div>}
                 description={brandName}
                 action={onClose && <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>}
             />
@@ -91,14 +99,18 @@ export function ContentDetailPanel({
                 {/* Tarihler */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                     <div style={{ padding: 'var(--space-2)', backgroundColor: 'rgba(50, 159, 245, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid #329FF5' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: '#329FF5', marginBottom: '4px' }}>📸 Çekim/Teslim</p>
+                        <p style={{ fontSize: 'var(--text-caption)', color: '#329FF5', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {Icons.Camera} Çekim/Teslim
+                        </p>
                         <p style={{ fontWeight: 700, fontSize: 'var(--text-body)' }}>
                             {content.deliveryDate ? new Date(content.deliveryDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Belirlenmedi'}
                         </p>
                     </div>
                     {(content.publishDate || (content.type as string) !== 'TASARIM') && (
                         <div style={{ padding: 'var(--space-2)', backgroundColor: 'rgba(0, 245, 176, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid #00F5B0' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: '#00F5B0', marginBottom: '4px' }}>📱 Paylaşım</p>
+                            <p style={{ fontSize: 'var(--text-caption)', color: '#00F5B0', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {Icons.Activity} Paylaşım
+                            </p>
                             <p style={{ fontWeight: 700, fontSize: 'var(--text-body)' }}>
                                 {content.publishDate ? new Date(content.publishDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                             </p>
@@ -108,10 +120,12 @@ export function ContentDetailPanel({
 
                 {/* Status Dropdown */}
                 <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>📊 Durum</p>
+                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {Icons.Activity} Durum
+                    </p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: `1px solid ${statusInfo.color}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '18px' }}>{contentStatuses[content.status]?.icon}</span>
+                            <span style={{ color: statusInfo.color }}>{StatusIcon}</span>
                             <div>
                                 <p style={{ fontWeight: 600 }}>{getSimpleStatus(content.status) === 'DONE' ? 'Tamamlandı' : 'Yapılacak'}</p>
                                 <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>{contentStatuses[content.status]?.label}</p>
@@ -156,7 +170,9 @@ export function ContentDetailPanel({
                     </div>
                     {/* Detaylı Durum Seçimi (Opsiyonel / İkincil) */}
                     <details style={{ marginTop: '8px' }}>
-                        <summary style={{ fontSize: '11px', color: 'var(--color-muted)', cursor: 'pointer', listStyle: 'none' }}>⬇️ Detaylı durum değiştir</summary>
+                        <summary style={{ fontSize: '11px', color: 'var(--color-muted)', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {Icons.ChevronDown} Detaylı durum değiştir
+                        </summary>
                         <div style={{ marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
                             {getStagesForType(content.type).map((stage) => {
                                 const info = contentStatuses[stage];
@@ -177,7 +193,9 @@ export function ContentDetailPanel({
                                             gap: 6
                                         }}
                                     >
-                                        <span>{info.icon}</span>
+                                        <span style={{ color: content.status === stage ? info.color : 'var(--color-muted)' }}>
+                                            {StatusIcons[stage] || <Clock size={16} />}
+                                        </span>
                                         <span style={{ color: content.status === stage ? info.color : 'inherit' }}>{info.label}</span>
                                     </button>
                                 );
@@ -188,9 +206,9 @@ export function ContentDetailPanel({
 
                 {/* Açıklama & Notlar */}
                 <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>
-                        📝 Açıklama & Notlar
-                        {content.notes && <span style={{ marginLeft: '8px', color: '#4CAF50' }}>✓ İçerik Hazır</span>}
+                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {Icons.FileText} Açıklama & Notlar
+                        {content.notes && <span style={{ marginLeft: '8px', color: '#4CAF50', display: 'flex', alignItems: 'center', gap: 4 }}>{Icons.Check} İçerik Hazır</span>}
                     </p>
                     <textarea
                         value={editingNotes}
@@ -219,7 +237,9 @@ export function ContentDetailPanel({
                 {/* Atanan Kişiler */}
                 {(content.assigneeIds?.length > 0 || content.assigneeId) && (
                     <div style={{ marginBottom: 'var(--space-3)' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>👤 Atanan</p>
+                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {Icons.User} Atanan
+                        </p>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map((assignee: string) => {
                                 const member = activeTeam.find(t => t.id === assignee || t.name === assignee);
@@ -245,7 +265,7 @@ export function ContentDetailPanel({
                 {/* Not Geçmişi */}
                 {noteHistory && noteHistory.filter(n => n.contentId === content.id).length > 0 && (
                     <div style={{ marginBottom: 'var(--space-3)' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>📜 Değişiklik Geçmişi</p>
+                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>{Icons.History} Değişiklik Geçmişi</p>
                         <div style={{
                             maxHeight: '150px',
                             overflowY: 'auto',

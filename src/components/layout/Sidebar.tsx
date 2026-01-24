@@ -31,6 +31,7 @@ import {
     MessageSquare,
     ChevronDown,
     X,
+    ListTodo, // New icon for Tasks
     type LucideIcon
 } from 'lucide-react';
 
@@ -75,12 +76,12 @@ const navGroups: NavGroup[] = [
                 roles: ['OWNER', 'OPS', 'DIGITAL', 'STUDIO'],
                 submenuItems: [
                     { href: '/dashboard/content-production', label: 'Üretim Paneli', icon: Clapperboard },
-                    { href: '/dashboard/tasks', label: 'Görevler', icon: CheckSquare },
+                    { href: '/dashboard/tasks', label: 'Görevler', icon: ListTodo },
                     { href: '/dashboard/calendar', label: 'Takvim', icon: Calendar },
                     { href: '/dashboard/studio', label: 'Stüdyo', icon: Camera },
                 ]
             },
-            { href: '/dashboard/clients', label: 'Müşteriler', icon: Users, roles: ['OWNER', 'OPS'] },
+            // { href: '/dashboard/clients', label: 'Müşteriler', icon: Users, roles: ['OWNER', 'OPS'] }, // Moved to System
             { href: '/dashboard/retainers', label: 'Retainer', icon: Timer, roles: ['OWNER', 'OPS'] },
         ]
     },
@@ -97,9 +98,11 @@ const navGroups: NavGroup[] = [
     {
         title: 'SİSTEM',
         items: [
-            { href: '/dashboard/notifications', label: 'Bildirimler', icon: Bell },
+            { href: '/dashboard/system/clients', label: 'Müşteriler', icon: Building2, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/system/users', label: 'Kullanıcılar', icon: Users, roles: ['OWNER', 'OPS'] },
+            { href: '/dashboard/system/settings', label: 'Ayarlar', icon: Settings, roles: ['OWNER'] },
             { href: '/dashboard/audit-log', label: 'Denetim Kaydı', icon: Shield, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/settings', label: 'Ayarlar', icon: Settings, roles: ['OWNER'] },
+            // { href: '/dashboard/notifications', label: 'Bildirimler', icon: Bell }, // Less important
         ]
     }
 ];

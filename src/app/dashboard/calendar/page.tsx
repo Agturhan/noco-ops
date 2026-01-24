@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { NewContentModal } from '@/components/content/NewContentModal';
 import { brands, getBrandById, getBrandColor, getBrandName, eventTypes } from '@/lib/data';
 import { getContentsAsCalendarEvents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB } from '@/lib/actions/content';
 import { getMemberColors } from '@/lib/actions/userSettings';
@@ -102,19 +103,11 @@ export default function CalendarPage() {
         loadContentEvents();
     }, []);
 
-    // Form state
-    const [formTitle, setFormTitle] = useState('');
-    const [formDescription, setFormDescription] = useState('');
-    const [formDate, setFormDate] = useState('');
-    const [formTime, setFormTime] = useState('');
-    const [formType, setFormType] = useState<CalendarEvent['type']>('TASK');
-    const [formProject, setFormProject] = useState('');
-    const [formBrand, setFormBrand] = useState('');
-    const [formStatus, setFormStatus] = useState<string>('PLANLANDI');
-    const [formAllDay, setFormAllDay] = useState(true);
+    // Form state removed - handled by NewContentModal
 
-    const [nextId, setNextId] = useState(200);
-    const getId = () => { const id = nextId; setNextId(nextId + 1); return id.toString(); };
+    // State for modal
+    const [formDate, setFormDate] = useState<string>('');
+    // getId removed
 
     // Takvim hesaplamaları
     const year = currentDate.getFullYear();
@@ -159,99 +152,41 @@ export default function CalendarPage() {
     const goToNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
     const goToToday = () => setCurrentDate(new Date());
 
-    const openNewEventModal = () => {
+    // Open New Content Modal
+    const openNewEventModal = (dateOrEvent?: string | React.MouseEvent) => {
         setEditingEvent(null);
-        setFormTitle('');
-        setFormDescription('');
-        setFormDate('');
-        setFormTime('');
-        setFormType('TASK');
-        setFormBrand('');
-        setFormStatus('PLANLANDI');
-        setFormAllDay(true);
+        if (typeof dateOrEvent === 'string') {
+            setFormDate(dateOrEvent);
+        } else {
+            setFormDate(new Date().toISOString().split('T')[0]);
+        }
         setShowModal(true);
     };
 
     const openEditEventModal = (event: CalendarEvent) => {
         setEditingEvent(event);
-        setFormTitle(event.title);
-        setFormDescription(event.description);
-        setFormDate(event.date);
-        setFormTime(event.time || '');
-        setFormType(event.type);
-        setFormBrand(event.brandId || '');
-        setFormStatus(event.status || 'PLANLANDI');
-        setFormAllDay(event.allDay);
+        // Map CalendarEvent to ContentItem-like object for modal
+        const mappedContent = {
+            id: event.sourceId || (event.id.startsWith('content-') ? event.id.replace('content-', '') : event.id),
+            title: event.title,
+            brandId: event.brandId,
+            type: event.type,
+            status: event.status,
+            notes: event.description,
+            deliveryDate: event.date,
+            // time:? NewContentModal doesn't support time yet
+            assigneeIds: event.assigneeIds || (event.assigneeId ? [event.assigneeId] : [])
+        };
+        // Reuse NewContentModal via showModal
+        // But NewContentModal uses 'formDate' or 'initialContent'.
+        // We can pass 'initialContent' via a state?
+        // We haven't added 'initialContent' state to CalendarPage yet. 
+        // We currently use 'editingEvent' state. 
+        // I need to update the NewContentModal usage in JSX to pass 'initialContent'.
         setShowModal(true);
     };
 
-    const saveEvent = async () => {
-        if (!formTitle || !formDate) return;
-
-        const brandColor = formBrand ? getBrandColor(formBrand) : calendarEventTypes[formType].color;
-
-        try {
-            // Optimistic Id
-            const tempId = editingEvent?.id || getId();
-
-            // Server Action Data Preparation
-            const contentData = {
-                title: formTitle,
-                notes: formDescription,
-                description: formDescription,
-                deliveryDate: formDate,
-                type: formType === 'TASK' ? 'VIDEO' : 'VIDEO', // Default to VIDEO or map correctly if we have types
-                // Map calendar types to content types if possible, or just store as is if DB supports it.
-                // Our DB `Task` table `contentType` is string.
-                status: formStatus,
-                brandId: formBrand,
-                assigneeId: undefined, // Add user selection if needed later
-            };
-
-            // DB IDs
-            const dbId = editingEvent?.sourceId || (editingEvent?.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent?.id);
-
-            if (editingEvent && dbId) {
-                // UPDATE
-                await updateContentDB(dbId, contentData);
-
-                // Update Local State
-                const updatedEvent: CalendarEvent = {
-                    ...editingEvent,
-                    title: formTitle,
-                    description: formDescription,
-                    date: formDate,
-                    time: formAllDay ? undefined : formTime,
-                    type: formType,
-                    allDay: formAllDay,
-                    brandId: formBrand || undefined,
-                };
-                setEvents(events.map(e => e.id === editingEvent.id ? updatedEvent : e));
-            } else {
-                // CREATE
-                const newContent = await createContent(contentData as any); // Cast as any to bypass strict type check for now if needed, or match interface
-                if (newContent) {
-                    const newEvent: CalendarEvent = {
-                        id: `content-${newContent.id}`,
-                        sourceId: newContent.id,
-                        title: newContent.title,
-                        description: newContent.notes || '',
-                        date: newContent.deliveryDate || formDate,
-                        time: formAllDay ? undefined : formTime,
-                        type: 'TASK', // Default or derived
-                        allDay: formAllDay,
-                        brandId: newContent.brandId || undefined,
-                        status: newContent.status,
-                    };
-                    setEvents([...events, newEvent]);
-                }
-            }
-            setShowModal(false);
-        } catch (error) {
-            console.error('Save event error:', error);
-            alert('Kaydedilirken bir hata oluştu.');
-        }
-    };
+    // saveEvent removed - handled by NewContentModal onSuccess
 
     const deleteEvent = async () => {
         if (editingEvent) {
@@ -325,7 +260,7 @@ export default function CalendarPage() {
             <Header
                 title="Takvim"
                 subtitle="Sürükle & Bırak ile Planlama"
-                actions={<Button variant="primary" onClick={openNewEventModal}>+ Etkinlik</Button>}
+                actions={<Button variant="primary" onClick={(e) => openNewEventModal(e)}>+ Etkinlik</Button>}
             />
 
             <div className="calendar-layout" style={{ padding: 'var(--space-3)', gap: 'var(--space-3)' }}>
@@ -398,6 +333,12 @@ export default function CalendarPage() {
                                 return (
                                     <div
                                         key={index}
+                                        onClick={() => {
+                                            if (day) {
+                                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                                openNewEventModal(dateStr);
+                                            }
+                                        }}
                                         onDragOver={(e) => {
                                             if (day) {
                                                 e.preventDefault();
@@ -415,7 +356,8 @@ export default function CalendarPage() {
                                             padding: 'var(--space-1)',
                                             backgroundColor: day ? (isToday(day) ? 'var(--color-primary-light)' : 'var(--color-card)') : 'var(--color-surface)',
                                             borderRadius: isToday(day) ? 'var(--radius-sm)' : 0,
-                                            border: isToday(day) ? '2px solid var(--color-primary)' : 'none'
+                                            border: isToday(day) ? '2px solid var(--color-primary)' : 'none',
+                                            cursor: day ? 'pointer' : 'default'
                                         }}
                                     >
                                         {day && (
@@ -519,42 +461,45 @@ export default function CalendarPage() {
             </div>
 
             {/* Etkinlik Oluştur/Düzenle Modal */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingEvent ? 'Etkinlik Düzenle' : 'Yeni Etkinlik'} size="md" footer={
-                <>
-                    {editingEvent && <Button variant="danger" onClick={deleteEvent} style={{ marginRight: 'auto' }}>Sil</Button>}
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button>
-                    <Button variant="primary" onClick={saveEvent}>Kaydet</Button>
-                </>
-            }>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    <Input label="Başlık *" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Etkinlik adı" />
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                        <Input label="Tarih *" type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
-                        {!formAllDay && <Input label="Saat" type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} />}
-                    </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                        <input type="checkbox" checked={formAllDay} onChange={(e) => setFormAllDay(e.target.checked)} />
-                        Tüm gün
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                        <Select label="Tip" value={formType} onChange={(e) => setFormType(e.target.value as CalendarEvent['type'])} options={Object.entries(calendarEventTypes).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))} />
-                        <Select
-                            label="Durum"
-                            value={formStatus}
-                            onChange={(e) => setFormStatus(e.target.value)}
-                            options={[
-                                { value: 'PLANLANDI', label: '📅 Planlandı' },
-                                { value: 'CEKILDI', label: '📸 Çekildi' },
-                                { value: 'KURGULANIYOR', label: '🎬 Kurgulanıyor' },
-                                { value: 'PAYLASILD', label: '✅ Paylaşıldı' },
-                                { value: 'TESLIM', label: '📦 Teslim' },
-                            ]}
-                        />
-                    </div>
-                    <Select label="Marka" value={formBrand} onChange={(e) => setFormBrand(e.target.value)} options={[{ value: '', label: 'Seçiniz...' }, ...brands.filter(b => b.active).map(b => ({ value: b.id, label: b.name }))]} />
-                    <Textarea label="Açıklama" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} />
-                </div>
-            </Modal>
+            {/* Yeni İçerik Modal (Calendar Integration) */}
+            <NewContentModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                initialDate={formDate}
+                initialContent={editingEvent ? {
+                    id: editingEvent.sourceId || (editingEvent.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent.id),
+                    title: editingEvent.title,
+                    brandId: editingEvent.brandId,
+                    type: editingEvent.type,
+                    status: editingEvent.status,
+                    notes: editingEvent.description,
+                    deliveryDate: editingEvent.date,
+                    assigneeIds: editingEvent.assigneeIds || (editingEvent.assigneeId ? [editingEvent.assigneeId] : [])
+                } : undefined}
+                onSuccess={(newContent) => {
+                    // Check if update or create based on editingEvent
+                    const eventId = `content-${newContent.id}`;
+
+                    const newEvent: CalendarEvent = {
+                        id: eventId,
+                        sourceId: newContent.id,
+                        title: newContent.title,
+                        description: newContent.notes || '',
+                        date: newContent.deliveryDate || formDate,
+                        type: newContent.type || 'TASK',
+                        allDay: true,
+                        brandId: newContent.brandId || undefined,
+                        status: newContent.status,
+                        assigneeIds: newContent.assigneeIds
+                    };
+
+                    if (editingEvent) {
+                        setEvents(events.map(e => e.id === editingEvent.id ? newEvent : e));
+                    } else {
+                        setEvents([...events, newEvent]);
+                    }
+                }}
+            />
 
             {/* Etkinlik Detay Modal */}
             <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={selectedEvent?.title || ''} size="sm" footer={

@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { logAction } from './audit';
 
 // ===== Client Actions =====
 
@@ -98,12 +99,8 @@ export async function createClient(data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'CREATE',
-        entityType: 'CLIENT',
-        entityId: client.id,
-        details: { name: data.name },
-    }]);
+    // Audit log
+    await logAction('CREATE', 'CLIENT', client.id, { name: data.name }, client.name);
 
     revalidatePath('/dashboard/clients');
     return client;
@@ -146,12 +143,7 @@ export async function updateClient(id: string, data: {
         throw new Error('Müşteri güncellenirken hata oluştu');
     }
 
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'UPDATE',
-        entityType: 'CLIENT',
-        entityId: id,
-        details: { updated: Object.keys(data) },
-    }]);
+    await logAction('UPDATE', 'CLIENT', id, { updated: Object.keys(data) }, client.name);
 
     revalidatePath('/dashboard/clients');
     revalidatePath(`/dashboard/clients/${id}`);
@@ -169,12 +161,7 @@ export async function deleteClient(id: string) {
         throw new Error('Müşteri silinirken hata oluştu');
     }
 
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'DELETE',
-        entityType: 'CLIENT',
-        entityId: id,
-        details: {},
-    }]);
+    await logAction('DELETE', 'CLIENT', id, {}, 'Müşteri');
 
     revalidatePath('/dashboard/clients');
 }
@@ -276,12 +263,8 @@ export async function createContract(data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'CREATE',
-        entityType: 'CONTRACT',
-        entityId: contract.id,
-        details: { name: data.name, clientId: data.clientId },
-    }]);
+    // Audit log
+    await logAction('CREATE', 'CONTRACT', contract.id, { name: data.name, clientId: data.clientId }, contract.name);
 
     revalidatePath('/dashboard/clients');
     revalidatePath(`/dashboard/clients/${data.clientId}`);
@@ -323,12 +306,8 @@ export async function updateContract(id: string, data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'UPDATE',
-        entityType: 'CONTRACT',
-        entityId: id,
-        details: updateData,
-    }]);
+    // Audit log
+    await logAction('UPDATE', 'CONTRACT', id, updateData, contract.name);
 
     revalidatePath('/dashboard/clients');
     return contract;
@@ -443,12 +422,8 @@ export async function createProject(data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'CREATE',
-        entityType: 'PROJECT',
-        entityId: project.id,
-        details: { name: data.name },
-    }]);
+    // Audit log
+    await logAction('CREATE', 'PROJECT', project.id, { name: data.name }, project.name);
 
     revalidatePath('/dashboard/projects');
     return project;
@@ -482,12 +457,8 @@ export async function updateProject(id: string, data: {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'UPDATE',
-        entityType: 'PROJECT',
-        entityId: id,
-        details: updateData,
-    }]);
+    // Audit log
+    await logAction('UPDATE', 'PROJECT', id, updateData, project.name);
 
     revalidatePath('/dashboard/projects');
     revalidatePath(`/dashboard/projects/${id}`);
@@ -506,12 +477,8 @@ export async function deleteProject(id: string) {
     }
 
     // Audit log
-    await supabaseAdmin.from('AuditLog').insert([{
-        action: 'DELETE',
-        entityType: 'PROJECT',
-        entityId: id,
-        details: {},
-    }]);
+    // Audit log
+    await logAction('DELETE', 'PROJECT', id, {}, 'Proje');
 
     revalidatePath('/dashboard/projects');
 }

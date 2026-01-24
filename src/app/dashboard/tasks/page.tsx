@@ -6,7 +6,7 @@ import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Tex
 import { getTasks, createTask, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
 import type { TaskStatus as TaskStatusType, TaskPriority as TaskPriorityType } from '@/lib/actions/tasks';
 import { getMemberColors, saveMemberColors } from '@/lib/actions/userSettings';
-import { CheckCircle2, Circle, Trash2, Edit, Calendar, User as UserIcon } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Edit, Calendar, User as UserIcon, FolderOpen, Check } from 'lucide-react';
 import { ContentDetailPanel } from '@/components/content/ContentDetailPanel';
 import { getActiveTeamMembers, User as DBUser } from '@/lib/actions/users';
 
@@ -348,16 +348,10 @@ export default function TasksPage() {
                 subtitle="İş Takibi ve Yönetimi"
                 actions={
                     <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-                        <div style={{
-                            display: 'flex',
-                            backgroundColor: 'var(--color-surface)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '2px',
-                            border: '1px solid var(--color-border)'
-                        }}>
-                            {/* Stats removed from header to keep simple or keep them if needed */}
-                        </div>
-                        <Button variant="secondary" size="sm" onClick={() => setShowColorSettings(true)}>🎨</Button>
+                        <Button variant="secondary" size="sm" onClick={() => setShowColorSettings(true)} style={{ gap: 8 }}>
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'linear-gradient(45deg, #FF9800, #E91E63, #329FF5)' }} />
+                            Renkler
+                        </Button>
                         <Button variant="primary" onClick={openAddModal}>+ Yeni Görev</Button>
                     </div>
                 }
@@ -365,17 +359,17 @@ export default function TasksPage() {
 
             <div style={{ padding: 'var(--space-3)', height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
                 {/* 2 Column Grid + Detail Panel */}
-                <div style={{ display: 'grid', gridTemplateColumns: selectedTask ? '1fr 1fr 400px' : '1fr 1fr', gap: 'var(--space-3)', height: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: selectedTask ? '1fr 1fr 400px' : '1fr 1fr', gap: 'var(--space-4)', height: '100%' }}>
 
-                    {/* SOL SÜTUN: HAZIRLANANLAR (TODO) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: 'var(--space-2)', backgroundColor: 'rgba(255, 152, 0, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 152, 0, 0.2)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-                            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#FF9800', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                ⏳ Hazırlananlar <Badge style={{ backgroundColor: '#FF9800', color: 'white' }}>{stats.todo}</Badge>
+                    {/* SOL SÜTUN: AKTİF GÖREVLER */}
+                    <Card style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', backgroundColor: 'transparent', border: 'none', padding: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)', paddingRight: 'var(--space-1)' }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                Aktif Görevler <Badge variant="warning">{stats.todo}</Badge>
                             </h3>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', overflowY: 'auto', paddingRight: 'var(--space-1)', paddingBottom: '20px' }}>
                             {sortedTasks.filter(t => t.status === 'TODO').map(task => {
                                 const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status === 'TODO';
                                 const isSelected = selectedTask?.id === task.id;
@@ -384,48 +378,77 @@ export default function TasksPage() {
                                         key={task.id}
                                         onClick={() => setSelectedTask(task)}
                                         style={{
-                                            padding: 'var(--space-2)',
+                                            padding: 'var(--space-3)',
                                             backgroundColor: 'var(--color-surface)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            borderTop: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                            borderRight: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                            borderBottom: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s ease',
-                                            borderLeft: isOverdue ? '4px solid #FF4242' : `4px solid ${priorityConfig[task.priority].color}`
+                                            position: 'relative',
+                                            overflow: 'hidden'
                                         }}
+                                        className="hover:bg-[var(--color-surface-hover)]"
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            left: 0,
+                                            top: 0,
+                                            bottom: 0,
+                                            width: '4px',
+                                            backgroundColor: isOverdue ? '#FF4242' : priorityConfig[task.priority].color
+                                        }} />
+
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingLeft: 8 }}>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
                                                 style={{
                                                     marginTop: 2,
-                                                    width: 20,
-                                                    height: 20,
+                                                    width: 18,
+                                                    height: 18,
                                                     borderRadius: '50%',
-                                                    border: '2px solid #ccc',
+                                                    border: '2px solid var(--color-muted)',
                                                     backgroundColor: 'transparent',
-                                                    cursor: 'pointer'
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0
                                                 }}
                                             />
                                             <div style={{ flex: 1 }}>
-                                                <p style={{ fontWeight: 600, marginBottom: 4, color: isOverdue ? '#D32F2F' : 'inherit' }}>{task.title}</p>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <p style={{ fontWeight: 600, marginBottom: 4, fontSize: '14px', color: isOverdue ? '#FF4242' : 'var(--color-text)' }}>{task.title}</p>
+                                                </div>
+
                                                 {task.project && (
-                                                    <p style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4 }}>📁 {task.project}</p>
+                                                    <p style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <FolderOpen size={12} /> {task.project}
+                                                    </p>
                                                 )}
 
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: '4px' }}>
                                                     {task.dueDate && (
-                                                        <span style={{ fontSize: 11, padding: '2px 6px', backgroundColor: 'var(--color-background)', borderRadius: 4, color: isOverdue ? '#D32F2F' : 'var(--color-muted)', border: '1px solid var(--color-border)' }}>
-                                                            📅 {new Date(task.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                                                        <span style={{
+                                                            fontSize: 11,
+                                                            display: 'flex', alignItems: 'center', gap: 4,
+                                                            color: isOverdue ? '#FF4242' : 'var(--color-muted)'
+                                                        }}>
+                                                            <Calendar size={12} />
+                                                            {new Date(task.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                                                         </span>
                                                     )}
-                                                    {task.assignees.slice(0, 3).map(a => (
-                                                        <span key={a} style={{ fontSize: 10, padding: '2px 6px', backgroundColor: (teamMemberColors[a] || '#6B7B80') + '20', color: teamMemberColors[a] || '#6B7B80', borderRadius: 10 }}>
-                                                            {a.split(' ')[0]}
-                                                        </span>
-                                                    ))}
+
+                                                    {task.assignees.length > 0 && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            {task.assignees.slice(0, 3).map(a => (
+                                                                <div key={a} style={{
+                                                                    width: 20, height: 20, borderRadius: '50%',
+                                                                    backgroundColor: teamMemberColors[a] || '#6B7B80',
+                                                                    color: 'white', fontSize: 9, fontWeight: 700,
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                                }} title={a}>
+                                                                    {a.charAt(0)}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -433,17 +456,17 @@ export default function TasksPage() {
                                 );
                             })}
                         </div>
-                    </div>
+                    </Card>
 
-                    {/* SAĞ SÜTUN: TAMAMLANANLAR (DONE) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: 'var(--space-2)', backgroundColor: 'rgba(0, 245, 176, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0, 245, 176, 0.2)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-                            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#00F5B0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                ✅ Tamamlananlar <Badge style={{ backgroundColor: '#00F5B0', color: 'white' }}>{stats.done}</Badge>
+                    {/* SAĞ SÜTUN: TAMAMLANANLAR */}
+                    <Card style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', backgroundColor: 'transparent', border: 'none', padding: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)', paddingRight: 'var(--space-1)' }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-muted)' }}>
+                                Tamamlananlar <Badge variant="neutral">{stats.done}</Badge>
                             </h3>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', overflowY: 'auto', paddingRight: 'var(--space-1)', paddingBottom: '20px' }}>
                             {sortedTasks.filter(t => t.status === 'DONE').map(task => {
                                 const isSelected = selectedTask?.id === task.id;
                                 return (
@@ -451,40 +474,45 @@ export default function TasksPage() {
                                         key={task.id}
                                         onClick={() => setSelectedTask(task)}
                                         style={{
-                                            padding: 'var(--space-2)',
+                                            padding: 'var(--space-3)',
                                             backgroundColor: 'var(--color-surface)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                            borderRadius: 'var(--radius-md)',
+                                            border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
                                             opacity: 0.6,
-                                            cursor: 'pointer'
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleTaskStatus(task); }}
                                                 style={{
                                                     marginTop: 2,
-                                                    width: 20,
-                                                    height: 20,
+                                                    width: 18,
+                                                    height: 18,
                                                     borderRadius: '50%',
-                                                    border: '2px solid #00F5B0',
+                                                    border: 'none',
                                                     backgroundColor: '#00F5B0',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                     cursor: 'pointer',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                    flexShrink: 0
                                                 }}
                                             >
-                                                <CheckCircle2 size={12} color="white" />
+                                                <Check size={12} color="white" strokeWidth={4} />
                                             </button>
                                             <div style={{ flex: 1 }}>
-                                                <p style={{ fontWeight: 600, marginBottom: 4, textDecoration: 'line-through', color: 'var(--color-muted)' }}>{task.title}</p>
-                                                <p style={{ fontSize: 11, color: '#00F5B0' }}>Tamamlandı: {new Date(task.updatedAt).toLocaleDateString()}</p>
+                                                <p style={{ fontWeight: 600, marginBottom: 4, fontSize: '14px', textDecoration: 'line-through', color: 'var(--color-muted)' }}>{task.title}</p>
+                                                <p style={{ fontSize: 11, color: '#00F5B0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <CheckCircle2 size={12} />
+                                                    Tamamlandı: {new Date(task.updatedAt).toLocaleDateString('tr-TR')}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </div>
+                    </Card>
 
                     {/* DETAY PANELİ */}
                     {selectedTask && (
@@ -493,7 +521,7 @@ export default function TasksPage() {
                                 id: selectedTask.id,
                                 title: selectedTask.title,
                                 brandId: selectedTask.brandId || '',
-                                status: selectedTask.status === 'DONE' ? 'PAYLASILD' : 'PLANLANDI', // Mapping issue here
+                                status: selectedTask.status === 'DONE' ? 'PAYLASILD' : 'PLANLANDI',
                                 type: (selectedTask.contentType as any) || 'OTHER',
                                 notes: selectedTask.notes || selectedTask.description || '',
                                 deliveryDate: selectedTask.dueDate,
@@ -512,8 +540,8 @@ export default function TasksPage() {
                 </div>
             </div>
 
-            {/* Modals ... (keep existing modals logic) */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingTask ? '✏️ Görev Düzenle' : '📋 Yeni Görev'} size="md" footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button><Button variant="primary" onClick={saveTask}>Kaydet</Button></>}>
+            {/* Modals */}
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingTask ? 'Düzenle' : 'Yeni Görev'} size="md" footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button><Button variant="primary" onClick={saveTask}>Kaydet</Button></>}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                     <Input label="Başlık *" value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Görev adı" />
                     <Textarea label="Açıklama" value={formDescription} onChange={e => setFormDescription(e.target.value)} rows={2} />
@@ -527,7 +555,7 @@ export default function TasksPage() {
             </Modal>
 
             {/* Color Settings Modal */}
-            <Modal isOpen={showColorSettings} onClose={() => setShowColorSettings(false)} title="🎨 Kişi Renk Ayarları" size="md">
+            <Modal isOpen={showColorSettings} onClose={() => setShowColorSettings(false)} title="Kişi Renk Ayarları" size="md">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                     <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: 8 }}>Her takım üyesi için bir renk seçin.</p>
                     {activeTeam.map(member => (
