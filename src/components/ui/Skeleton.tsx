@@ -122,7 +122,7 @@ export function SkeletonTable({ rows = 5, columns = 4 }: SkeletonTableProps) {
                         <Skeleton
                             key={colIndex}
                             height={14}
-                            width={colIndex === 0 ? '100%' : `${60 + Math.random() * 30}%`}
+                            width={colIndex === 0 ? '100%' : `${60 + (colIndex * 10) % 30}%`}
                         />
                     ))}
                 </div>
@@ -205,7 +205,7 @@ export function SkeletonKanban() {
                     padding: 'var(--space-2)',
                 }}>
                     <Skeleton width="70%" height={18} style={{ marginBottom: 'var(--space-2)' }} />
-                    {Array.from({ length: 2 + Math.floor(Math.random() * 2) }).map((_, cardIndex) => (
+                    {Array.from({ length: 2 + (colIndex % 2) }).map((_, cardIndex) => (
                         <div key={cardIndex} style={{
                             backgroundColor: 'var(--color-card)',
                             borderRadius: 'var(--radius-sm)',

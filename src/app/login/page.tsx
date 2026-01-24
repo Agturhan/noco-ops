@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Card } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
+import { GlassSurface } from '@/components/ui/GlassSurface';
+import Prism from '@/components/backgrounds/Prism';
 import '@/styles/tokens.css';
 import '@/styles/components.css';
 
@@ -26,21 +28,17 @@ export default function LoginPage() {
         setError('');
         setIsLoading(true);
 
-        // Kullanıcı kontrolü
         const user = TEAM_MEMBERS.find(
             u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
         );
 
         if (user) {
-            // Kullanıcı bilgilerini localStorage'a kaydet
             localStorage.setItem('currentUser', JSON.stringify({
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role
             }));
-
-            // Dashboard'a yönlendir
             router.push('/dashboard');
         } else {
             setError('E-posta veya şifre hatalı');
@@ -51,48 +49,64 @@ export default function LoginPage() {
 
     return (
         <div style={{
+            position: 'relative',
             minHeight: '100vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #1A1A1A 0%, #0D0D0D 100%)',
-            padding: 'var(--space-3)'
+            overflow: 'hidden',
+            backgroundColor: '#000', // Deep black background for Prism
         }}>
-            <Card style={{
+            {/* Background Animation */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+                <Prism
+                    height={3.5}
+                    baseWidth={5.5}
+                    scale={3.6}
+                    hueShift={0}
+                    colorFrequency={1}
+                    noise={0.1}
+                    glow={0.8}
+                    animationType="rotate"
+                    timeScale={0.3}
+                />
+            </div>
+
+            {/* Glass Container */}
+            <GlassSurface intensity="medium" style={{
                 width: '100%',
                 maxWidth: '420px',
                 padding: 'var(--space-4)',
-                backgroundColor: 'var(--color-surface)',
-                border: '1px solid var(--color-border)'
+                zIndex: 1, // Ensure it's above background
             }}>
                 {/* Logo */}
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-4)' }}>
-                    <div style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '16px',
-                        background: 'linear-gradient(135deg, #329FF5 0%, #00F5B0 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto var(--space-2)',
-                        fontSize: '28px',
-                        fontWeight: 700,
-                        color: '#0D0D0D'
-                    }}>
-                        N
-                    </div>
+                    <img
+                        src="/noco-logo-minimal.jpg"
+                        alt="Noco Logo"
+                        style={{
+                            width: '80px',
+                            height: 'auto',
+                            objectFit: 'contain',
+                            borderRadius: '12px',
+                            margin: '0 auto var(--space-2)',
+                            display: 'block'
+                        }}
+                    />
                     <h1 style={{
-                        fontSize: 'var(--text-h2)',
-                        fontFamily: 'var(--font-heading)',
-                        color: 'var(--color-ink)',
-                        marginBottom: '4px'
+                        marginTop: '16px',
+                        fontSize: '32px',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        marginBottom: '4px',
+                        textShadow: '0 2px 10px rgba(0,0,0,0.5)'
                     }}>
                         NOCO Ops
                     </h1>
                     <p style={{
-                        color: 'var(--color-muted)',
-                        fontSize: 'var(--text-body-sm)'
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontSize: '14px',
+                        letterSpacing: '0.5px'
                     }}>
                         Creative Operations System
                     </p>
@@ -100,32 +114,49 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                        <Input
-                            label="E-posta"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="isim@noco.studio"
-                            required
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '13px', color: '#ccc', fontWeight: 500 }}>E-posta</label>
+                            <Input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="isim@noco.studio"
+                                required
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'white'
+                                }}
+                            />
+                        </div>
 
-                        <Input
-                            label="Şifre"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            required
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '13px', color: '#ccc', fontWeight: 500 }}>Şifre</label>
+                            <Input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                style={{
+                                    backgroundColor: 'rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'white'
+                                }}
+                            />
+                        </div>
 
                         {error && (
                             <div style={{
-                                padding: 'var(--space-2)',
-                                backgroundColor: 'rgba(255, 66, 66, 0.1)',
-                                borderRadius: 'var(--radius-sm)',
-                                borderLeft: '3px solid #FF4242',
-                                color: '#FF4242',
-                                fontSize: 'var(--text-body-sm)'
+                                padding: '12px',
+                                backgroundColor: 'rgba(255, 66, 66, 0.2)',
+                                borderRadius: '8px',
+                                border: '1px solid #FF4242',
+                                color: '#ff8080',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
                             }}>
                                 ⚠️ {error}
                             </div>
@@ -136,7 +167,14 @@ export default function LoginPage() {
                             variant="primary"
                             size="lg"
                             isLoading={isLoading}
-                            style={{ width: '100%', marginTop: 'var(--space-1)' }}
+                            style={{
+                                width: '100%',
+                                marginTop: 'var(--space-2)',
+                                background: 'linear-gradient(90deg, #329FF5 0%, #00F5B0 100%)',
+                                border: 'none',
+                                color: '#000',
+                                fontWeight: 600
+                            }}
                         >
                             Giriş Yap
                         </Button>
@@ -145,58 +183,61 @@ export default function LoginPage() {
 
                 {/* Ekip Üyeleri Bilgi */}
                 <div style={{
-                    marginTop: 'var(--space-3)',
-                    paddingTop: 'var(--space-3)',
-                    borderTop: '1px solid var(--color-border)'
+                    marginTop: '24px',
+                    paddingTop: '24px',
+                    borderTop: '1px solid rgba(255,255,255,0.1)'
                 }}>
                     <p style={{
-                        color: 'var(--color-muted)',
-                        fontSize: 'var(--text-caption)',
-                        marginBottom: 'var(--space-1)',
-                        textAlign: 'center'
+                        color: 'rgba(255,255,255,0.5)',
+                        fontSize: '12px',
+                        marginBottom: '12px',
+                        textAlign: 'center',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
                     }}>
-                        👥 Ekip Üyeleri
+                        Hızlı Erişim (Demo)
                     </p>
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: '1fr 1fr',
                         gap: '8px',
-                        fontSize: 'var(--text-caption)'
+                        fontSize: '12px'
                     }}>
                         {TEAM_MEMBERS.map(member => (
                             <div
                                 key={member.id}
                                 style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: 'var(--color-bg)',
-                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '10px',
+                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
+                                    transition: 'all 0.2s ease',
+                                    border: '1px solid rgba(255,255,255,0.05)'
                                 }}
                                 onClick={() => {
                                     setEmail(member.email);
                                     setPassword(member.password);
                                 }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                }}
                             >
-                                <p style={{ fontWeight: 600, color: 'var(--color-ink)', marginBottom: '2px' }}>
+                                <p style={{ fontWeight: 600, color: '#fff', marginBottom: '2px' }}>
                                     {member.name.split(' ')[0]}
                                 </p>
-                                <p style={{ color: 'var(--color-muted)', fontSize: '10px' }}>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>
                                     {member.role}
                                 </p>
                             </div>
                         ))}
                     </div>
-                    <p style={{
-                        color: 'var(--color-muted)',
-                        fontSize: '10px',
-                        textAlign: 'center',
-                        marginTop: 'var(--space-1)'
-                    }}>
-                        Tıkla → otomatik doldur
-                    </p>
                 </div>
-            </Card>
+            </GlassSurface>
         </div>
     );
 }
