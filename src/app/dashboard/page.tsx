@@ -167,12 +167,7 @@ const getDynamicPendingActions = () => {
 
 const pendingActions = getDynamicPendingActions();
 
-const quickActions = [
-    { label: 'Yeni İçerik', icon: Clapperboard, href: '/dashboard/content-production', color: '#329FF5' },
-    { label: 'Yeni Gider', icon: TrendingDown, href: '/dashboard/accounting?tab=expenses', color: '#FF4242' },
-    { label: 'Yeni Gelir', icon: TrendingUp, href: '/dashboard/accounting?tab=income', color: '#00F5B0' },
-    { label: 'Stüdyo Rezerve', icon: Camera, href: '/dashboard/studio', color: '#9C27B0' },
-];
+
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -402,7 +397,23 @@ export default function DashboardPage() {
                 subtitle={`${new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
                 actions={
                     currentUser && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {/* Yeni Header Aksiyonları (Minimalist) */}
+                            <Link href="/dashboard/content-production?action=new" style={{ textDecoration: 'none' }}>
+                                <Button variant="ghost" size="sm" style={{ gap: 8, color: '#329FF5', fontSize: '13px' }}>
+                                    <Clapperboard size={16} />
+                                    Yeni İçerik
+                                </Button>
+                            </Link>
+                            <Link href="/dashboard/studio" style={{ textDecoration: 'none' }}>
+                                <Button variant="ghost" size="sm" style={{ gap: 8, color: '#9C27B0', fontSize: '13px' }}>
+                                    <Camera size={16} />
+                                    Stüdyo
+                                </Button>
+                            </Link>
+
+                            <div style={{ width: 1, height: 20, backgroundColor: 'var(--color-border)', margin: '0 4px' }} />
+
                             <span style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
                                 {currentUser.role}
                             </span>
@@ -415,24 +426,7 @@ export default function DashboardPage() {
             />
 
             <div style={{ padding: 'var(--space-3)' }}>
-                {/* Hızlı Aksiyonlar */}
-                <div className="quick-actions" style={{ marginBottom: 'var(--space-2)' }}>
-                    {quickActions.map(action => {
-                        const Icon = action.icon;
-                        return (
-                            <Link key={action.label} href={action.href} style={{ textDecoration: 'none' }}>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    style={{ borderLeft: `3px solid ${action.color}`, gap: '8px' }}
-                                >
-                                    <Icon size={16} />
-                                    {action.label}
-                                </Button>
-                            </Link>
-                        );
-                    })}
-                </div>
+
 
 
                 {currentUser && (

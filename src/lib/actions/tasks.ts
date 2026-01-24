@@ -389,11 +389,11 @@ export async function getUserWeekDeadlines(userId: string) {
     // 2. Get Upcoming Tasks (Next 7 days)
     const { data: upcomingData } = await supabaseAdmin
         .from('Task')
-        .select('id, title, dueDate, priority, status, assigneeId, assigneeIds, brandName, project:Project(name, contract:Contract(client:Client(name)))')
+        .select('id, title, description, notes, dueDate, priority, status, assigneeId, assigneeIds, brandName, project:Project(name, contract:Contract(client:Client(name)))')
         .not('dueDate', 'is', null)
-        .gte('dueDate', today.toISOString().split('T')[0])
+        .gte('dueDate', yesterday.toISOString().split('T')[0])
         .lte('dueDate', weekEnd.toISOString().split('T')[0])
-        .limit(30);
+        .limit(50);
 
     // Combine
     const allData = [...(overdueData || []), ...(upcomingData || [])];
@@ -413,6 +413,7 @@ export async function getUserWeekDeadlines(userId: string) {
         return {
             id: t.id,
             title: t.title,
+            description: t.description || t.notes || '',
             date: dueDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
             daysLeft,
             priority: t.priority,

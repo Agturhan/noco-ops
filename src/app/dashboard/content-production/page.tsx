@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar, MultiSelect, ColorPicker } from '@/components/ui';
 import { brands, getBrandColor, getBrandName, contentStatuses, contentTypes, ContentStatus, ContentType, getSimpleStatus, getStagesForType } from '@/lib/data';
@@ -65,6 +66,20 @@ export default function ContentProductionPage() {
     const [filterAssignee, setFilterAssignee] = useState('all'); // 'all', 'me', veya kişi ismi
     const [currentUser, setCurrentUser] = useState<{ name: string; id: string } | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'team' | 'archive'>('list');
+
+    // URL Query Params handling for auto-opening modal
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    useEffect(() => {
+        const action = searchParams.get('action');
+        if (action === 'new') {
+            setShowModal(true);
+            // URL'den parametreyi temizle (opsiyonel, sayfa yenilendiğinde tekrar açılmasın diye)
+            // router.replace('/dashboard/content-production'); 
+            // Not: Kullanıcı geri gelirse modal açık kalsın mı? Şimdilik kalsın.
+        }
+    }, [searchParams]);
 
     // Kullanıcı bilgilerini localStorage'dan al
     React.useEffect(() => {
@@ -461,7 +476,11 @@ export default function ContentProductionPage() {
                 {viewMode === 'team' && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 16 }}>
                         {activeTeam.map(member => {
-                            const tasks = contents.filter(c => c.assigneeId === member.id && c.status !== 'PAYLASILD');
+                            const tasks = contents.filter(c => {
+                                if (c.status === 'PAYLASILD') return false;
+                                const assignees = c.assigneeIds || (c.assigneeId ? [c.assigneeId] : []);
+                                return assignees.some(id => id === member.id || id === member.name);
+                            });
                             return (
                                 <Card key={member.id}>
                                     <CardHeader title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{member.name.charAt(0)}</span><div><p style={{ fontWeight: 600 }}>{member.name}</p><p style={{ fontSize: 11, color: 'var(--color-muted)' }}>{member.email}</p></div></div>} action={<Badge variant={member.role === 'OPS' ? 'warning' : 'info'}>{member.role}</Badge>} />
