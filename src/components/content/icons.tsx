@@ -4,7 +4,7 @@ import {
     Scissors, Film, Clock, Share2, Package, CheckCircle2,
     Video, Mic, Globe, BarChart, FileText, Megaphone, Layout,
     Users, User, Tag, Trash2, Edit2, ChevronDown, Activity,
-    History, AlertCircle, Check, Plus, Eye
+    History, AlertCircle, Check, Plus, Eye, Search
 } from 'lucide-react';
 import { ContentStatus, ContentType } from '@/lib/data';
 
@@ -54,5 +54,6 @@ export const Icons = {
     FileText: <FileText size={14} />,
     Camera: <Camera size={14} />,
     Plus: <Plus size={14} />,
-    Eye: <Eye size={14} />
+    Eye: <Eye size={14} />,
+    Search: <Search size={14} />
 };

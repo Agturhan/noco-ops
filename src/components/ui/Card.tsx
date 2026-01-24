@@ -37,10 +37,11 @@ export function CardHeader({ title, description, action }: CardHeaderProps) {
 interface CardContentProps {
     children: React.ReactNode;
     className?: string;
+    style?: React.CSSProperties;
 }
 
-export function CardContent({ children, className = '' }: CardContentProps) {
-    return <div className={`card-content ${className}`}>{children}</div>;
+export function CardContent({ children, className = '', style }: CardContentProps) {
+    return <div className={`card-content ${className}`} style={style}>{children}</div>;
 }
 
 export default Card;

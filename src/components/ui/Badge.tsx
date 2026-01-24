@@ -5,6 +5,7 @@ type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral';
 interface BadgeProps {
     children: React.ReactNode;
     variant?: BadgeVariant;
+    size?: 'sm' | 'md' | 'lg';
     className?: string;
     style?: React.CSSProperties;
 }
@@ -14,9 +15,13 @@ interface BadgeProps {
  * 
  * Status indicators for deliverables, invoices, etc.
  */
-export function Badge({ children, variant = 'neutral', className = '', style }: BadgeProps) {
+export function Badge({ children, variant = 'neutral', size = 'md', className = '', style }: BadgeProps) {
+    const sizeClass = size !== 'md' ? `badge-${size}` : '';
+    // Optional: inline fallback if CSS classes missing
+    const sizeStyle = size === 'sm' ? { fontSize: '0.75rem', padding: '0.125em 0.5em' } : {};
+
     return (
-        <span className={`badge badge-${variant} ${className}`} style={style}>
+        <span className={`badge badge-${variant} ${sizeClass} ${className}`} style={{ ...sizeStyle, ...style }}>
             {children}
         </span>
     );
