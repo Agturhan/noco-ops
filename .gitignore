@@ -45,3 +45,8 @@ next-env.d.ts
 
 check_*.js
 db_report.ts
+
+# Debug scripts and outputs
+scripts/debug_*.js
+*_output.txt
+test_*.js
