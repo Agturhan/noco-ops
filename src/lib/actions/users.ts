@@ -3,13 +3,15 @@
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
-import { logAction } from './audit';
+import { UserRole } from '@/lib/types/auth';
+
+export type { UserRole } from '@/lib/types/auth';
 
 export interface User {
     id: string;
     name: string;
     email: string;
-    role: 'OWNER' | 'OPS' | 'STUDIO' | 'DIGITAL' | 'CLIENT';
+    role: UserRole;
     phone?: string;
     notes?: string;
     createdAt: string;
@@ -33,21 +35,15 @@ export async function getActiveTeamMembers() {
     const { data, error } = await supabaseAdmin
         .from('User')
         .select('*')
-        .neq('role', 'CLIENT') // Clients are not team members? Static data showed roles: OWNER, OPS, DIGITAL, STUDIO
+        .neq('role', 'CLIENT')
         .order('name');
-
-    // Static data filter: role !== 'OWNER' for "active team"?
-    // data.ts: getActiveTeamMembers = () => teamMembers.filter(m => m.active && m.role !== 'OWNER');
-    // Let's stick to returning all internal staff for now, filtering can be done in UI if needed, 
-    // but maybe exclude OWNER if that was the rule.
-    // Let's filter out CLIENT definitely.
 
     if (error) {
         console.error('Error fetching team members:', error);
         return [];
     }
 
-    return (data as User[]).filter(u => u.role !== 'CLIENT');
+    return data as User[];
 }
 
 export async function getUserById(id: string) {
@@ -65,7 +61,7 @@ export async function getUserById(id: string) {
     return data as User;
 }
 
-export async function updateUserDetails(id: string, data: { phone?: string; notes?: string }) {
+export async function updateUserDetails(id: string, data: { phone?: string; notes?: string; role?: UserRole }) {
     try {
         const { error } = await supabaseAdmin
             .from('User')
@@ -78,6 +74,77 @@ export async function updateUserDetails(id: string, data: { phone?: string; note
         return true;
     } catch (error) {
         console.error('Error updating user details:', error);
+        return false;
+    }
+}
+
+export async function createUser(data: { name: string; email: string; role: UserRole; password?: string; phone?: string }) {
+    try {
+        // 1. Create Auth User (if password provided)
+        let authId = null;
+        if (data.password) {
+            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+                email: data.email,
+                password: data.password,
+                email_confirm: true,
+                user_metadata: { name: data.name, role: data.role }
+            });
+
+            if (authError) throw authError;
+            authId = authData.user.id;
+        }
+
+        // 2. Create DB User Record
+        // If authId exists, use it as ID, otherwise generate one (or let DB do it if UUID)
+        const userPayload: any = {
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            phone: data.phone,
+            createdAt: new Date().toISOString(),
+        };
+
+        if (authId) userPayload.id = authId;
+
+        const { error: dbError } = await supabaseAdmin
+            .from('User')
+            .insert(userPayload);
+
+        if (dbError) {
+            // Rollback auth user if DB fails
+            if (authId) await supabaseAdmin.auth.admin.deleteUser(authId);
+            throw dbError;
+        }
+
+        revalidatePath('/dashboard/system/users');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Create user error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function deleteUser(id: string) {
+    try {
+        // 1. Delete from Auth (try catch, might not exist in auth)
+        try {
+            await supabaseAdmin.auth.admin.deleteUser(id);
+        } catch (e) {
+            console.warn('Auth user delete warning (might be DB-only user):', e);
+        }
+
+        // 2. Delete from DB
+        const { error } = await supabaseAdmin
+            .from('User')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard/system/users');
+        return true;
+    } catch (error) {
+        console.error('Delete user error:', error);
         return false;
     }
 }

@@ -280,7 +280,7 @@ export function AccountingPageClient() {
 
                 {/* 2. INCOME (Medium Card) */}
                 <div className="md:col-span-4 lg:col-span-3 group relative rounded-[24px] overflow-hidden h-full min-h-[160px] shadow-sm">
-                    <GlassSurface className="h-full w-full flex flex-col justify-between p-6" intensity="low">
+                    <GlassSurface className="h-full w-full flex flex-col justify-between p-6" intensity="light">
                         <div className="flex items-center justify-between">
                             <span className="text-[13px] font-medium text-white/50 uppercase tracking-widest">Gelirler</span>
                             <div className="p-2 rounded-full bg-[#30D158]/10 text-[#30D158]">
