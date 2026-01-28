@@ -277,14 +277,47 @@ export function RetainersPageClient() {
                                             {client.usedHours} / {client.monthlyHours}
                                         </span>
                                     </div>
-                                    <div style={{ height: 10, backgroundColor: 'var(--color-border)', borderRadius: 5, overflow: 'hidden' }}>
-                                        <div style={{
-                                            height: '100%',
-                                            width: `${Math.min(usagePercent, 100)}%`,
-                                            backgroundColor: usagePercent >= 100 ? '#FF4242' : usagePercent >= 80 ? '#FF9800' : '#00F5B0',
-                                            borderRadius: 5,
-                                            transition: 'width 0.3s'
-                                        }} />
+                                    <div style={{ display: 'flex', gap: '2px', height: 12 }}>
+                                        {Array.from({ length: client.monthlyHours }).map((_, i) => {
+                                            const isFilled = i < client.usedHours;
+                                            const isOverLimit = i >= client.monthlyHours; // Logic if used > monthly
+
+                                            // Determine color
+                                            let bgColor = 'var(--color-border)';
+                                            if (isFilled) {
+                                                if (usagePercent >= 100) bgColor = '#FF4242';
+                                                else if (usagePercent >= 80) bgColor = '#FF9800';
+                                                else bgColor = '#00F5B0';
+                                            }
+
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    style={{
+                                                        flex: 1,
+                                                        backgroundColor: bgColor,
+                                                        borderRadius: '2px',
+                                                        opacity: isFilled ? 1 : 0.3
+                                                    }}
+                                                    title={`Parça ${i + 1}`}
+                                                />
+                                            );
+                                        })}
+                                        {/* Show extra blocks if overused */}
+                                        {client.usedHours > client.monthlyHours && (
+                                            Array.from({ length: client.usedHours - client.monthlyHours }).map((_, i) => (
+                                                <div
+                                                    key={`over-${i}`}
+                                                    style={{
+                                                        flex: 1,
+                                                        backgroundColor: '#FF4242',
+                                                        borderRadius: '2px',
+                                                        animation: 'pulse 1.5s infinite' // Alert animation for overuse
+                                                    }}
+                                                    title={`Ekstra ${i + 1}`}
+                                                />
+                                            ))
+                                        )}
                                     </div>
                                 </div>
 

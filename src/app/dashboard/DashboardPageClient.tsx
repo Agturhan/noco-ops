@@ -487,10 +487,30 @@ export function DashboardPageClient() {
                                                     </Link>
                                                 </td>
                                                 <td className="py-3.5 pr-6">
-                                                    <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden mb-1.5">
-                                                        <div className="h-full bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.4)] rounded-full relative" style={{ width: `${Math.min((item.progress / item.total) * 100, 100)}%` }}>
-                                                            <div className="absolute inset-0 bg-white/20"></div>
-                                                        </div>
+                                                    <div className="flex items-center gap-[2px] h-3 mb-1.5">
+                                                        {Array.from({ length: item.total || 8 }).map((_, i) => {
+                                                            const isFilled = i < (item.progress || 0);
+                                                            // Calculate color based on percentage
+                                                            const usagePercent = item.total > 0 ? (item.progress / item.total) * 100 : 0;
+                                                            let bgColor = 'rgba(255,255,255,0.1)';
+
+                                                            if (isFilled) {
+                                                                if (usagePercent >= 100) bgColor = '#FF453A'; // Red
+                                                                else if (usagePercent >= 80) bgColor = '#FF9F0A'; // Orange
+                                                                else bgColor = '#32D74B'; // Green
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    className="flex-1 h-full rounded-[1px]"
+                                                                    style={{
+                                                                        backgroundColor: bgColor,
+                                                                        opacity: isFilled ? 1 : 0.4
+                                                                    }}
+                                                                />
+                                                            );
+                                                        })}
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] bg-white/[0.08] text-white/80 px-2 py-0.5 rounded-md font-medium">{item.label}</span>

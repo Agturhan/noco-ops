@@ -239,6 +239,44 @@ export async function getCashflowForecast() {
     }
 }
 
+// ===== LİSTELEME (DETAYLI) =====
+
+export async function getIncomes(year: number, month: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    try {
+        const incomes = await prisma.income.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate }
+            },
+            orderBy: { date: 'desc' }
+        });
+        return incomes;
+    } catch (error) {
+        console.error('Gelir listesi alınamadı:', error);
+        return [];
+    }
+}
+
+export async function getExpenses(year: number, month: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    try {
+        const expenses = await prisma.expense.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate }
+            },
+            orderBy: { date: 'desc' }
+        });
+        return expenses;
+    } catch (error) {
+        console.error('Gider listesi alınamadı:', error);
+        return [];
+    }
+}
+
 // ===== GELİR EKLEME =====
 
 export async function createIncome(data: {
@@ -268,5 +306,69 @@ export async function createIncome(data: {
     } catch (error) {
         console.error('Gelir eklenirken hata:', error);
         throw new Error('Gelir kaydedilemedi');
+    }
+}
+// ===== GİDER EKLEME =====
+
+export async function createExpense(data: {
+    title: string;
+    amount: number;
+    category?: any;
+    projectId?: string;
+    notes?: string;
+    Date?: string;
+}) {
+    try {
+        const expense = await prisma.expense.create({
+            data: {
+                title: data.title,
+                amount: data.amount,
+                category: data.category || 'OTHER',
+                projectId: data.projectId,
+                notes: data.notes,
+                date: data.Date ? new Date(data.Date) : new Date(),
+            }
+        });
+
+        return expense;
+    } catch (error) {
+        console.error('Gider eklenirken hata:', error);
+        throw new Error('Gider kaydedilemedi');
+    }
+}
+
+export async function deleteIncome(id: string) {
+    try {
+        await prisma.income.delete({ where: { id } });
+        return { success: true };
+    } catch (error) {
+        return { success: false, error };
+    }
+}
+
+export async function deleteExpense(id: string) {
+    try {
+        await prisma.expense.delete({ where: { id } });
+        return { success: true };
+    } catch (error) {
+        return { success: false, error };
+    }
+}
+
+export async function seedExpenses(expenses: any[]) {
+    try {
+        const count = await prisma.expense.createMany({
+            data: expenses.map(e => ({
+                title: e.title,
+                amount: e.amount,
+                category: e.category,
+                date: new Date(),
+                notes: 'Varsayılan gider'
+            }))
+        });
+        return { success: true, count: count.count };
+    } catch (error) {
+        console.error('Seed hatası:', error);
+        return { success: false, error };
     }
 }

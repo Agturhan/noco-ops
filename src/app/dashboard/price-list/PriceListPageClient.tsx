@@ -2,387 +2,213 @@
 
 import React, { useState } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardContent, Button, Badge, Modal } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 import { smPackages, studioReelsPackages, unitPrices } from './data';
-
-const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount);
+import { MagicBento } from '@/components/react-bits/MagicBento';
+import { GlassSurface } from '@/components/ui/GlassSurface';
+import { StarBorder } from '@/components/react-bits/StarBorder';
+import ShinyText from '@/components/react-bits/ShinyText';
+import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
+import { Check, Info, Film, Camera, Mic, Megaphone, Palette, Star } from 'lucide-react';
 
 export function PriceListPageClient() {
     const [activeTab, setActiveTab] = useState<'packages' | 'units' | 'studio'>('packages');
 
     return (
-        <>
-            <Header
-                title="Fiyat Listesi"
-                subtitle="NOCO Creative Digital Studios - 2026"
-            />
-
-            <div style={{ padding: 'var(--space-3)' }}>
-                {/* Tab Navigation */}
-                <div style={{
-                    display: 'flex',
-                    gap: 'var(--space-1)',
-                    marginBottom: 'var(--space-3)',
-                    borderBottom: '2px solid var(--color-border)',
-                    paddingBottom: 'var(--space-1)'
-                }}>
-                    {[
-                        { id: 'packages', label: 'Sosyal Medya Paketleri' },
-                        { id: 'studio', label: 'Studio Reels' },
-                        { id: 'units', label: 'Birim Fiyatlar' },
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            style={{
-                                padding: '12px 24px',
-                                background: activeTab === tab.id ? 'var(--color-primary)' : 'transparent',
-                                color: activeTab === tab.id ? 'white' : 'var(--color-muted)',
-                                border: 'none',
-                                borderRadius: 'var(--radius-sm)',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+        <div className="p-4 md:p-8 min-h-screen pt-6 text-white overflow-x-hidden">
+            {/* HEADER */}
+            <div className="mb-8 md:mb-12 relative">
+                <div className="absolute top-0 left-0 w-64 h-64 bg-purple-600/20 rounded-full blur-[100px] -z-10 pointer-events-none" />
+                <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-2">
+                    <ShinyText text="Fiyat Listesi" speed={4} />
+                </h1>
+                <div className="text-white/40 text-sm md:text-base font-medium tracking-wide max-w-2xl">
+                    Şeffaf, esnek ve büyüme odaklı paketlerimizi inceleyin.
                 </div>
+            </div>
 
+            {/* TAB NAVIGATION */}
+            <div className="flex overflow-x-auto pb-4 mb-4 gap-2 no-scrollbar md:justify-start">
+                {[
+                    { id: 'packages', label: 'Sosyal Medya', icon: <Star size={14} /> },
+                    { id: 'studio', label: 'Studio Reels', icon: <Film size={14} /> },
+                    { id: 'units', label: 'Birim Fiyatlar', icon: <Palette size={14} /> },
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`
+                            whitespace-nowrap px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 border
+                            ${activeTab === tab.id
+                                ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105'
+                                : 'bg-white/5 text-white/50 border-white/5 hover:bg-white/10 hover:border-white/10 hover:text-white'}
+                        `}
+                    >
+                        {tab.icon}
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            <MagicBento gap={16}>
                 {/* SOSYAL MEDYA PAKETLERİ */}
                 {activeTab === 'packages' && (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                        gap: 'var(--space-2)'
-                    }}>
-                        {smPackages.map(pkg => (
-                            <Card key={pkg.id} style={{
-                                position: 'relative',
-                                borderTop: `4px solid ${pkg.color}`,
-                                overflow: 'hidden'
-                            }}>
-                                {pkg.popular && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: 12,
-                                        right: -30,
-                                        background: pkg.color,
-                                        color: '#0E1113',
-                                        padding: '4px 40px',
-                                        fontSize: '11px',
-                                        fontWeight: 700,
-                                        transform: 'rotate(45deg)'
-                                    }}>
-                                        EN POPÜLER
-                                    </div>
-                                )}
+                    <>
+                        {smPackages.map((pkg, index) => (
+                            <div key={pkg.id} className={`col-span-1 md:col-span-6 lg:col-span-3 ${pkg.popular ? 'lg:col-span-4' : ''}`}>
+                                <div className={`relative h-full group ${pkg.popular ? 'transform md:-translate-y-4' : ''}`}>
+                                    {pkg.popular && <StarBorder color={pkg.color} speed="3s" />}
 
-                                <div className="card-header">
-                                    <h3 style={{
-                                        fontSize: '24px',
-                                        fontWeight: 700,
-                                        color: pkg.color,
-                                        marginBottom: '8px'
-                                    }}>
-                                        {pkg.name}
-                                    </h3>
-                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                        <span style={{ fontSize: '36px', fontWeight: 800 }}>
-                                            {formatCurrency(pkg.price)}
-                                        </span>
-                                        <span style={{ color: 'var(--color-muted)', fontSize: '14px' }}>/ay</span>
-                                    </div>
+                                    <GlassSurface
+                                        className="h-full flex flex-col p-6 md:p-8 relative overflow-hidden"
+                                        intensity={pkg.popular ? 'medium' : 'light'}
+                                        glowOnHover
+                                        glowColor={pkg.id === 'starter' ? 'blue' : pkg.id === 'growth' ? 'green' : pkg.id === 'pro' ? 'purple' : 'blue'}
+                                    >
+                                        {/* Background Glow */}
+                                        <div
+                                            className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-[60px] opacity-20 transition-opacity duration-500 group-hover:opacity-40"
+                                            style={{ backgroundColor: pkg.color }}
+                                        />
+
+                                        {pkg.popular && (
+                                            <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-bold px-3 py-1 rounded-full shadow-lg uppercase tracking-wider flex items-center gap-1">
+                                                <Star size={10} fill="black" /> En Popüler
+                                            </div>
+                                        )}
+
+                                        <div className="mb-6 relative z-10">
+                                            <h3 className="text-lg md:text-xl font-bold uppercase tracking-widest mb-2" style={{ color: pkg.color }}>
+                                                {pkg.name}
+                                            </h3>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-3xl md:text-4xl font-bold text-white tracking-tighter">
+                                                    <AnimatedCounter value={pkg.price} prefix="₺" />
+                                                </span>
+                                                <span className="text-sm text-white/40">/ay</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 flex-grow relative z-10">
+                                            {pkg.features.map((feature, i) => (
+                                                <div key={i} className="flex items-start gap-3 text-sm md:text-base text-white/80 group-hover:text-white transition-colors">
+                                                    <div className="mt-0.5 min-w-[18px]">
+                                                        <Check size={16} color={pkg.color} strokeWidth={3} />
+                                                    </div>
+                                                    <span className="font-medium leading-snug">{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
+                                            <Button
+                                                className="w-full h-12 rounded-xl text-base font-bold transition-transform active:scale-95"
+                                                style={{
+                                                    backgroundColor: pkg.popular ? pkg.color : 'rgba(255,255,255,0.1)',
+                                                    color: pkg.popular ? '#000' : '#fff',
+                                                }}
+                                            >
+                                                Seç
+                                            </Button>
+                                        </div>
+                                    </GlassSurface>
                                 </div>
-
-                                <CardContent>
-                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                        {pkg.features.map((feature, i) => (
-                                            <li key={i} style={{
-                                                padding: '10px 0',
-                                                borderBottom: i < pkg.features.length - 1 ? '1px solid var(--color-border)' : 'none',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px'
-                                            }}>
-                                                <span style={{ color: pkg.color }}>✓</span>
-                                                {feature}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                            </Card>
+                            </div>
                         ))}
 
-                        {/* 3 Ay Anlaşma İbaresi */}
-                        <div style={{
-                            gridColumn: '1 / -1',
-                            padding: 'var(--space-2)',
-                            background: 'var(--color-surface-2)',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px dashed var(--color-border)',
-                            textAlign: 'center'
-                        }}>
-                            <p style={{ color: 'var(--color-sub-ink)', fontWeight: 500 }}>
-                                📌 Sosyal Medya Paketleri <strong>en az 3 ay anlaşıldığı takdirde</strong> geçerlidir.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* STUDIO REELS PAKETLERİ */}
-                {activeTab === 'studio' && (
-                    <>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(3, 1fr)',
-                            gap: 'var(--space-2)',
-                            marginBottom: 'var(--space-3)'
-                        }}>
-                            {studioReelsPackages.map(pkg => (
-                                <Card key={pkg.id} style={{
-                                    textAlign: 'center',
-                                    borderTop: '4px solid var(--color-primary)'
-                                }}>
-                                    <div className="card-header">
-                                        <h3 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
-                                            {pkg.name}
-                                        </h3>
-                                        <p style={{ color: 'var(--color-muted)', fontSize: '14px' }}>
-                                            {pkg.hours} saat çekim + {pkg.videos} video
-                                        </p>
-                                    </div>
-                                    <CardContent>
-                                        <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-primary)', marginBottom: '16px' }}>
-                                            {formatCurrency(pkg.price)}
-                                            <span style={{ fontSize: '14px', color: 'var(--color-muted)' }}> +KDV</span>
-                                        </div>
-                                        <div style={{
-                                            padding: '12px',
-                                            background: 'linear-gradient(135deg, rgba(50,159,245,0.1), rgba(0,245,176,0.1))',
-                                            borderRadius: 'var(--radius-sm)'
-                                        }}>
-                                            <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Video başına</p>
-                                            <p style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-success)' }}>
-                                                {formatCurrency(pkg.perVideo)}
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-
-                        <Card>
-                            <div className="card-header">
-                                <h3>📊 Studio Reels Karşılaştırma</h3>
+                        <div className="col-span-12 mt-4">
+                            <div className="bg-[#111111] border border-white/5 rounded-xl p-4 flex flex-col md:flex-row items-center justify-center gap-3 text-center">
+                                <Info size={18} className="text-white/40" />
+                                <span className="text-sm text-white/60">
+                                    Paketler en az <strong className="text-white">3 ay taahhütlü</strong> anlaşmalarda geçerlidir.
+                                </span>
                             </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Paket</th>
-                                            <th>Çekim Süresi</th>
-                                            <th>Video Sayısı</th>
-                                            <th style={{ textAlign: 'right' }}>Paket Fiyatı</th>
-                                            <th style={{ textAlign: 'right' }}>Video Başına</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {studioReelsPackages.map(pkg => (
-                                            <tr key={pkg.id}>
-                                                <td style={{ fontWeight: 600 }}>{pkg.name}</td>
-                                                <td>{pkg.hours} saat</td>
-                                                <td>{pkg.videos} video</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatCurrency(pkg.price)}</td>
-                                                <td style={{ textAlign: 'right', color: 'var(--color-success)' }}>{formatCurrency(pkg.perVideo)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                        </div>
                     </>
                 )}
 
-                {/* BİRİM FİYATLAR */}
-                {activeTab === 'units' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                        {/* Video Prodüksiyon */}
-                        <Card>
-                            <div className="card-header">
-                                <h3>Video Prodüksiyon</h3>
-                            </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hizmet</th>
-                                            <th>Açıklama</th>
-                                            <th style={{ textAlign: 'right' }}>Fiyat</th>
-                                            <th>Birim</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {unitPrices.video.map(item => (
-                                            <tr key={item.id}>
-                                                <td style={{ fontWeight: 600 }}>{item.name}</td>
-                                                <td style={{ color: 'var(--color-muted)' }}>{item.description}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primary)' }}>
-                                                    {formatCurrency(item.price)}
-                                                    {item.note && <span style={{ fontSize: '11px', color: 'var(--color-muted)', marginLeft: '4px' }}>({item.note})</span>}
-                                                </td>
-                                                <td>/ {item.unit}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                {/* STUDIO REELS */}
+                {activeTab === 'studio' && (
+                    <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {studioReelsPackages.map((pkg) => (
+                            <GlassSurface key={pkg.id} className="p-6 md:p-8 flex flex-col items-center text-center relative overflow-hidden group" intensity="low" glowOnHover>
+                                <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: '#2997FF' }} />
 
-                        {/* Reklam Yönetimi */}
-                        <Card>
-                            <div className="card-header">
-                                <h3>📢 Reklam Yönetimi</h3>
-                            </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hizmet</th>
-                                            <th>Açıklama</th>
-                                            <th style={{ textAlign: 'right' }}>Fiyat</th>
-                                            <th>Birim</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {unitPrices.reklam.map(item => (
-                                            <tr key={item.id}>
-                                                <td style={{ fontWeight: 600 }}>{item.name}</td>
-                                                <td style={{ color: 'var(--color-muted)' }}>{item.description}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primary)' }}>
-                                                    {item.price > 0 ? formatCurrency(item.price) : '—'}
-                                                    {item.note && <Badge variant="warning" style={{ marginLeft: '8px' }}>{item.note}</Badge>}
-                                                </td>
-                                                <td>/ {item.unit}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                                <h3 className="text-2xl font-bold text-white mb-2">{pkg.name}</h3>
+                                <div className="text-white/50 text-sm mb-6 font-medium">{pkg.hours} Saat Çekim • {pkg.videos} Video</div>
 
-                        {/* Podcast */}
-                        <Card>
-                            <div className="card-header">
-                                <h3>🎙️ Podcast</h3>
-                            </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hizmet</th>
-                                            <th>Açıklama</th>
-                                            <th style={{ textAlign: 'right' }}>Fiyat</th>
-                                            <th>Birim</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {unitPrices.podcast.map(item => (
-                                            <tr key={item.id}>
-                                                <td style={{ fontWeight: 600 }}>{item.name}</td>
-                                                <td style={{ color: 'var(--color-muted)' }}>{item.description}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(item.price)}</td>
-                                                <td>/ {item.unit}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                                <div className="text-4xl font-bold text-white mb-1"><AnimatedCounter value={pkg.price} prefix="₺" /></div>
+                                <div className="text-[10px] text-white/30 uppercase tracking-widest mb-8">+ KDV</div>
 
-                        {/* Fotoğraf Stüdyo */}
-                        <Card>
-                            <div className="card-header">
-                                <h3>📸 Fotoğraf Stüdyo</h3>
-                            </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hizmet</th>
-                                            <th>Açıklama</th>
-                                            <th style={{ textAlign: 'right' }}>Fiyat</th>
-                                            <th>Birim</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {unitPrices.foto.map(item => (
-                                            <tr key={item.id}>
-                                                <td style={{ fontWeight: 600 }}>{item.name}</td>
-                                                <td style={{ color: 'var(--color-muted)' }}>{item.description}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(item.price)}</td>
-                                                <td>/ {item.unit}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                                <div className="grid grid-cols-1 gap-2 w-full mb-8">
+                                    <div className="bg-white/5 rounded-lg p-3">
+                                        <div className="text-[10px] text-white/40 mb-1">Video Başına</div>
+                                        <div className="text-lg font-bold text-[#30D158]"><AnimatedCounter value={pkg.perVideo} prefix="₺" /></div>
+                                    </div>
+                                </div>
 
-                        {/* Tasarım & Operasyon (Eşdeğer) */}
-                        <Card>
-                            <div className="card-header">
-                                <h3>🎨 Tasarım & Operasyon (Eşdeğer Birim Fiyatlar)</h3>
-                            </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hizmet</th>
-                                            <th>Açıklama</th>
-                                            <th style={{ textAlign: 'right' }}>Fiyat</th>
-                                            <th>Birim</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {unitPrices.tasarim.map(item => (
-                                            <tr key={item.id}>
-                                                <td style={{ fontWeight: 600 }}>{item.name}</td>
-                                                <td style={{ color: 'var(--color-muted)' }}>{item.description}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primary)' }}>
-                                                    {formatCurrency(item.price)}
-                                                    {item.note && <span style={{ fontSize: '11px', color: 'var(--color-muted)', marginLeft: '4px' }}>({item.note})</span>}
-                                                </td>
-                                                <td>/ {item.unit}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
+                                <Button className="w-full bg-white/10 hover:bg-white/20 text-white rounded-xl h-10 font-semibold border-none">
+                                    Detaylı İncele
+                                </Button>
+                            </GlassSurface>
+                        ))}
                     </div>
                 )}
 
-                {/* Info Banner */}
-                <Card style={{
-                    marginTop: 'var(--space-3)',
-                    background: 'linear-gradient(135deg, rgba(50,159,245,0.05), rgba(0,245,176,0.05))',
-                    borderLeft: '4px solid var(--color-primary)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <span style={{ fontSize: '24px' }}>ℹ️</span>
-                        <div>
-                            <p style={{ fontWeight: 600, marginBottom: '4px' }}>Fiyatlandırma Notu</p>
-                            <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
-                                Tüm fiyatlar KDV hariçtir. Özel projeler ve enterprise anlaşmalar için iletişime geçin.
-                                ~işaretli fiyatlar paket içi eşdeğer tahmini değerlerdir.
-                            </p>
-                        </div>
+                {/* BİRİM FİYATLAR - MOBILE FRIENDLY TABLES */}
+                {activeTab === 'units' && (
+                    <div className="col-span-12 flex flex-col gap-6">
+                        {[
+                            { title: 'Video Prodüksiyon', icon: <Film size={20} className="text-blue-400" />, data: unitPrices.video, color: 'blue' },
+                            { title: 'Reklam Yönetimi', icon: <Megaphone size={20} className="text-purple-400" />, data: unitPrices.reklam, color: 'purple' },
+                            { title: 'Podcast Stüdyo', icon: <Mic size={20} className="text-orange-400" />, data: unitPrices.podcast, color: 'orange' },
+                            { title: 'Fotoğraf Stüdyo', icon: <Camera size={20} className="text-green-400" />, data: unitPrices.foto, color: 'green' },
+                            { title: 'Tasarım & Operasyon', icon: <Palette size={20} className="text-pink-400" />, data: unitPrices.tasarim, color: 'pink' },
+                        ].map((group, idx) => (
+                            <GlassSurface key={idx} className="overflow-hidden rounded-2xl" intensity="light">
+                                <div className="p-4 md:p-6 border-b border-white/5 flex items-center gap-3 bg-white/[0.02]">
+                                    <div className={`p-2 rounded-lg bg-${group.color}-500/10`}>
+                                        {group.icon}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">{group.title}</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">
+                                        <thead>
+                                            <tr className="text-[11px] font-semibold text-white/30 uppercase tracking-wider bg-white/[0.01]">
+                                                <th className="p-4">Hizmet</th>
+                                                <th className="p-4">Açıklama</th>
+                                                <th className="p-4 text-right">Fiyat</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {group.data.map((item: any) => (
+                                                <tr key={item.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                    <td className="p-4 text-sm font-medium text-white/90">{item.name}</td>
+                                                    <td className="p-4 text-sm text-white/50">{item.description || '-'}</td>
+                                                    <td className="p-4 text-sm text-right font-bold text-white whitespace-nowrap">
+                                                        {item.price > 0 ? (
+                                                            <>
+                                                                <span className="text-white/40 text-[10px] mr-1">₺</span>
+                                                                {new Intl.NumberFormat('tr-TR').format(item.price)}
+                                                                <span className="text-white/30 font-normal text-[10px] ml-1">/ {item.unit}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-white/40 italic">Teklif</span>
+                                                        )}
+                                                        {item.note && <div className="text-[10px] text-yellow-500/80 mt-0.5">{item.note}</div>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </GlassSurface>
+                        ))}
                     </div>
-                </Card>
-            </div>
-        </>
+                )}
+            </MagicBento>
+        </div>
     );
 }
+

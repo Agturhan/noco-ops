@@ -40,9 +40,8 @@ export async function getUserTodayTasks(userId: string) {
             // 1. Assignee Check
             const isAssigned =
                 t.assigneeId === userId ||
-                (userName && t.assigneeId === userName) || // Check Name
-                (Array.isArray(t.assigneeIds) && (t.assigneeIds.includes(userId) || (userName && t.assigneeIds.includes(userName)))) ||
-                (typeof t.assigneeIds === 'string' && (t.assigneeIds.includes(userId) || (userName && t.assigneeIds.includes(userName))));
+                (Array.isArray(t.assigneeIds) && t.assigneeIds.includes(userId)) ||
+                (typeof t.assigneeIds === 'string' && t.assigneeIds.includes(userId));
 
             if (!isAssigned) return false;
 
