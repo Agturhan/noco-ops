@@ -100,17 +100,7 @@ export function PriceListPageClient() {
                                             ))}
                                         </div>
 
-                                        <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
-                                            <Button
-                                                className="w-full h-12 rounded-xl text-base font-bold transition-transform active:scale-95"
-                                                style={{
-                                                    backgroundColor: pkg.popular ? pkg.color : 'rgba(255,255,255,0.1)',
-                                                    color: pkg.popular ? '#000' : '#fff',
-                                                }}
-                                            >
-                                                Seç
-                                            </Button>
-                                        </div>
+
                                     </GlassSurface>
                                 </div>
                             </div>
@@ -131,7 +121,7 @@ export function PriceListPageClient() {
                 {activeTab === 'studio' && (
                     <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
                         {studioReelsPackages.map((pkg) => (
-                            <GlassSurface key={pkg.id} className="p-6 md:p-8 flex flex-col items-center text-center relative overflow-hidden group" intensity="low" glowOnHover>
+                            <GlassSurface key={pkg.id} className="p-6 md:p-8 flex flex-col items-center text-center relative overflow-hidden group" intensity="light" glowOnHover>
                                 <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: '#2997FF' }} />
 
                                 <h3 className="text-2xl font-bold text-white mb-2">{pkg.name}</h3>
@@ -147,9 +137,7 @@ export function PriceListPageClient() {
                                     </div>
                                 </div>
 
-                                <Button className="w-full bg-white/10 hover:bg-white/20 text-white rounded-xl h-10 font-semibold border-none">
-                                    Detaylı İncele
-                                </Button>
+
                             </GlassSurface>
                         ))}
                     </div>
