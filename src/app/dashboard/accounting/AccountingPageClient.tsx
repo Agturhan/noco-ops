@@ -300,7 +300,7 @@ export function AccountingPageClient() {
 
                 {/* 3. EXPENSE (Medium Card) */}
                 <div className="md:col-span-4 lg:col-span-3 group relative rounded-[24px] overflow-hidden h-full min-h-[160px] shadow-sm">
-                    <GlassSurface className="h-full w-full flex flex-col justify-between p-6" intensity="low">
+                    <GlassSurface className="h-full w-full flex flex-col justify-between p-6" intensity="light">
                         <div className="flex items-center justify-between">
                             <span className="text-[13px] font-medium text-white/50 uppercase tracking-widest">Giderler</span>
                             <div className="p-2 rounded-full bg-[#FF453A]/10 text-[#FF453A]">
@@ -321,7 +321,7 @@ export function AccountingPageClient() {
                 {/* 4. CHARTS & LISTS GRID */}
                 <div className="md:col-span-12 lg:col-span-9 h-full min-h-[500px] flex flex-col gap-6">
                     {/* INCOME LIST */}
-                    <GlassSurface className="w-full rounded-[24px] p-6" intensity="low">
+                    <GlassSurface className="w-full rounded-[24px] p-6" intensity="light">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                                 <span className="w-1 h-5 rounded-full bg-[#30D158]" />
@@ -367,7 +367,7 @@ export function AccountingPageClient() {
                     </GlassSurface>
 
                     {/* EXPENSE LIST */}
-                    <GlassSurface className="w-full rounded-[24px] p-6" intensity="low">
+                    <GlassSurface className="w-full rounded-[24px] p-6" intensity="light">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                                 <span className="w-1 h-5 rounded-full bg-[#FF453A]" />
