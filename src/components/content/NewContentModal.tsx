@@ -45,7 +45,7 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
         if (isOpen) {
             if (initialContent) {
                 setFormTitle(initialContent.title || '');
-                setFormBrand(initialContent.brandId || initialContent.brandName || '');
+                setFormBrand(initialContent.brandName || initialContent.brandId || '');
                 setFormType(initialContent.type || 'VIDEO');
                 setFormStatus(initialContent.status || 'PLANLANDI');
                 setFormNotes(initialContent.notes || '');
@@ -85,7 +85,10 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
     };
 
     const saveContent = async () => {
-        if (!formTitle || !formBrand) return;
+        if (!formTitle || !formBrand) {
+            alert('Lütfen Başlık ve Marka alanlarını doldurunuz.');
+            return;
+        }
 
         const data = {
             title: formTitle,
@@ -103,47 +106,14 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
             let result;
             if (initialContent && initialContent.id) {
                 // Update existing
-                // Note: updateContentDB expects brandId, but here we might have brandName if it's new custom brand
-                // If it's a known brand, we should probably find the ID. 
-                // However, for simplicity and since `updateContentDB` usage in original file used `brandId`, 
-                // and `createContentWithBrand` handles name-to-id or new brand creation.
-                // We might need a similar "updateContentWithBrand" or just handle it.
-                // The original code in page.tsx for update just passed `brandId: formBrand`.
-                // But `formBrand` in the original creation flow was the NAME for new brands or ID for selected? 
-                // Actually in original page.tsx:
-                // `const [formBrand, setFormBrand] = useState('');` - initially empty
-                // `handleBrandInput` sets it to string value.
-                // `selectBrandSuggestion` sets it to suggestion.name.
-                // So `formBrand` is likely the NAME.
-                // But `updateContentDB` takes `brandId`.
-                // This implies the original update logic might have been flawed if it passed name as ID, OR `updateContentDB` handles names?
-                // Let's check `lib/actions/content.ts` later if needed. For now assuming `create` behavior is main target.
-
-                // For creation, we definitely use `createContentWithBrand`.
-
-                // If we are editing, we probably want to support updating title/status etc. but brand update might be tricky if we don't have the ID content.
-                // Let's assume this modal is primarily for CREATION as per user request "Yeni içerik paneli orada da açılsın".
-                // Detailed editing is done in `ContentDetailPanel` anyway? 
-                // Wait, the original `ContentProductionPage` had an edit modal too.
-                // "openModal" in page.tsx did setFormBrand(content.brandId). So for established content it was ID?
-                // But for creation `createContentWithBrand` takes `brandName`.
-                // Mixed usage.
-
-                // Let's stick to CREATION focus for now or handle it safely.
-                // The user said "Yeni içerik paneli orada da açılsın ve o şekilde ekleyebilelim" -> Focus on Adding.
-
-                // If we are editing, we fall back to generic update but we might not support swapping brand accurately without ID lookup.
-                // Re-using `createContentWithBrand` logic for creation.
-
                 result = await updateContentDB(initialContent.id, {
                     title: formTitle,
-                    // brandId: ... we skip updating brand ID here to avoid breaking things if we only have name. 
-                    // If user types a name, we don't have ID.
+                    brandName: formBrand,
                     type: formType,
                     status: formStatus,
                     notes: formNotes,
-                    deliveryDate: formDeliveryDate,
-                    publishDate: formPublishDate,
+                    deliveryDate: formDeliveryDate || undefined,
+                    publishDate: formPublishDate || undefined,
                     assigneeIds: formAssignees,
                     assigneeId: formAssignees[0]
                 });
@@ -153,6 +123,8 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
 
             if (onSuccess && result) {
                 onSuccess(result);
+            } else if (!result) {
+                throw new Error('Kayıt başarısız (Sonuç boş)');
             }
             onClose();
             // Reset form
@@ -161,7 +133,7 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
             setFormAssignees([]);
         } catch (error) {
             console.error('İçerik kaydedilemedi:', error);
-            alert('Kaydedilirken bir hata oluştu.');
+            alert('Kaydedilirken bir hata oluştu: ' + error);
         }
     };
 
@@ -264,7 +236,11 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
                         label="Sorumlular"
                         value={formAssignees}
                         onChange={setFormAssignees}
-                        options={activeTeam.map(m => ({ value: m.name, label: m.name, color: teamMemberColors[m.name] }))}
+                        options={activeTeam.map(m => ({
+                            value: m.id, // Use ID properly
+                            label: m.name,
+                            color: teamMemberColors[m.name] || teamMemberColors[m.id]
+                        }))}
                         placeholder="Kişi seçiniz..."
                     />
                     <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={3} />

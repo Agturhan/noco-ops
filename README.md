@@ -81,3 +81,16 @@ Sistem aşağıdaki kuralları otomatik olarak zorlar:
 ## 📝 Lisans
 
 Bu proje NOCO Digital için özel olarak geliştirilmiştir.
+
+## 🧪 Dashboard Reskin Smoke Test Checklist
+
+Before merging visual changes, verify:
+
+- [ ] **/login**: Standard design preserved?
+- [ ] **/dashboard**: Background is dark glass? Cards are glass?
+- [ ] **/dashboard/tasks**: Tasks list visible? No infinite loader?
+- [ ] **/dashboard/content-production**: Table renders correctly?
+- [ ] **/dashboard/invoices**: Layout breaks?
+- [ ] **Mobile View**: Resize to < 768px. Do cards stack? Is text readable?
+- [ ] **Rollback**: Set `NEXT_PUBLIC_DASHBOARD_RESKIN=false`. Does it revert perfectly?
+

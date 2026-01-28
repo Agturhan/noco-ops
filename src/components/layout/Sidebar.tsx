@@ -184,7 +184,7 @@ export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleThem
                 />
             )}
 
-            <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+            <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{ background: 'var(--color-surface)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border)' }}>
                 <div className="sidebar-header">
                     <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Image

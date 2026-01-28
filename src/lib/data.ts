@@ -139,9 +139,9 @@ export const contentTypes: Record<ContentType, { label: string; icon: string; co
 
 // Türe göre aşama akışı (dinamik workflow)
 export const contentTypeStages: Record<ContentType, ContentStatus[]> = {
-    // 1. Video & Podcast: Çekim ve kurgu odaklı
-    VIDEO: ['PLANLANDI', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'ONAY', 'PAYLASILD'],
-    PODCAST: ['PLANLANDI', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'ONAY', 'PAYLASILD'],
+    // 1. Video & Podcast: Çekim ve kurgu odaklı (Sadeleştirilmiş Akış)
+    VIDEO: ['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'],
+    PODCAST: ['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'],
 
     // 2. Fotoğraf: Görsel işleme odaklı
     FOTOGRAF: ['PLANLANDI', 'CEKILDI', 'FOTOGRAF_RETOUCH', 'ONAY', 'PAYLASILD'],

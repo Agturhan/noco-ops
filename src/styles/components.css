@@ -656,3 +656,59 @@
         padding-top: 0;
     }
 }
+
+/* ===== Dashboard Reskin Components (Scoped) ===== */
+[data-dashboard="true"] .sidebar {
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-right: var(--glass-border);
+}
+
+[data-dashboard="true"] .header {
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-bottom: var(--glass-border);
+}
+
+[data-dashboard="true"] .mobile-header {
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-bottom: var(--glass-border);
+}
+
+[data-dashboard="true"] .sidebar-link.active {
+    background-color: var(--glass-bg);
+    border: var(--glass-border);
+    color: var(--color-primary);
+    box-shadow: 0 0 10px rgba(50, 159, 244, 0.2);
+}
+
+[data-dashboard="true"] .sidebar-link:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--color-ink);
+}
+
+/* Glass Glow Effects (Desktop Only) */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .glass-glow-blue:hover:not(.active) {
+        box-shadow: var(--shadow-neon-blue);
+        border-color: rgba(50, 159, 244, 0.5);
+        /* fallback if rgb var missing */
+        transform: translateY(-2px);
+    }
+
+    .glass-glow-green:hover:not(.active) {
+        box-shadow: var(--shadow-neon-green);
+        border-color: rgba(0, 245, 176, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .glass-glow-purple:hover:not(.active) {
+        box-shadow: 0 0 10px rgba(156, 39, 176, 0.3), 0 0 2px rgba(156, 39, 176, 0.5);
+        border-color: rgba(156, 39, 176, 0.5);
+        transform: translateY(-2px);
+    }
+}

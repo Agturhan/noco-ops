@@ -238,3 +238,35 @@ export async function getCashflowForecast() {
         return { expectedIncome: 0, expectedExpense: 0, invoicesDue: 0 };
     }
 }
+
+// ===== GELİR EKLEME =====
+
+export async function createIncome(data: {
+    title: string;
+    amount: number;
+    category?: string;
+    source?: string;
+    projectId?: string;
+    invoiceId?: string;
+    notes?: string;
+    date?: string;
+}) {
+    try {
+        const income = await prisma.income.create({
+            data: {
+                title: data.title,
+                amount: data.amount,
+                source: data.source,
+                projectId: data.projectId,
+                invoiceId: data.invoiceId,
+                notes: data.notes,
+                date: data.date ? new Date(data.date) : new Date(),
+            }
+        });
+
+        return income;
+    } catch (error) {
+        console.error('Gelir eklenirken hata:', error);
+        throw new Error('Gelir kaydedilemedi');
+    }
+}

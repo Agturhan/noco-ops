@@ -4,7 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardContent, Button, Badge, Input, Textarea, ColorPicker, Modal } from '@/components/ui';
 import { Icons, TypeIcons, StatusIcons } from '@/components/content/icons';
 import { Clock, ListChecks } from 'lucide-react';
-import { getBrandById, updateBrand, getBrandStats, getBrandProjects, Brand } from '@/lib/actions/brands';
+import { getClientById, updateClient, deleteClient, createContract, updateContract } from '@/lib/actions/projects'; // Using projects.ts client actions
+import { getBrandStats, getBrandProjects, Brand } from '@/lib/actions/brands';
 import { ContentStatus } from '@/lib/data';
 
 function TabButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
@@ -34,17 +35,23 @@ export default function BrandDetailPage() {
     const router = useRouter();
     const id = params.id as string;
 
-    const [brand, setBrand] = useState<Brand | null>(null);
+    const [brand, setBrand] = useState<any | null>(null);
     const [stats, setStats] = useState({ totalProjects: 0, activeProjects: 0, contracts: 0 });
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'GENERAL' | 'PROJECTS' | 'SOCIAL' | 'NOTES'>('GENERAL');
+    const [activeTab, setActiveTab] = useState<'GENERAL' | 'PROJECTS' | 'SOCIAL' | 'NOTES' | 'CONTRACTS'>('GENERAL');
 
     // Form States
     const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState<Partial<Brand>>({});
+    const [formData, setFormData] = useState<Partial<any>>({});
     const [socialCreds, setSocialCreds] = useState('');
     const [selectedTask, setSelectedTask] = useState<any>(null);
+
+    // Contract Form
+    const [showContractModal, setShowContractModal] = useState(false);
+    const [contractForm, setContractForm] = useState({
+        name: 'Hizmet Sözleşmesi', monthlyVideoQuota: 0, monthlyPostQuota: 0, notes: '', retainerHours: 0
+    });
 
     useEffect(() => {
         loadData();
@@ -53,7 +60,7 @@ export default function BrandDetailPage() {
     const loadData = async () => {
         setLoading(true);
         const [brandData, statsData, projectsData] = await Promise.all([
-            getBrandById(id),
+            getClientById(id), // Now returns contracts
             getBrandStats(id),
             getBrandProjects(id)
         ]);
@@ -72,13 +79,33 @@ export default function BrandDetailPage() {
         if (!brand) return;
         try {
             const updates = { ...formData, socialCredentials: socialCreds };
-            await updateBrand(brand.id, updates);
+            // Using updateClient from projects.ts (wrapper for Client table)
+            await updateClient(brand.id, updates);
             setBrand({ ...brand, ...updates });
             setEditMode(false);
             alert('Kaydedildi');
         } catch (e) {
             console.error('Save failed', e);
             alert('Hata oluştu');
+        }
+    };
+
+    const handleCreateContract = async () => {
+        if (!brand) return;
+        try {
+            await createContract({
+                clientId: brand.id,
+                name: contractForm.name,
+                monthlyVideoQuota: Number(contractForm.monthlyVideoQuota),
+                monthlyPostQuota: Number(contractForm.monthlyPostQuota),
+                retainerHours: Number(contractForm.retainerHours),
+                notes: contractForm.notes
+            });
+            await loadData(); // Reload to see new contract
+            setShowContractModal(false);
+        } catch (e: any) {
+            console.error(e);
+            alert(e.message || 'Sözleşme oluşturulamadı');
         }
     };
 
@@ -91,7 +118,7 @@ export default function BrandDetailPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <Button variant="ghost" onClick={() => router.back()}>&larr; Geri</Button>
-                    <div style={{ width: 40, height: 40, borderRadius: '8px', backgroundColor: brand.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '18px' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '8px', backgroundColor: brand.color || '#329FF5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '18px' }}>
                         {brand.name.charAt(0)}
                     </div>
                     <div>
@@ -128,8 +155,8 @@ export default function BrandDetailPage() {
                     </Card>
                     <Card>
                         <CardContent style={{ textAlign: 'center', padding: '24px' }}>
-                            <p style={{ fontSize: '12px', color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Sözleşme</p>
-                            <p style={{ fontSize: '32px', fontWeight: 700, color: '#F6D73C' }}>{stats.contracts}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Sözleşmeler</p>
+                            <p style={{ fontSize: '32px', fontWeight: 700, color: '#F6D73C' }}>{brand.contracts?.length || 0}</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -138,6 +165,7 @@ export default function BrandDetailPage() {
             {/* Tabs */}
             <div style={{ borderBottom: '1px solid var(--color-border)', marginBottom: 'var(--space-4)', display: 'flex', gap: '8px' }}>
                 <TabButton active={activeTab === 'GENERAL'} onClick={() => setActiveTab('GENERAL')}>Genel</TabButton>
+                <TabButton active={activeTab === 'CONTRACTS'} onClick={() => setActiveTab('CONTRACTS')}>Sözleşmeler ({brand.contracts?.length || 0})</TabButton>
                 <TabButton active={activeTab === 'PROJECTS'} onClick={() => setActiveTab('PROJECTS')}>Projeler ({projects.length})</TabButton>
                 <TabButton active={activeTab === 'SOCIAL'} onClick={() => setActiveTab('SOCIAL')}>Sosyal Medya</TabButton>
                 <TabButton active={activeTab === 'NOTES'} onClick={() => setActiveTab('NOTES')}>Notlar</TabButton>
@@ -190,6 +218,47 @@ export default function BrandDetailPage() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'CONTRACTS' && (
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Aktif Sözleşmeler</h3>
+                                <Button variant="primary" size="sm" onClick={() => setShowContractModal(true)}>+ Yeni Sözleşme</Button>
+                            </div>
+
+                            {(brand.contracts || []).length === 0 ? <p style={{ color: 'var(--color-muted)' }}>Henüz sözleşme yok.</p> : (
+                                <div style={{ display: 'grid', gap: '12px' }}>
+                                    {brand.contracts.map((c: any) => (
+                                        <div key={c.id} style={{ padding: '16px', backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <h4 style={{ fontWeight: 600 }}>{c.name}</h4>
+                                                <Badge variant="success">Aktif</Badge>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', fontSize: '13px' }}>
+                                                <div>
+                                                    <span style={{ color: 'var(--color-muted)', display: 'block', textTransform: 'uppercase', fontSize: '11px' }}>Video Kotası</span>
+                                                    <span style={{ fontWeight: 600, fontSize: '15px' }}>{c.monthlyVideoQuota} Video</span>
+                                                </div>
+                                                <div>
+                                                    <span style={{ color: 'var(--color-muted)', display: 'block', textTransform: 'uppercase', fontSize: '11px' }}>Post Kotası</span>
+                                                    <span style={{ fontWeight: 600, fontSize: '15px' }}>{c.monthlyPostQuota} Post</span>
+                                                </div>
+                                                <div>
+                                                    <span style={{ color: 'var(--color-muted)', display: 'block', textTransform: 'uppercase', fontSize: '11px' }}>Stüdyo</span>
+                                                    <span style={{ fontWeight: 600, fontSize: '15px' }}>{c.retainerHours || 0} Saat</span>
+                                                </div>
+                                            </div>
+                                            {c.notes && (
+                                                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+                                                    <p style={{ fontSize: '13px', color: 'var(--color-muted)' }}>{c.notes}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -267,6 +336,50 @@ export default function BrandDetailPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* CONTRACT MODAL */}
+            <Modal
+                isOpen={showContractModal}
+                onClose={() => setShowContractModal(false)}
+                title="Yeni Hakediş Sözleşmesi"
+            >
+                <div style={{ display: 'grid', gap: '16px' }}>
+                    <Input
+                        label="Sözleşme Adı"
+                        value={contractForm.name}
+                        onChange={e => setContractForm({ ...contractForm, name: e.target.value })}
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <Input
+                            label="Aylık Video Kotası"
+                            type="number"
+                            value={contractForm.monthlyVideoQuota}
+                            onChange={e => setContractForm({ ...contractForm, monthlyVideoQuota: Number(e.target.value) })}
+                        />
+                        <Input
+                            label="Aylık Post Kotası"
+                            type="number"
+                            value={contractForm.monthlyPostQuota}
+                            onChange={e => setContractForm({ ...contractForm, monthlyPostQuota: Number(e.target.value) })}
+                        />
+                    </div>
+                    <Input
+                        label="Stüdyo Saati (Opsiyonel)"
+                        type="number"
+                        value={contractForm.retainerHours}
+                        onChange={e => setContractForm({ ...contractForm, retainerHours: Number(e.target.value) })}
+                    />
+                    <Textarea
+                        placeholder="Özel Notlar (Örn: Ayda 1 kez mekan çekimi, 10-25 arası çekim yapılacak vb.)"
+                        value={contractForm.notes}
+                        onChange={e => setContractForm({ ...contractForm, notes: e.target.value })}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+                        <Button variant="secondary" onClick={() => setShowContractModal(false)}>İptal</Button>
+                        <Button variant="primary" onClick={handleCreateContract}>Oluştur</Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* TASK DETAIL MODAL */}
             <Modal

@@ -3,31 +3,48 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Badge, Button, Modal } from '@/components/ui';
-import { brands, getBrandName, getBrandColor } from '@/lib/data';
-import { getDashboardStats, getPendingActions, type DashboardStats } from '@/lib/actions/dashboard';
-import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines } from '@/lib/actions/tasks';
+import { Badge, Button, Modal } from '@/components/ui';
+import { GlassSurface } from '@/components/ui/GlassSurface';
+import { AssigneeStack } from '@/components/ui/AssigneeStack';
+import { getBrandName } from '@/lib/data';
+import { getDashboardStats, type DashboardStats } from '@/lib/actions/dashboard';
+import { toggleTaskStatus, getUserTodayTasks, getUserWeekDeadlines, updateTask } from '@/lib/actions/tasks';
 import { getMemberColors } from '@/lib/actions/userSettings';
-import { getTodayTasks as getSharedTasks, getWeekDeadlines as getSharedDeadlines } from '@/lib/sharedTasks';
 import { getRetainerStatus } from '@/lib/actions/content';
-import { Clapperboard, TrendingDown, TrendingUp, Camera, Plus, LogOut, FolderOpen, ListChecks, AlertTriangle, Clock, CheckCircle, Check } from 'lucide-react';
+import { AnimatedList } from '@/components/react-bits/AnimatedList';
+import { MagicBento } from '@/components/react-bits/MagicBento';
+import { BlurText, ShinyText } from '@/components/react-bits/TextAnimations';
+import { GlassIcon } from '@/components/react-bits/GlassIcons';
+import { StarBorder } from '@/components/react-bits/StarBorder';
+import { Clapperboard, Camera, Clock, Check, ListChecks, LogOut, X, CheckCircle, Share2, Calendar } from 'lucide-react';
+import { DashboardDebugger } from '@/components/debug/DashboardDebugger';
 
-// Takım üyeleri varsayılan renkleri
 const defaultMemberColors: Record<string, string> = {
     'Şeyma Bora': '#E91E63',
     'Fatih Ustaosmanoğlu': '#329FF5',
-    'Ayşegül Güler': '#00F5B0',
-    'Ahmet Gürkan Turhan': '#9C27B0'
+    'Ahmet Gürkan Turhan': '#9C27B0',
+    'Ayşegül Güler Ustaosmanoğlu': '#FF9800',
+    'user-ops': '#9C27B0',
+    'user-studio': '#329FF5',
+    'user-digital': '#E91E63',
+    'user-owner': '#FF9800'
 };
 
-// ===== GELİŞMİŞ DASHBOARD (Blueprint Uyumlu) =====
-// - Düzenli (Retainer) vs Düzensiz (Proje) Gelir Ayrımı
-// - Bugünkü Stüdyo Doluluk
-// - Yaklaşan Ödeme Riskleri (7/14/30 gün)
-// - Rol Bazlı Görünüm
+const memberNames: Record<string, string> = {
+    'user-ops': 'Ahmet Turhan',
+    'user-studio': 'Fatih Usta',
+    'user-digital': 'Şeyma Bora',
+    'user-owner': 'Ayşegül Güler'
+};
 
-// Kullanıcı tipi
+const CELEBRATION_MESSAGES = [
+    "Harika iş! Bu haftayı fethettin.",
+    "Tüm görevler tamam! Şimdi kahve molası zamanı.",
+    "Efsane performans! Hiçbir şey senin elinden kaçamaz.",
+    "Şov yapıyorsun! Bu hafta senden sorulur.",
+    "Mükemmel! Liste tertemiz, kafan rahat."
+];
+
 interface CurrentUser {
     id: string;
     name: string;
@@ -35,7 +52,6 @@ interface CurrentUser {
     role: string;
 }
 
-// Günün saatine göre selamlama
 const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Günaydın';
@@ -43,151 +59,23 @@ const getGreeting = () => {
     return 'İyi akşamlar';
 };
 
-// Gerçek markalardan gelir verileri
-const revenueData = {
-    recurring: 285000, // Retainer geliri
-    project: 124500, // Proje geliri
-    total: 409500,
-    recurringChange: '+₺25K',
-    projectChange: '+₺18K',
-};
-
-
-
-// Bugünkü Stüdyo Doluluk - Gerçek markalar
-const todayStudio = {
-    bookings: [
-        { time: '09:00 - 13:00', client: 'Valora Psikoloji', project: 'Ürün Çekimi', type: 'INTERNAL' },
-        { time: '14:00 - 18:00', client: 'Zoks Studio', project: 'Konsept Çekim', type: 'INTERNAL' },
-    ],
-    occupancyPercent: 80,
-    isOccupiedNow: true,
-    currentBooking: 'Valora Psikoloji - Ürün Çekimi',
-};
-
-// Yaklaşan Ödeme Riskleri - Gerçek markalar (dinamik tarih hesabı)
-const getOverdueDays = (dueDateStr: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dueDate = new Date(dueDateStr);
-    dueDate.setHours(0, 0, 0, 0);
-    return Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-};
-
-const getDaysUntil = (dateStr: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const targetDate = new Date(dateStr);
-    targetDate.setHours(0, 0, 0, 0);
-    return Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-};
-
-// Fatura vade tarihleri
-const invoiceDueDates: Record<string, string> = {
-    'INV-2026-002': '2026-01-12', // Zeytindalı - vadesi geçmiş
-    'INV-2026-003': '2026-01-20', // Valora
-    'INV-2026-004': '2026-01-24', // İkra
-    'INV-2026-005': '2026-01-29', // Zoks
-    'INV-2026-006': '2026-02-10', // Ali Haydar
-};
-
-const paymentRisks = {
-    overdue: [
-        { id: 'o1', client: 'Zeytindalı Gıda', invoice: 'INV-2026-002', amount: 50000, dueDate: invoiceDueDates['INV-2026-002'], daysOverdue: Math.max(0, getOverdueDays(invoiceDueDates['INV-2026-002'])) },
-    ],
-    next7Days: [
-        { id: 'p1', client: 'Valora Psikoloji', invoice: 'INV-2026-003', amount: 35000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-003']) },
-        { id: 'p2', client: 'İkra Giyim', invoice: 'INV-2026-004', amount: 25000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-004']) },
-    ],
-    next14Days: [
-        { id: 'p3', client: 'Zoks Studio', invoice: 'INV-2026-005', amount: 45000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-005']) },
-    ],
-    next30Days: [
-        { id: 'p4', client: 'Ali Haydar Ocakbaşı', invoice: 'INV-2026-006', amount: 20000, dueIn: getDaysUntil(invoiceDueDates['INV-2026-006']) },
-    ],
-};
-
-// Gerçek marka projeleri - projects/[id]/page.tsx ile SENKRON
-// Progress: Tamamlanan teslimat / Toplam teslimat (detay sayfasıyla aynı)
-// PaymentStatus: Ödeme durumu detay sayfasındaki fatura durumuna göre
-const recentProjects = [
-    // Zeytindalı: 0/5 teslimat completed → %0, Fatura PENDING → OVERDUE değil
-    { id: '1', name: 'Zeytindalı Rebrand 2026', client: 'Zeytindalı Gıda', status: 'ACTIVE', progress: 0, dueDate: '2026-02-28', paymentStatus: 'PENDING' },
-    // İkranur: 1/2 teslimat completed → %50
-    { id: '2', name: 'İkranur Sosyal Medya Paketi', client: 'İkranur Kozmetik', status: 'ACTIVE', progress: 50, dueDate: '2026-03-15', paymentStatus: 'PAID' },
-    // Louvess: 0/2 teslimat → %0
-    { id: '3', name: 'Louvess E-Ticaret Lansmanı', client: 'Louvess Beauty', status: 'PENDING', progress: 0, dueDate: '2026-04-01', paymentStatus: 'PENDING' },
-    // Tevfik: 1/3 teslimat completed → %33
-    { id: '4', name: 'Tevfik Usta Web Sitesi', client: 'Tevfik Usta Döner', status: 'ACTIVE', progress: 33, dueDate: '2026-02-15', paymentStatus: 'PENDING' },
-];
-
-
-// Dinamik pending actions - bugünün tarihine göre
-const getDynamicPendingActions = () => {
-    const actions = [];
-    const today = new Date();
-
-    // Gecikmiş fatura - INV-2026-002 (Zeytindalı ara ödeme)
-    // Not: projects/[id]/page.tsx'deki invoices ile tutarlı: amount: 50000, dueDate: '2026-02-01'
-    const inv002DueDate = new Date('2026-02-01');
-    const overdueDays = Math.ceil((today.getTime() - inv002DueDate.getTime()) / (1000 * 60 * 60 * 24));
-    if (overdueDays > 0) {
-        actions.push({
-            id: '1',
-            type: 'payment',
-            message: `Zeytindalı Gıda ara ödeme - ₺50.000 (${overdueDays} gün gecikmiş)`,
-            actionLabel: 'Faturayı Gör',
-            severity: 'error',
-            link: '/dashboard/invoices/i1' // ID=1 proje faturasına
-        });
-    }
-
-    // Louvess projesi beklemede  - projects/[id] ID=3 ile tutarlı
-    actions.push({
-        id: '2',
-        type: 'approval',
-        message: 'Louvess E-Ticaret Lansmanı onay bekliyor',
-        actionLabel: 'Projeyi Gör',
-        severity: 'warning',
-        link: '/dashboard/projects/3'
-    });
-
-    // Zeytindalı Logo incelemede - deliverables/d1 ile tutarlı
-    actions.push({
-        id: '3',
-        type: 'deadline',
-        message: 'Zeytindalı Logo Tasarımı müşteri onayı bekliyor',
-        actionLabel: 'Teslimatı Gör',
-        severity: 'info',
-        link: '/dashboard/deliverables/d1'
-    });
-
-    return actions;
-};
-
-const pendingActions = getDynamicPendingActions();
-
-
-
 export function DashboardPageClient() {
     const router = useRouter();
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-    const [actions, setActions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [todayTasks, setTodayTasks] = useState<any[]>([]);
     const [upcomingStudio, setUpcomingStudio] = useState<any[]>([]);
     const [retainerStats, setRetainerStats] = useState<any[]>([]);
     const [weekDeadlines, setWeekDeadlines] = useState<any[]>([]);
     const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
     const [taskViewMode, setTaskViewMode] = useState<'today' | 'upcoming'>('today');
-    const [debugCounts, setDebugCounts] = useState({ server: 0, client: 0 });
+
+    // Define currentDate for display
+    const currentDate = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
-    // Görev tamamla/geri al toggle - DB'ye kaydet
     const handleToggleTask = async (taskId: string) => {
-        // UI'da hemen güncelle (İyimser güncelleme)
         setTodayTasks(prev => {
             const updated = prev.map(t =>
                 t.id === taskId ? { ...t, completed: !t.completed, status: t.completed ? 'TODO' : 'DONE' } : t
@@ -195,13 +83,10 @@ export function DashboardPageClient() {
             return updated.sort((a, b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
         });
 
-        // DB'ye kaydet
         try {
-            const result = await toggleTaskStatus(taskId, currentUser?.id);
-            console.log('Görev durumu güncellendi:', result);
+            await toggleTaskStatus(taskId, currentUser?.id);
         } catch (error) {
             console.error('Görev güncellenirken hata:', error);
-            // Hata durumunda geri al
             setTodayTasks(prev => {
                 const updated = prev.map(t =>
                     t.id === taskId ? { ...t, completed: !t.completed, status: t.completed ? 'DONE' : 'TODO' } : t
@@ -211,85 +96,141 @@ export function DashboardPageClient() {
         }
     };
 
+    const handleSnoozeTask = async (taskId: string) => {
+        if (!taskId) return;
+
+        // Calculate new date: Tomorrow
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const newDate = tomorrow.toISOString();
+
+        // Optimistic update: Update local state immediately
+        setTodayTasks(prev => prev.map(t => {
+            if (t.id === taskId) {
+                return { ...t, deadline: new Date(newDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) + " (Ertelendi)" };
+            }
+            return t;
+        }));
+
+        // Also update week deadlines if it exists there
+        setWeekDeadlines(prev => prev.map(t => {
+            if (t.id === taskId) {
+                const d = new Date(newDate);
+                const daysLeft = Math.ceil((d.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                return { ...t, date: d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }), daysLeft };
+            }
+            return t;
+        }));
+
+        try {
+            await updateTask(taskId, { dueDate: newDate });
+
+            // Remove from "Today" list as it is snoozed
+            setTimeout(() => {
+                setTodayTasks(prev => prev.filter(t => t.id !== taskId));
+                setSelectedTask(null);
+            }, 500); // Small delay to let user see "Ertelendi" or some feedback, or simply close it.
+
+        } catch (error) {
+            console.error('Snooze error:', error);
+            // Revert logic could be added here
+        }
+    };
 
     useEffect(() => {
-        // Kullanıcı bilgilerini localStorage'dan al
         const userStr = localStorage.getItem('currentUser');
-        let userId = 'user-owner'; // Default
-        let userName = ''; // Kullanıcı adı
+        let userId = 'user-owner';
+        let userName = '';
         if (userStr) {
             const user = JSON.parse(userStr);
+
+            // AUTO-FIX: Corrupted ID correction
+            if (user.id === '2' || user.id === '4') {
+                console.warn('Fixing corrupted User ID:', user.id);
+                if (user.name.includes('Fatih')) user.id = 'user-studio';
+                else if (user.name.includes('Seyma')) user.id = 'user-digital';
+                else if (user.name.includes('Ahmet')) user.id = 'user-ops';
+                else if (user.name.includes('Aysegul')) user.id = 'user-owner';
+
+                // Save fixed user back to storage
+                localStorage.setItem('currentUser', JSON.stringify(user));
+            }
+
             setCurrentUser(user);
             userId = user.id || 'user-owner';
             userName = user.name || '';
         }
 
-        // Dashboard verilerini yükle
+
+
         const loadDashboardData = async () => {
             try {
-                // Supabase'den görevleri ve renkleri çek
                 const [dbTasks, dbDeadlines, memberColors] = await Promise.all([
                     getUserTodayTasks(userId),
                     getUserWeekDeadlines(userId),
                     getMemberColors().catch(() => defaultMemberColors),
                 ]);
 
-                // Kişi renklerini set et
                 setTeamMemberColors(memberColors);
 
                 let userTasks = dbTasks || [];
+                const now = new Date();
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const endOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
-                // DB boşsa, sharedTasks'ten fallback kullan
-                // if (userTasks.length === 0) { ... } -> Removed to avoid showing successful static tasks that fail on interaction
-
-
-                // Kullanıcıya göre filtrele
                 if (userId || userName) {
                     const filtered = userTasks.filter((t: any) => {
                         const assignees = t.assigneeIds || [];
                         if (t.assigneeId && !assignees.includes(t.assigneeId)) assignees.push(t.assigneeId);
 
-                        // Atanmamış görevleri herkese göster
-                        if (assignees.length === 0) return true;
-
-                        // 1. ID Kontrolü (Öncelikli)
-                        if (userId && assignees.includes(userId)) return true;
-
-                        // 2. İsim Kontrolü (Gelişmiş)
-                        if (userName) {
+                        let isAssigned = false;
+                        if (userId && assignees.includes(userId)) isAssigned = true;
+                        else if (userName) {
                             const lowerUserName = userName.toLowerCase();
-                            const userParts = lowerUserName.split(' ');
-                            const firstName = userParts[0].trim();
-
-                            return assignees.some((a: string) => {
+                            const firstName = lowerUserName.split(' ')[0].trim();
+                            isAssigned = assignees.some((a: string) => {
                                 if (!a) return false;
-                                const lowerA = a.toLowerCase();
-                                // Çapraz kontrol: İsimler birbirini içeriyor mu?
-                                return lowerA.includes(firstName) || lowerUserName.includes(lowerA);
+                                return a.toLowerCase().includes(firstName) || lowerUserName.includes(a.toLowerCase());
                             });
                         }
+                        if (!isAssigned) return false;
 
-                        return false;
+                        if (t.dueDate) {
+                            const d = new Date(t.dueDate);
+                            // Safe check
+                            if (isNaN(d.getTime()) || d.getFullYear() < 2000) return false; // Invalid dates
+                            const taskDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                            if (taskDate >= endOfTomorrow) return false; // Future tasks (after tomorrow)
+                            if (taskDate < startOfToday) { return !t.completed; } // Overdue logic (only incomplete)
+                        } else {
+                            // If no due date, show it if it's active (TODO/IN_PROGRESS)
+                            if (t.completed) return false;
+                        }
+
+                        return true;
                     });
-                    // Filtrelenmiş görev varsa kullan
-                    setDebugCounts({ server: userTasks.length, client: filtered.length });
+
+                    filtered.sort((a: any, b: any) => {
+                        if (!a.dueDate) return 1; // Undated last
+                        if (!b.dueDate) return -1;
+                        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                    });
                     userTasks = filtered;
-                } else {
-                    setDebugCounts({ server: userTasks.length, client: userTasks.length });
                 }
 
-                // Deadline'ları set et
                 if (dbDeadlines && dbDeadlines.length > 0) {
                     setWeekDeadlines(dbDeadlines);
                 } else {
-                    // Fallback: görevlerden hesapla
                     const today = new Date();
+                    today.setHours(0, 0, 0, 0);
                     const weekLater = new Date(today);
                     weekLater.setDate(weekLater.getDate() + 7);
-
                     const deadlines = userTasks.filter((t: any) => {
                         if (!t.dueDate) return false;
                         const due = new Date(t.dueDate);
+                        due.setHours(0, 0, 0, 0);
                         return due >= today && due <= weekLater && t.status !== 'DONE';
                     }).map((t: any) => ({
                         id: t.id,
@@ -299,11 +240,9 @@ export function DashboardPageClient() {
                         daysLeft: Math.ceil((new Date(t.dueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
                         assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
                     })).slice(0, 5);
-
                     setWeekDeadlines(deadlines);
                 }
 
-                // Görevleri formatla ve set et
                 const formattedTasks = userTasks.map((t: any) => ({
                     id: t.id,
                     title: t.title,
@@ -315,495 +254,406 @@ export function DashboardPageClient() {
                     assignee: t.assignee || t.assigneeId || '',
                     assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
                 })).slice(0, 10);
-
                 setTodayTasks(formattedTasks);
 
-                // Studio Verileri (LocalStorage)
                 let studioData: any[] = [];
-                if (typeof window !== 'undefined') {
-                    const saved = localStorage.getItem('studioBookings');
-                    if (saved) {
-                        try {
-                            studioData = JSON.parse(saved);
-                        } catch (e) {
-                            console.error(e);
-                        }
-                    }
-                }
-
-                // Fallback: Eğer hiç veri yoksa, varsayılanları (initialBookings benzeri) kullan ki dashboard boş görünmesin
-                // Ancak senkronizasyon sorunu yaşamamak için, Studio sayfası açıldığında localstorage dolacaktır.
-                // Burada sadece varsa gösterelim.
-
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
-
+                if (typeof window !== 'undefined') { try { const saved = localStorage.getItem('studioBookings'); if (saved) studioData = JSON.parse(saved); } catch (e) { } }
+                const studioNow = new Date();
+                studioNow.setHours(0, 0, 0, 0);
                 const filteredStudio = studioData
                     .filter((b: any) => {
                         const bDate = new Date(b.date);
-                        const diffTime = bDate.getTime() - now.getTime();
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const diffDays = Math.ceil((bDate.getTime() - studioNow.getTime()) / (1000 * 60 * 60 * 24));
                         return diffDays >= 0 && diffDays <= 7;
                     })
                     .sort((a: any, b: any) => new Date(a.date + 'T' + a.startTime).getTime() - new Date(b.date + 'T' + b.startTime).getTime());
-                // Group by date
+
                 const groupedStudio: any[] = [];
                 filteredStudio.forEach((b: any) => {
                     const dateStr = b.date;
                     let group = groupedStudio.find(g => g.date === dateStr);
-                    if (!group) {
-                        group = { date: dateStr, bookings: [] };
-                        groupedStudio.push(group);
-                    }
+                    if (!group) { group = { date: dateStr, bookings: [] }; groupedStudio.push(group); }
                     group.bookings.push(b);
                 });
-
                 setUpcomingStudio(groupedStudio);
 
-                // Diğer dashboard verileri
-                const [stats, pendingActions, rStats] = await Promise.all([
-                    getDashboardStats(),
-                    getPendingActions(),
-                    getRetainerStatus(),
-                ]);
+                const [stats, rStats] = await Promise.all([getDashboardStats(), getRetainerStatus()]);
                 setDashboardStats(stats);
-                setActions(pendingActions.length > 0 ? pendingActions : []);
                 setRetainerStats(rStats);
-            } catch (error) {
-                console.error('Dashboard verileri yüklenirken hata:', error);
-            } finally {
-                setLoading(false);
-            }
+            } catch (error) { console.error('Data load error:', error); }
         };
         loadDashboardData();
     }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem('currentUser');
-        router.push('/login');
-    };
-
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount);
-
-    const totalOverdue = paymentRisks.overdue.reduce((s, i) => s + i.amount, 0);
-    const total7Days = paymentRisks.next7Days.reduce((s, i) => s + i.amount, 0);
-    const total14Days = paymentRisks.next14Days.reduce((s, i) => s + i.amount, 0);
+    const handleLogout = () => { localStorage.removeItem('currentUser'); router.push('/login'); };
 
     return (
-        <>
-            <Header
-                title={currentUser ? `${getGreeting()}, ${currentUser.name.split(' ')[0]}!` : 'Gösterge Paneli'}
-                subtitle={`${new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
-                actions={
-                    currentUser && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            {/* Yeni Header Aksiyonları (Minimalist) */}
-                            <Link href="/dashboard/content-production?action=new" style={{ textDecoration: 'none' }}>
-                                <Button variant="ghost" size="sm" style={{ gap: 8, color: '#329FF5', fontSize: '13px' }}>
-                                    <Clapperboard size={16} />
-                                    Yeni İçerik
-                                </Button>
+        <div className="p-4 md:p-6 min-h-screen pt-6">
+            {/* Header Section - Compact & Aligned */}
+            {/* Header Section Removed (Duplicate) */}
+
+            {/* HEADER SECTION */}
+            <div className="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 className="text-4xl font-bold tracking-tight mb-1 flex items-center gap-3">
+                        {getGreeting()}, <ShinyText text={currentUser?.name?.split(' ')[0] || 'Misafir'} disabled={false} speed={3} className="text-[#2997FF]" />!
+                    </h1>
+                    <div className="text-white/40 text-sm font-medium tracking-wide uppercase">{currentDate}</div>
+                </div>
+                <Link href="/dashboard/content-production?action=new">
+                    <Button variant="primary" className="h-[42px] px-6 text-[13px] font-semibold bg-[#0A84FF] hover:bg-[#007AFF] shadow-[0_0_20px_rgba(10,132,255,0.3)] border-none rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                        + Yeni İçerik
+                    </Button>
+                </Link>
+            </div>
+
+            {/* Magic Bento Grid - More whitespace */}
+            <MagicBento gap={32}>
+                {/* 1. TODAY TASKS (Main Top) - Col span 8 */}
+                <div className="md:col-span-8 group relative rounded-[20px] overflow-hidden h-full min-h-[400px] shadow-sm">
+                    <StarBorder color="#2997FF" speed="4s" />
+                    <GlassSurface className="h-full w-full" intensity="medium">
+                        {/* Header: px-6 pt-6 pb-2 */}
+                        <div className="px-6 pt-6 pb-2 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-white tracking-tight flex items-center gap-2">
+                                {taskViewMode === 'today' ? 'Bugünkü Görevlerim' : 'Sıradaki İşler'}
+                                {taskViewMode === 'upcoming' && <Badge variant="success" className="text-[10px] h-5 px-2 font-medium bg-[#30D158]/20 text-[#30D158] border-none">Bugün Boş</Badge>}
+                            </h3>
+                            <Link href="/dashboard/tasks">
+                                <Button size="sm" variant="ghost" className="text-[12px] h-auto p-0 text-white/40 hover:text-white transition-colors">Tümünü Gör</Button>
                             </Link>
-                            <Link href="/dashboard/studio" style={{ textDecoration: 'none' }}>
-                                <Button variant="ghost" size="sm" style={{ gap: 8, color: '#9C27B0', fontSize: '13px' }}>
-                                    <Camera size={16} />
-                                    Stüdyo
-                                </Button>
-                            </Link>
-
-                            <div style={{ width: 1, height: 20, backgroundColor: 'var(--color-border)', margin: '0 4px' }} />
-
-                            <span style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
-                                {currentUser.role}
-                            </span>
-                            <Button variant="ghost" size="sm" onClick={handleLogout}>
-                                Çıkış
-                            </Button>
                         </div>
-                    )
-                }
-            />
-
-            <div style={{ padding: 'var(--space-3)' }}>
-
-
-
-                {currentUser && (
-                    <div className="dashboard-grid dashboard-grid-2-1" style={{ marginBottom: 'var(--space-2)' }}>
-                        {/* Bugünkü Görevlerim */}
-                        <Card style={{ borderTop: '4px solid #329FF5' }}>
-                            <CardHeader
-                                title={
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span>{taskViewMode === 'today' ? 'Bugünkü Görevlerim' : 'Sıradaki İşler'}</span>
-                                        {taskViewMode === 'upcoming' && <Badge variant="success" style={{ fontSize: 10 }}>Bugün Boş 🎉</Badge>}
-                                    </div>
-                                }
-                                description={taskViewMode === 'today' ? `${todayTasks.filter(t => !t.completed).length} aktif görev` : 'Bugün teslim edilecek iş yok, sıradaki işler listeleniyor:'}
-                                action={<Link href="/dashboard/tasks"><Button size="sm" variant="ghost">Tümünü Gör</Button></Link>}
-                            />
-                            <CardContent>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-                                    {todayTasks.map(task => (
-                                        <div
-                                            key={task.id}
-                                            onClick={() => setSelectedTask(task)}
-                                            style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                padding: 'var(--space-1) var(--space-2)',
-                                                backgroundColor: task.completed ? 'rgba(107, 123, 128, 0.1)' : 'var(--color-surface)',
-                                                borderRadius: 'var(--radius-sm)',
-                                                borderLeft: `4px solid ${task.completed ? '#9CA3AF' : (task.assigneeIds?.length > 0 ? (teamMemberColors[task.assigneeIds[0]] || '#6B7B80') : '#6B7B80')}`,
-                                                opacity: task.completed ? 0.6 : 1,
-                                                cursor: 'pointer',
-                                                transition: 'all 0.3s ease'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleTask(task.id);
-                                                    }}
-                                                    style={{
-                                                        width: '20px',
-                                                        height: '20px',
-                                                        borderRadius: '4px',
-                                                        border: task.completed ? 'none' : '2px solid var(--color-border)',
-                                                        backgroundColor: task.completed ? '#00F5B0' : 'transparent',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '12px',
-                                                        color: 'white',
-                                                        transition: 'all 0.2s',
-                                                        cursor: 'pointer'
-                                                    }}>
-                                                    {task.completed && <Check size={12} strokeWidth={3} />}
-                                                </div>
-                                                <div>
-                                                    <p style={{
-                                                        fontWeight: 600,
-                                                        marginBottom: '2px',
-                                                        textDecoration: task.completed ? 'line-through' : 'none',
-                                                        color: task.completed ? '#9CA3AF' : 'inherit'
-                                                    }}>{task.title}</p>
-                                                    <p style={{
-                                                        fontSize: 'var(--text-caption)',
-                                                        color: task.completed ? '#9CA3AF' : 'var(--color-muted)'
-                                                    }}>
-                                                        {getBrandName(task.brand)}
-                                                    </p>
-                                                </div>
+                        {/* Body: px-6 pb-6 */}
+                        <div className="px-6 pb-6">
+                            <p className="text-[12px] text-white/40 font-medium mb-4">
+                                {taskViewMode === 'today' ? <>{todayTasks.filter(t => !t.completed).length} aktif görev</> : 'Checking upcoming items...'}
+                            </p>
+                            <AnimatedList className="flex flex-col gap-2">
+                                {todayTasks.length > 0 ? todayTasks.map(task => (
+                                    <div
+                                        key={task.id}
+                                        onClick={() => setSelectedTask(task)}
+                                        className="relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.08] hover:scale-[1.005] border border-white/5 bg-white/[0.03]"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                onClick={(e) => { e.stopPropagation(); handleToggleTask(task.id); }}
+                                                className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-300 ${task.completed ? 'border-[#30D158] bg-[#30D158]' : 'border-white/20 hover:border-[#30D158]/60'
+                                                    }`}
+                                            >
+                                                {task.completed && <Check size={12} color="white" strokeWidth={3} />}
                                             </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                {!task.completed && (
-                                                    <Badge variant={task.priority === 'high' || task.priority === 'urgent' ? 'error' : task.priority === 'medium' ? 'warning' : 'info'}>
-                                                        {task.deadline}
-                                                    </Badge>
-                                                )}
-                                                {task.completed && (
-                                                    <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Tamamlandı</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Bu Hafta Deadline */}
-                        <Card style={{ borderTop: '4px solid #FF4242' }}>
-                            <CardHeader title="Bu Hafta Deadline" />
-                            <CardContent>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-                                    {weekDeadlines.map(dl => (
-                                        <div
-                                            key={dl.id}
-                                            onClick={() => setSelectedTask(dl)}
-                                            style={{
-                                                padding: 'var(--space-1)',
-                                                backgroundColor: dl.status === 'DONE' ? 'rgba(107, 123, 128, 0.1)' : (dl.daysLeft <= 2 ? 'rgba(255, 66, 66, 0.1)' : 'var(--color-surface)'),
-                                                borderRadius: 'var(--radius-sm)',
-                                                borderLeft: `3px solid ${dl.status === 'DONE' ? '#9CA3AF' : (dl.assigneeIds?.length > 0 ? (teamMemberColors[dl.assigneeIds[0]] || '#6B7B80') : '#6B7B80')}`,
-                                                opacity: dl.status === 'DONE' ? 0.7 : 1,
-                                                cursor: 'pointer',
-                                                transition: 'transform 0.2s',
-                                            }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <p style={{
-                                                    fontWeight: 600,
-                                                    fontSize: 'var(--text-body-sm)',
-                                                    textDecoration: dl.status === 'DONE' ? 'line-through' : 'none',
-                                                    color: dl.status === 'DONE' ? 'var(--color-muted)' : 'inherit'
-                                                }}>{dl.title}</p>
-                                                {dl.status === 'DONE' && <Badge variant="neutral" style={{ fontSize: 9, height: 18 }}>OK</Badge>}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                                <span style={{ fontSize: 'var(--text-caption)', color: dl.status === 'DONE' ? 'var(--color-muted)' : (dl.daysLeft <= 2 ? '#FF4242' : 'var(--color-muted)') }}>
-                                                    {dl.date} • {dl.status === 'DONE' ? 'Tamamlandı' : `${dl.daysLeft} gün kaldı`}
-                                                </span>
-                                                {dl.assigneeIds && dl.assigneeIds.length > 0 && (
-                                                    <div style={{ display: 'flex', gap: 4 }}>
-                                                        {dl.assigneeIds.slice(0, 3).map((name: string) => {
-                                                            const memberColor = teamMemberColors[name] || '#6B7B80';
-                                                            return (
-                                                                <span key={name} style={{
-                                                                    fontSize: 9,
-                                                                    padding: '2px 6px',
-                                                                    backgroundColor: memberColor + '20',
-                                                                    color: memberColor,
-                                                                    borderRadius: 8,
-                                                                    fontWeight: 500
-                                                                }}>
-                                                                    {name.split(' ')[0]}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                        {dl.assigneeIds.length > 3 && <span style={{ fontSize: 9, color: 'var(--color-muted)' }}>+{dl.assigneeIds.length - 3}</span>}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Not: Kişisel Performans bloğu kaldırıldı (Tamamlanan/Seri/Haftalık) */}
-
-
-
-                {/* BÖLÜM 5: Hakediş Paneli */}
-                <div className="dashboard-grid dashboard-grid-2-1">
-                    <Card>
-                        <CardHeader
-                            title="Hakediş Paneli (Aylık Üretim)"
-                            description="Müşteri kotaları ve gerçekleşen üretimler (Ocak 2026)"
-                            action={<Link href="/dashboard/retainers"><Button variant="secondary" size="sm">Detaylı Rapor</Button></Link>}
-                        />
-                        <div className="table-container">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Müşteri</th>
-                                        <th>Hakediş Durumu</th>
-                                        <th>Yayına Hazır</th>
-                                        <th>Operasyon Notu</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {retainerStats.length > 0 ? retainerStats.map((item) => (
-                                        <tr key={item.id}>
-                                            <td style={{ fontWeight: 600 }}>
-                                                {item.clientId ? (
-                                                    <Link href={`/dashboard/system/clients/${item.clientId}`} style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
-                                                        <span className="hover:text-primary transition-colors">{item.client}</span>
-                                                    </Link>
-                                                ) : (
-                                                    item.client
-                                                )}
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <div style={{ flex: 1, minWidth: 80, height: 8, backgroundColor: 'var(--color-border)', borderRadius: 4, overflow: 'hidden' }}>
-                                                        <div style={{
-                                                            height: '100%',
-                                                            width: `${Math.min(100, (item.progress / item.total) * 100)}%`,
-                                                            backgroundColor: item.warning ? 'var(--color-warning)' : 'var(--color-primary)',
-                                                            borderRadius: 4
-                                                        }} />
-                                                    </div>
-                                                    <span style={{ fontSize: '12px', fontWeight: 600, color: item.warning ? 'var(--color-warning)' : 'inherit' }}>{item.label}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span style={{
-                                                    fontSize: '13px',
-                                                    fontWeight: 500,
-                                                    color: item.stock > 0 ? 'var(--color-text)' : 'var(--color-muted)',
-                                                    display: 'flex', alignItems: 'center', gap: 8
-                                                }}>
-                                                    {item.stock > 0 && <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#00F5B0', boxShadow: '0 0 4px #00F5B0' }} />}
-                                                    {item.stock > 0 ? `${item.stock} Adet` : '-'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <p style={{ fontSize: '12px', color: 'var(--color-muted)', lineHeight: 1.3 }}>{item.note}</p>
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-muted)' }}>Yükleniyor...</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
-
-                    {/* Haftalık Stüdyo Programı */}
-                    <Card>
-                        <CardHeader
-                            title="Stüdyo Programı"
-                            action={
-                                <Link href="/dashboard/studio">
-                                    <Button variant="ghost" size="sm">Detay →</Button>
-                                </Link>
-                            }
-                        />
-                        <CardContent>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                {upcomingStudio.length > 0 ? (
-                                    upcomingStudio.map((group, groupIndex) => {
-                                        const bDate = new Date(group.date);
-                                        const dayName = bDate.toLocaleDateString('tr-TR', { weekday: 'long' });
-                                        const dayNum = bDate.getDate();
-                                        const monthName = bDate.toLocaleDateString('tr-TR', { month: 'long' });
-                                        const isToday = new Date().toDateString() === bDate.toDateString();
-                                        const isTomorrow = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString() === bDate.toDateString();
-
-                                        const label = isToday ? 'Bugün' : isTomorrow ? 'Yarın' : `${dayNum} ${monthName}, ${dayName}`;
-
-                                        return (
-                                            <div key={group.date}>
-                                                <p style={{
-                                                    fontSize: '11px',
-                                                    fontWeight: 600,
-                                                    color: isToday ? 'var(--color-primary)' : 'var(--color-muted)',
-                                                    marginBottom: '8px',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.5px'
-                                                }}>
-                                                    {label}
+                                            {/* Priority Dot */}
+                                            <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'urgent' ? 'bg-[#FF453A] shadow-[0_0_8px_rgba(255,69,58,0.6)]' : task.priority === 'high' ? 'bg-[#FFD60A]' : 'bg-[#2997FF]'
+                                                }`} />
+                                            <div>
+                                                <p className={`text-[14px] font-medium leading-snug ${task.completed ? 'line-through text-white/30' : 'text-white/90'}`}>
+                                                    {task.title}
                                                 </p>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {group.bookings.map((booking: any, index: number) => (
-                                                        <div
-                                                            key={booking.id || index}
-                                                            onClick={() => setSelectedBooking({ ...booking, date: group.date })}
-                                                            style={{
-                                                                display: 'flex',
-                                                                gap: '12px',
-                                                                padding: '10px',
-                                                                backgroundColor: 'var(--color-surface)',
-                                                                borderRadius: '6px',
-                                                                borderLeft: `3px solid ${booking.type === 'EXTERNAL' ? '#E91E63' : '#329FF5'}`,
-                                                                cursor: 'pointer',
-                                                                transition: 'transform 0.2s',
-                                                            }}>
-                                                            <div style={{ minWidth: '80px', fontSize: '12px', fontWeight: 600, color: 'var(--color-text)' }}>
-                                                                {booking.startTime} - {booking.endTime}
-                                                            </div>
-                                                            <div style={{ flex: 1 }}>
-                                                                <p style={{ fontWeight: 600, fontSize: '13px', marginBottom: '2px' }}>{booking.client}</p>
-                                                                <p style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{booking.project} {booking.type === 'EXTERNAL' && '• Dış Çekim'}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                <p className="text-[11px] text-white/40">{task.brand}</p>
                                             </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '13px', backgroundColor: 'var(--color-surface)', borderRadius: '8px' }}>
-                                        <p>📅 Önümüzdeki 7 gün için stüdyo boş.</p>
-                                        <Link href="/dashboard/studio">
-                                            <Button variant="ghost" size="sm" style={{ marginTop: '8px' }}>Rezervasyon Yap</Button>
-                                        </Link>
+                                        </div>
+                                        {!task.completed && task.assigneeIds?.length > 0 && (
+                                            <AssigneeStack assignees={task.assigneeIds.map((id: string) => {
+                                                const realName = memberNames[id] || id;
+                                                return { id: id, name: realName, color: teamMemberColors[realName] || teamMemberColors[id] };
+                                            })} size={24} max={4} />
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-10 text-white/20 text-xs text-sm">
+                                        Bugün için atanmış görev yok!
                                     </div>
                                 )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </AnimatedList>
+                        </div>
+                    </GlassSurface>
                 </div>
-            </div>
-            {/* TASK DETAIL MODAL */}
-            <Modal
-                isOpen={!!selectedTask}
-                onClose={() => setSelectedTask(null)}
-                title={selectedTask?.title || 'Görev Detayı'}
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Header Info */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', color: 'var(--color-muted)', fontWeight: 500 }}>
-                            {getBrandName(selectedTask?.brand)}
-                        </span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            {selectedTask?.priority && (
-                                <Badge variant={selectedTask?.priority === 'high' || selectedTask?.priority === 'urgent' ? 'error' : selectedTask?.priority === 'medium' ? 'warning' : 'info'}>
-                                    {selectedTask.priority === 'urgent' ? 'ACİL' : selectedTask.priority === 'high' ? 'YÜKSEK' : selectedTask.priority === 'medium' ? 'NORMAL' : 'DÜŞÜK'}
-                                </Badge>
+
+                {/* 2. DEADLINES (Side Top) - Col span 4 */}
+                <div className="md:col-span-4 group relative rounded-[20px] overflow-hidden h-full shadow-sm">
+                    <StarBorder color="#FF453A" speed="5s" />
+                    <GlassSurface className="h-full w-full" intensity="medium">
+                        <div className="px-6 pt-6 pb-4">
+                            <h3 className="text-[16px] font-semibold text-white tracking-tight">Bu Hafta Deadline</h3>
+                        </div>
+                        <div className="px-6 pb-6 flex flex-col gap-3">
+                            {weekDeadlines.length > 0 ? (
+                                weekDeadlines.every(dl => dl.status === 'DONE') ? (
+                                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                                        <p className="text-[13px] font-medium text-white/80 px-4 leading-relaxed">{CELEBRATION_MESSAGES[0]}</p>
+                                    </div>
+                                ) : (
+                                    weekDeadlines.map(dl => (
+                                        <div
+                                            key={dl.id}
+                                            onClick={() => setSelectedTask(dl)} /* Tıklanabilirlik eklendi */
+                                            className="flex items-center justify-between p-4 border border-white/5 rounded-2xl bg-black/20 hover:bg-white/[0.06] cursor-pointer transition-colors"
+                                        >
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="text-[14px] font-medium text-white/90 leading-tight">{dl.title}</span>
+                                                <span className={`text-[12px] font-medium flex items-center gap-1.5 ${dl.daysLeft <= 1 ? 'text-[#FF453A]' : 'text-white/50'}`}>
+                                                    <span className="opacity-90 tracking-wide text-[11px] uppercase">{dl.date}</span>
+                                                    <span className="w-0.5 h-0.5 rounded-full bg-white/40"></span>
+                                                    <span>{dl.status === 'DONE' ? 'Tamamlandı' : `${dl.daysLeft} gün kaldı`}</span>
+                                                </span>
+                                            </div>
+                                            {dl.assigneeIds && dl.assigneeIds.length > 0 && (
+                                                <AssigneeStack assignees={dl.assigneeIds.map((id: string) => {
+                                                    const realName = memberNames[id] || id;
+                                                    return { id: id, name: realName, color: teamMemberColors[realName] || teamMemberColors[id] };
+                                                })} size={22} max={3} />
+                                            )}
+                                        </div>
+                                    ))
+                                )
+                            ) : (
+                                <div className="text-white/30 text-xs text-center py-10">
+                                    Bu hafta teslim edilecek iş yok.
+                                </div>
                             )}
-                            <Badge variant={selectedTask?.completed ? 'success' : 'neutral'}>
-                                {selectedTask?.completed ? 'TAMAMLANDI' : 'YAPILACAK'}
-                            </Badge>
                         </div>
-                    </div>
+                    </GlassSurface>
+                </div>
 
-                    {/* Description */}
-                    <div style={{ padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted)', marginBottom: '8px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <ListChecks size={14} />
-                            Açıklama / İçerik Detayı
-                        </h4>
-                        <p style={{ fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>
-                            {selectedTask?.description || 'Bu görev için girilmiş bir açıklama bulunmuyor.'}
-                        </p>
-                    </div>
-
-                    {/* Footer / Meta */}
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: 'var(--color-muted)', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Clock size={16} />
-                            <span>Son Tarih: {selectedTask?.deadline}</span>
+                {/* 3. STUDIO (Side Bottom) - Col span 4 */}
+                <div className="md:col-span-4 md:order-last group relative rounded-[20px] overflow-hidden h-full shadow-sm">
+                    <StarBorder color="#BF5AF2" speed="6s" />
+                    <GlassSurface className="h-full w-full" intensity="medium">
+                        <div className="px-6 pt-6 pb-4 flex items-center justify-between">
+                            <h3 className="text-[16px] font-semibold text-white tracking-tight">Stüdyo Programı</h3>
+                            <Link href="/dashboard/studio"><Button variant="ghost" size="sm" className="text-[12px] h-auto p-0 text-white/40 hover:text-white transition-colors">Detay →</Button></Link>
                         </div>
-                        {selectedTask?.assignee && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: teamMemberColors[selectedTask.assignee] || '#ccc' }} />
-                                <span>{selectedTask.assignee.split(' ')[0]}</span>
+                        <div className="px-6 pb-6 pt-1">
+                            <div className="flex flex-col gap-6">
+                                {upcomingStudio.length > 0 ? upcomingStudio.map(group => (
+                                    <div key={group.date}>
+                                        <p className="text-[11px] font-bold text-[#2997FF] mb-3 uppercase tracking-widest opacity-80">{group.date}</p>
+                                        <div className="flex flex-col gap-2.5">
+                                            {group.bookings.map((booking: any) => (
+                                                <div
+                                                    key={booking.id}
+                                                    onClick={() => setSelectedBooking(booking)}
+                                                    className="flex items-center gap-3.5 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/[0.08] cursor-pointer transition-colors"
+                                                >
+                                                    <span className="text-[12px] font-bold min-w-[64px] text-center bg-white/[0.08] py-1.5 rounded-lg text-white/90">{booking.time}</span>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-[13px] font-semibold text-white/90">{booking.client}</span>
+                                                        <span className="text-[11px] text-white/50">{booking.project}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-8 text-white/30 text-xs">Program boş</div>
+                                )}
                             </div>
-                        )}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                        <Button onClick={() => setSelectedTask(null)} variant="primary">Kapat</Button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* STUDIO DETAIL MODAL */}
-            <Modal
-                isOpen={!!selectedBooking}
-                onClose={() => setSelectedBooking(null)}
-                title={selectedBooking?.client || 'Rezervasyon Detayı'}
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '8px', borderLeft: `4px solid ${selectedBooking?.type === 'EXTERNAL' ? '#E91E63' : '#329FF5'}` }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span style={{ fontWeight: 600, fontSize: '16px' }}>{selectedBooking?.project}</span>
-                            <Badge variant={selectedBooking?.type === 'EXTERNAL' ? 'warning' : 'info'}>
-                                {selectedBooking?.type === 'EXTERNAL' ? 'DIŞ ÇEKİM' : 'STÜDYO'}
-                            </Badge>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-muted)', fontSize: '14px' }}>
-                            <Clock size={16} />
-                            <span>{selectedBooking?.date ? new Date(selectedBooking.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : ''}  •  {selectedBooking?.startTime} - {selectedBooking?.endTime}</span>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                        <Link href="/dashboard/studio">
-                            <Button variant="secondary" size="sm" style={{ marginRight: '8px' }}>Takvime Git</Button>
-                        </Link>
-                        <Button onClick={() => setSelectedBooking(null)} variant="primary" size="sm">Kapat</Button>
-                    </div>
+                    </GlassSurface>
                 </div>
-            </Modal>
-        </>
+
+                {/* 4. RETAINER (Main Bottom) - Col span 8 */}
+                <div className="md:col-span-8 group relative rounded-[20px] overflow-hidden h-full shadow-sm">
+                    <StarBorder color="#00D4FF" speed="7s" />
+                    <GlassSurface className="h-full w-full" intensity="medium">
+                        <div className="px-8 pt-8 pb-5 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-[18px] font-semibold text-white tracking-tight">Hakediş Paneli</h3>
+                                <p className="text-[12px] text-white/40 mt-1">Aylık Üretim (Ocak 2026)</p>
+                            </div>
+                            <Link href="/dashboard/retainers"><Button variant="ghost" size="sm" className="text-[13px] h-auto p-0 text-white/40 hover:text-white transition-colors">Rapor</Button></Link>
+                        </div>
+                        <div className="px-8 pb-8">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-white/[0.08] text-white/40 text-[11px] uppercase tracking-wider">
+                                            <th className="pb-4 pl-2 font-medium">Müşteri</th>
+                                            <th className="pb-4 font-medium w-[40%]">Durum</th>
+                                            <th className="pb-4 font-medium">Stok</th>
+                                            <th className="pb-4 font-medium text-right pr-2">Not</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/[0.04]">
+                                        {retainerStats.length > 0 ? retainerStats.map((item) => (
+                                            <tr key={item.id} className="group/row hover:bg-white/[0.02] transition-colors">
+                                                <td className="py-3.5 pl-2 font-medium text-white text-[14px]">
+                                                    <Link
+                                                        href={item.clientId ? `/dashboard/system/clients?id=${item.clientId}` : `/dashboard/system/clients`}
+                                                        className="no-underline hover:text-[#2997FF] transition-colors relative group-link"
+                                                    >
+                                                        {item.client}
+                                                    </Link>
+                                                </td>
+                                                <td className="py-3.5 pr-6">
+                                                    <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden mb-1.5">
+                                                        <div className="h-full bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.4)] rounded-full relative" style={{ width: `${Math.min((item.progress / item.total) * 100, 100)}%` }}>
+                                                            <div className="absolute inset-0 bg-white/20"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] bg-white/[0.08] text-white/80 px-2 py-0.5 rounded-md font-medium">{item.label}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3.5 font-medium text-[13px] text-white/90">{item.stock} ad.</td>
+                                                <td className="py-3.5 text-[12px] text-white/40 text-right pr-2 max-w-[180px] truncate">{item.note}</td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan={4} className="text-center py-6 text-white/30">Veri yok...</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </GlassSurface>
+                </div>
+            </MagicBento >
+
+            {/* Slide-over Panel for Task Detail */}
+            < div className={`fixed inset-0 z-[100] transition-all duration-500 ${selectedTask ? 'bg-black/60 backdrop-blur-[4px] pointer-events-auto' : 'bg-transparent pointer-events-none delay-100'}`
+            }>
+                <div
+                    className={`absolute top-2 right-2 bottom-2 w-full max-w-[420px] bg-[#161616]/95 backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[24px] z-10 transform transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col overflow-hidden ${selectedTask ? 'translate-x-0' : 'translate-x-[110%]'}`}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {selectedTask && (
+                        <>
+                            {/* Slide-over Header */}
+                            <div className="px-6 pt-6 pb-4 flex items-start justify-between border-b border-white/5 shrink-0">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex flex-wrap gap-2 mb-1">
+                                        <Badge variant="neutral" className={`border-none px-2 py-0.5 text-[10px] font-bold tracking-wider ${selectedTask?.priority === 'urgent' ? 'bg-red-500/10 text-red-400' :
+                                            selectedTask?.priority === 'high' ? 'bg-amber-500/10 text-amber-400' :
+                                                selectedTask?.priority === 'medium' ? 'bg-blue-500/10 text-blue-400' :
+                                                    'bg-gray-500/10 text-gray-400'
+                                            }`}>
+                                            {selectedTask.priority === 'urgent' ? 'ACİL' : selectedTask.priority === 'high' ? 'YÜKSEK' : selectedTask.priority === 'medium' ? 'NORMAL' : 'DÜŞÜK'}
+                                        </Badge>
+                                        <Badge variant="neutral" className="bg-white/5 text-white/50 border-none px-2 py-0.5 text-[10px] font-bold tracking-wider">{getBrandName(selectedTask?.brand)}</Badge>
+                                    </div>
+                                    <h2 className="text-xl font-semibold text-white leading-snug">{selectedTask.title}</h2>
+                                </div>
+                                <button onClick={() => setSelectedTask(null)} className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors cursor-pointer z-50">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Slide-over Body */}
+                            <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+                                {/* Action Bar */}
+                                <div className="flex gap-2 mb-8">
+                                    <Button onClick={() => handleToggleTask(selectedTask.id)} variant="ghost" size="sm" className={`flex-1 border border-white/10 bg-white/5 hover:bg-white/10 text-xs h-10 ${selectedTask.completed ? 'text-[#30D158]' : 'text-white/80'}`}>
+                                        <CheckCircle size={15} className={`mr-2 ${selectedTask.completed ? 'fill-[#30D158]/20' : ''}`} /> {selectedTask.completed ? 'Tamamlandı' : 'Tamamla'}
+                                    </Button>
+                                    <Button onClick={() => handleSnoozeTask(selectedTask.id)} variant="ghost" size="sm" className="flex-1 border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 text-xs h-10">
+                                        <Clock size={15} className="mr-2" /> Ertele
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="flex-1 border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 text-xs h-10">
+                                        <Share2 size={15} className="mr-2" /> Paylaş
+                                    </Button>
+                                </div>
+
+                                {/* Description */}
+                                <div className="mb-8">
+                                    <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3 pl-1">Açıklama</h4>
+                                    <div className="text-[14px] leading-relaxed text-white/80 whitespace-pre-wrap font-light p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                        {selectedTask.description || <span className="text-white/20 italic">Açıklama girilmemiş.</span>}
+                                    </div>
+                                </div>
+
+                                {/* Metadata Grid */}
+                                <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3 pl-1">Detaylar</h4>
+                                <div className="grid grid-cols-1 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
+                                    <div className="bg-white/[0.02] p-4 flex items-center justify-between group/meta hover:bg-white/[0.04] transition-colors">
+                                        <span className="text-[13px] text-white/50">Son Tarih</span>
+                                        <div className="flex items-center gap-2 text-white/90 text-[13px] font-medium">
+                                            <Clock size={14} className="text-[#F5A623]" />
+                                            {selectedTask.deadline}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.02] p-4 flex items-center justify-between group/meta hover:bg-white/[0.04] transition-colors">
+                                        <span className="text-[13px] text-white/50">Atanan Kişi</span>
+                                        <div className="flex items-center gap-2 text-white/90 text-[13px]">
+                                            {selectedTask?.assigneeIds?.length > 0 ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <AssigneeStack assignees={selectedTask.assigneeIds.map((id: string) => {
+                                                        const realName = memberNames[id] || id;
+                                                        return { id: id, name: realName, color: teamMemberColors[realName] || teamMemberColors[id] };
+                                                    })} size={20} max={3} />
+                                                </div>
+                                            ) : <span className="text-white/30">Yok</span>}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.02] p-4 flex items-center justify-between group/meta hover:bg-white/[0.04] transition-colors">
+                                        <span className="text-[13px] text-white/50">Durum</span>
+                                        <div className="flex items-center gap-2 text-white/90 text-[13px]">
+                                            <div className={`w-2 h-2 rounded-full ${selectedTask.completed ? 'bg-[#30D158] shadow-[0_0_8px_rgba(48,209,88,0.4)]' : 'bg-white/20'}`} />
+                                            {selectedTask.completed ? 'Tamamlandı' : 'Beklemede'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+                {/* Backdrop Click to Close */}
+                <div className="absolute inset-0 z-0" onClick={() => setSelectedTask(null)} />
+            </div >
+
+            {/* Slide-over Panel for Booking Detail */}
+            < div className={`fixed inset-0 z-[100] transition-all duration-500 ${selectedBooking ? 'bg-black/60 backdrop-blur-[4px] pointer-events-auto' : 'bg-transparent pointer-events-none delay-100'}`}>
+                <div
+                    className={`absolute top-2 right-2 bottom-2 w-full max-w-[420px] bg-[#161616]/95 backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[24px] z-10 transform transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col overflow-hidden ${selectedBooking ? 'translate-x-0' : 'translate-x-[110%]'}`}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {selectedBooking && (
+                        <>
+                            <div className="px-6 pt-6 pb-4 flex items-start justify-between border-b border-white/5 shrink-0">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex flex-wrap gap-2 mb-1">
+                                        <Badge variant="neutral" className={`border-none px-2 py-0.5 text-[10px] font-bold tracking-wider ${selectedBooking?.type === 'EXTERNAL' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                            {selectedBooking?.type === 'EXTERNAL' ? 'DIŞ ÇEKİM' : 'STÜDYO'}
+                                        </Badge>
+                                    </div>
+                                    <h2 className="text-xl font-semibold text-white leading-snug">{selectedBooking.project}</h2>
+                                    <p className="text-sm text-white/50">{selectedBooking.client}</p>
+                                </div>
+                                <button onClick={() => setSelectedBooking(null)} className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors cursor-pointer z-50">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+                                <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3 pl-1">Rezervasyon Detayları</h4>
+                                <div className="grid grid-cols-1 gap-px bg-white/5 rounded-2xl overflow-hidden border border-white/5">
+                                    <div className="bg-white/[0.02] p-4 flex items-center justify-between group/meta hover:bg-white/[0.04] transition-colors">
+                                        <span className="text-[13px] text-white/50">Tarih</span>
+                                        <div className="flex items-center gap-2 text-white/90 text-[13px] font-medium">
+                                            <Calendar size={14} className="text-[#2997FF]" />
+                                            {selectedBooking.date ? new Date(selectedBooking.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }) : ''}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.02] p-4 flex items-center justify-between group/meta hover:bg-white/[0.04] transition-colors">
+                                        <span className="text-[13px] text-white/50">Saat Aralığı</span>
+                                        <div className="flex items-center gap-2 text-white/90 text-[13px] font-medium">
+                                            <Clock size={14} className="text-white/50" />
+                                            {selectedBooking.startTime} - {selectedBooking?.endTime}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8">
+                                    <Link href="/dashboard/studio">
+                                        <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/15 text-white border-none h-12 rounded-xl text-sm font-medium">Takvime Git</Button>
+                                    </Link>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+                <div className="absolute inset-0 z-0" onClick={() => setSelectedBooking(null)} />
+            </div >
+        </div >
     );
 }

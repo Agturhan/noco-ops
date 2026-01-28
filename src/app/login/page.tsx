@@ -10,10 +10,10 @@ import '@/styles/components.css';
 
 // Önceden tanımlı ekip üyeleri
 const TEAM_MEMBERS = [
-    { id: '1', name: 'Şeyma Bora', email: 'seyma@noco.studio', password: 'seyma2026', role: 'Kurgu & Takvim' },
-    { id: '2', name: 'Fatih Ustaosmanoğlu', email: 'fatih@noco.studio', password: 'fatih2026', role: 'Çekim & Prodüksiyon' },
-    { id: '3', name: 'Ayşegül Güler', email: 'aysegul@noco.studio', password: 'aysegul2026', role: 'Takvim & Koordinasyon' },
-    { id: '4', name: 'Ahmet Gürkan Turhan', email: 'ahmet@noco.studio', password: 'ahmet2026', role: 'Çekim & Kurgu' },
+    { id: 'user-digital', name: 'Şeyma Bora', email: 'seyma@noco.studio', password: 'seyma2026', role: 'Kurgu & Takvim' },
+    { id: 'user-studio', name: 'Fatih Ustaosmanoğlu', email: 'fatih@noco.studio', password: 'fatih2026', role: 'Çekim & Prodüksiyon' },
+    { id: 'user-owner', name: 'Ayşegül Güler', email: 'aysegul@noco.studio', password: 'aysegul2026', role: 'Takvim & Koordinasyon' },
+    { id: 'user-ops', name: 'Ahmet Gürkan Turhan', email: 'ahmet@noco.studio', password: 'ahmet2026', role: 'Çekim & Kurgu' },
 ];
 
 export default function LoginPage() {

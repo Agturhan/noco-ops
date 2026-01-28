@@ -5,12 +5,12 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 // Şu an mock data ile çalışıyor
 
 const mockUsers = [
-    { id: '1', email: 'admin@noco.studio', name: 'Admin User', role: 'OWNER', password: 'demo123' },
-    { id: '2', email: 'ops@noco.studio', name: 'Ops User', role: 'OPS', password: 'demo123' },
-    { id: '3', email: 'seyma@noco.studio', name: 'Şeyma Bora', role: 'DIGITAL', password: 'seyma2026' },
-    { id: '4', email: 'fatih@noco.studio', name: 'Fatih Ustaosmanoğlu', role: 'DIGITAL', password: 'fatih2026' },
-    { id: '5', email: 'aysegul@noco.studio', name: 'Ayşegül Güler', role: 'DIGITAL', password: 'aysegul2026' },
-    { id: '6', email: 'ahmet@noco.studio', name: 'Ahmet Gürkan Turhan', role: 'OPS', password: 'ahmet2026' },
+    { id: 'user-owner', email: 'admin@noco.studio', name: 'Admin User', role: 'OWNER', password: 'demo123' },
+    { id: 'user-ops', email: 'ops@noco.studio', name: 'Ops User', role: 'OPS', password: 'demo123' },
+    { id: 'user-digital', email: 'seyma@noco.studio', name: 'Şeyma Bora', role: 'DIGITAL', password: 'seyma2026' },
+    { id: 'user-studio', email: 'fatih@noco.studio', name: 'Fatih Ustaosmanoğlu', role: 'DIGITAL', password: 'fatih2026' },
+    { id: 'user-owner', email: 'aysegul@noco.studio', name: 'Ayşegül Güler', role: 'DIGITAL', password: 'aysegul2026' },
+    { id: 'user-ops', email: 'ahmet@noco.studio', name: 'Ahmet Gürkan Turhan', role: 'OPS', password: 'ahmet2026' },
 ];
 
 export const authOptions = {

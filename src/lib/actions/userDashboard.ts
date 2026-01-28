@@ -1,6 +1,7 @@
 'use server';
 
 import prisma from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // ===== KULLANICI BAZLI GÖREVLER =====
 
@@ -11,30 +12,73 @@ export async function getUserTodayTasks(userId: string) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    console.log(`[getUserTodayTasks] Called for userId: ${userId}`);
+    console.log(`[getUserTodayTasks] Date filter: ${today.toISOString()}`);
+
     try {
-        const tasks = await prisma.task.findMany({
-            where: {
-                assigneeId: userId,
-                OR: [
-                    { dueDate: { gte: today, lt: tomorrow } },
-                    { status: { in: ['TODO', 'IN_PROGRESS'] } }
-                ]
-            },
-            orderBy: [
-                { priority: 'desc' },
-                { dueDate: 'asc' }
-            ],
-            take: 10
+        // Use Supabase directly. Fetch active + due today. Filter precise match in JS.
+        // This avoids issues with array column types or 'or' syntax.
+        const { data: tasks, error } = await supabaseAdmin
+            .from('Task')
+            .select('*')
+            // Query: Status is active OR DueDate is today
+            .or(`status.in.(TODO,IN_PROGRESS),dueDate.gte.${today.toISOString()}`)
+            .order('priority', { ascending: false });
+
+        if (tasks) console.log(`[getUserTodayTasks] Raw tasks fetched: ${tasks.length}`);
+        if (error) console.log(`[getUserTodayTasks] Error:`, error);
+        // Removed limit to ensure we process all potential candidates before filtering in JS
+        // This is crucial because "limit" applies before our manual JS filtering.
+
+        if (error) {
+            console.error('Supabase getUserTodayTasks error:', error);
+            return [];
+        }
+
+        // JS Filter
+        const filteredTasks = tasks.filter(t => {
+            // 1. Assignee Check
+            const isAssigned =
+                t.assigneeId === userId ||
+                (userName && t.assigneeId === userName) || // Check Name
+                (Array.isArray(t.assigneeIds) && (t.assigneeIds.includes(userId) || (userName && t.assigneeIds.includes(userName)))) ||
+                (typeof t.assigneeIds === 'string' && (t.assigneeIds.includes(userId) || (userName && t.assigneeIds.includes(userName))));
+
+            if (!isAssigned) return false;
+
+            // 2. Status check
+            const isActive = ['TODO', 'IN_PROGRESS'].includes(t.status);
+
+            // 3. Date check
+            let isToday = false;
+            if (t.dueDate) {
+                const d = new Date(t.dueDate);
+                isToday = d >= today && d < tomorrow;
+            }
+
+            // Return if (Active) OR (Due Today)
+            return isToday || isActive;
         });
 
-        return tasks.map((t: any) => ({
+        // Sort: Due Dates first, then undated
+        filteredTasks.sort((a, b) => {
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        });
+
+        console.log(`[getUserTodayTasks] Filtered tasks matching user: ${filteredTasks.length}`);
+
+        return filteredTasks.slice(0, 10).map(t => ({
             id: t.id,
             title: t.title,
-            description: t.description,
+            description: t.description || t.notes,
             status: t.status,
             priority: t.priority,
-            dueDate: t.dueDate?.toISOString(),
-            projectId: t.projectId,
+            dueDate: t.dueDate,
+            projectId: t.projectId || t.brandName,
+            assigneeId: t.assigneeId,
+            assigneeIds: t.assigneeIds
         }));
     } catch (error) {
         console.error('Görevler alınamadı:', error);
@@ -156,7 +200,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
 }
 
 // Rol bazlı izin kontrolü
-export function hasPermission(userRole: UserRole, action: string): boolean {
+function hasPermission(userRole: UserRole, action: string): boolean {
     const permissions: Record<UserRole, string[]> = {
         OWNER: ['*'], // Tüm yetkiler
         ADMIN: ['create', 'read', 'update', 'delete', 'approve', 'manage_users'],

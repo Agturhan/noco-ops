@@ -4,6 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, MiniCalendar, MultiSelect, ColorPicker } from '@/components/ui';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassSurface } from '@/components/ui/GlassSurface';
+import { AssigneeStack } from '@/components/ui/AssigneeStack';
 import { brands, getBrandColor, getBrandName, contentStatuses, contentTypes, ContentStatus, ContentType, getSimpleStatus, getStagesForType } from '@/lib/data';
 import { ContentDetailPanel } from '@/components/content/ContentDetailPanel';
 import { NewContentModal } from '@/components/content/NewContentModal';
@@ -25,6 +28,7 @@ interface ContentItem {
     publishDate?: string;
     assigneeIds?: string[];  // Çoklu atama desteği
     assigneeId?: string;     // Geriye uyumluluk
+    brandName?: string;      // UI helper
 }
 
 interface ActivityLog {
@@ -110,7 +114,10 @@ export function ContentProductionPageClient() {
     const [activeTeam, setActiveTeam] = useState<DBUser[]>([]);
 
     useEffect(() => {
-        getActiveTeamMembers().then(setActiveTeam);
+        getActiveTeamMembers().then(data => {
+            console.log('Active Team Loaded:', data);
+            setActiveTeam(data);
+        });
     }, []);
 
     // Tüm markalar = varsayılan + custom
@@ -219,10 +226,16 @@ export function ContentProductionPageClient() {
         if (filterBrand !== 'all' && c.brandId !== filterBrand) return false;
         if (filterStatus !== 'all' && getSimpleStatus(c.status) !== filterStatus) return false;
         // Atanan kişi filtresi
+        // Atanan kişi filtresi
         if (filterAssignee === 'me' && currentUser) {
-            if (c.assigneeId !== currentUser.name) return false;
+            // Check both ID (new standard) and Name (legacy)
+            if (c.assigneeId !== currentUser.id && c.assigneeId !== currentUser.name) {
+                // Check array as well
+                if (!c.assigneeIds?.includes(currentUser.id) && !c.assigneeIds?.includes(currentUser.name)) return false;
+            }
         } else if (filterAssignee !== 'all' && filterAssignee !== 'me') {
-            if (c.assigneeId !== filterAssignee) return false;
+            // filterAssignee is now an ID (e.g., 'user-studio')
+            if (c.assigneeId !== filterAssignee && !c.assigneeIds?.includes(filterAssignee)) return false;
         }
 
         // Arşiv modu: Sadece PAYLASILD veya TESLIM olanlar
@@ -287,13 +300,25 @@ export function ContentProductionPageClient() {
         }
     };
 
+    const handleDelete = async (id: string) => {
+        try {
+            await deleteContentDB(id);
+            setContents(prev => prev.filter(c => c.id !== id));
+            if (selectedContent?.id === id) {
+                setSelectedContent(null);
+            }
+        } catch (error) {
+            console.error('İçerik silinemedi:', error);
+            alert('Silme işlemi başarısız oldu.');
+        }
+    };
+
     // İstatistikler
     const stats = {
         total: contents.length,
-        cekildi: contents.filter(c => c.status === 'CEKILDI').length,
-        kurgulaniyor: contents.filter(c => c.status === 'KURGULANIYOR').length,
-        paylasild: contents.filter(c => c.status === 'PAYLASILD').length,
-        planlandi: contents.filter(c => c.status === 'PLANLANDI').length,
+        planned: contents.filter(c => c.status === 'PLANLANDI').length,
+        edited: contents.filter(c => c.status === 'KURGULANDI').length,
+        published: contents.filter(c => c.status === 'PAYLASILD' || c.status === 'TESLIM').length,
     };
 
     // Marka bazlı grupla
@@ -335,97 +360,114 @@ export function ContentProductionPageClient() {
 
             <div style={{ padding: 'var(--space-3)' }}>
                 {/* İstatistikler */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                    <Card><CardContent><div style={{ textAlign: 'center' }}><p style={{ fontSize: 32, fontWeight: 700, color: 'var(--color-primary)' }}>{stats.total}</p><p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Toplam</p></div></CardContent></Card>
-                    <Card><CardContent><div style={{ textAlign: 'center' }}><p style={{ fontSize: 32, fontWeight: 700, color: '#6B7B80' }}>{stats.cekildi}</p><p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Çekildi</p></div></CardContent></Card>
-                    <Card><CardContent><div style={{ textAlign: 'center' }}><p style={{ fontSize: 32, fontWeight: 700, color: '#FF9800' }}>{stats.kurgulaniyor}</p><p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Kurgulanıyor</p></div></CardContent></Card>
-                    <Card><CardContent><div style={{ textAlign: 'center' }}><p style={{ fontSize: 32, fontWeight: 700, color: '#00F5B0' }}>{stats.paylasild}</p><p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Paylaşıldı</p></div></CardContent></Card>
-                    <Card><CardContent><div style={{ textAlign: 'center' }}><p style={{ fontSize: 32, fontWeight: 700, color: '#329FF5' }}>{stats.planlandi}</p><p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Planlanacak</p></div></CardContent></Card>
+                {/* İstatistikler */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <GlassCard className="py-5 px-3 flex flex-col items-center justify-center text-center scale-95 hover:scale-100 transition-transform duration-300 relative overflow-hidden group" glowOnHover glowColor="blue">
+                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="text-3xl font-bold text-white mb-1 group-hover:scale-110 transition-transform duration-300">{stats.total}</div>
+                        <div className="text-[10px] font-bold text-white/40 tracking-widest uppercase">TOPLAM</div>
+                    </GlassCard>
+
+                    <GlassCard className="py-5 px-3 flex flex-col items-center justify-center text-center scale-95 hover:scale-100 transition-transform duration-300 relative overflow-hidden group" glowOnHover glowColor="blue">
+                        <div className="absolute inset-0 bg-[#329FF5]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="text-3xl font-bold text-[#329FF5] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.planned}</div>
+                        <div className="text-[10px] font-bold text-[#329FF5]/60 tracking-widest uppercase">PLANLANACAK</div>
+                    </GlassCard>
+
+                    <GlassCard className="py-5 px-3 flex flex-col items-center justify-center text-center scale-95 hover:scale-100 transition-transform duration-300 relative overflow-hidden group" glowOnHover glowColor="blue">
+                        <div className="absolute inset-0 bg-[#F6D73C]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="text-3xl font-bold text-[#F6D73C] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.edited}</div>
+                        <div className="text-[10px] font-bold text-[#F6D73C]/60 tracking-widest uppercase">KURGULANDI</div>
+                    </GlassCard>
+
+                    <GlassCard className="py-5 px-3 flex flex-col items-center justify-center text-center scale-95 hover:scale-100 transition-transform duration-300 relative overflow-hidden group" glowOnHover glowColor="green">
+                        <div className="absolute inset-0 bg-[#00F5B0]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="text-3xl font-bold text-[#00F5B0] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.published}</div>
+                        <div className="text-[10px] font-bold text-[#00F5B0]/60 tracking-widest uppercase">PAYLAŞILDI</div>
+                    </GlassCard>
                 </div>
 
                 {/* Filtreler */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                        <option value="all">Tüm Markalar</option>
-                        {activeBrands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                <GlassSurface className="flex flex-wrap items-center gap-4 p-4 rounded-2xl mb-6 relative z-10" intensity="light">
+                    <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/50 text-white min-w-[140px] transition-colors hover:bg-white/10">
+                        <option value="all" className="bg-slate-900">Tüm Markalar</option>
+                        {activeBrands.map(b => <option key={b.id} value={b.id} className="bg-slate-900">{b.name}</option>)}
                     </select>
-                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'TODO' | 'DONE')} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                        <option value="all">Tüm Durumlar</option>
-                        <option value="TODO">Yapılacaklar</option>
-                        <option value="DONE">Tamamlananlar</option>
+                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'all' | 'TODO' | 'DONE')} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/50 text-white min-w-[140px] transition-colors hover:bg-white/10">
+                        <option value="all" className="bg-slate-900">Tüm Durumlar</option>
+                        <option value="TODO" className="bg-slate-900">Yapılacaklar</option>
+                        <option value="DONE" className="bg-slate-900">Tamamlananlar</option>
                     </select>
                     {/* Sorumlu filtresi */}
-                    <select value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: filterAssignee === 'me' ? '2px solid #00F5B0' : '1px solid var(--color-border)', backgroundColor: filterAssignee === 'me' ? 'rgba(0, 245, 176, 0.1)' : 'transparent' }}>
-                        <option value="all">Tüm Sorumlular</option>
-                        <option value="me">Bana Atananlar</option>
-                        {activeTeam.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                    <select value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary/50 text-white min-w-[140px] transition-colors hover:bg-white/10" style={{ border: filterAssignee === 'me' ? '1px solid #00F5B0' : '1px solid rgba(255,255,255,0.1)' }}>
+                        <option value="all" className="bg-slate-900">Tüm Sorumlular</option>
+                        <option value="me" className="bg-slate-900">Bana Atananlar</option>
+                        {activeTeam.map(t => <option key={t.id} value={t.id} className="bg-slate-900">{t.name}</option>)}
                     </select>
                     {/* Hızlı marka filtreleri */}
-                    <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
                         {contentsByBrand.slice(0, 6).map(b => (
-                            <button key={b.id} onClick={() => setFilterBrand(filterBrand === b.id ? 'all' : b.id)} style={{ padding: '4px 10px', borderRadius: 20, border: filterBrand === b.id ? `2px solid ${b.color}` : '1px solid var(--color-border)', backgroundColor: filterBrand === b.id ? b.color + '20' : 'white', fontSize: 12, cursor: 'pointer' }}>
+                            <button key={b.id} onClick={() => setFilterBrand(filterBrand === b.id ? 'all' : b.id)} style={{ padding: '6px 12px', borderRadius: 20, border: filterBrand === b.id ? `2px solid ${b.color}` : '1px solid var(--color-border)', backgroundColor: filterBrand === b.id ? b.color + '20' : 'rgba(255,255,255,0.05)', fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}>
                                 {b.name.split(' ')[0]} ({b.count})
                             </button>
                         ))}
                     </div>
-                </div>
+                </GlassSurface>
 
                 {(viewMode === 'list' || viewMode === 'archive') && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-3)' }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
                         <div>
                             {filteredContents.map(content => {
                                 const brandColor = getBrandColor(content.brandId);
                                 const brandName = getBrandName(content.brandId);
                                 const isSelected = selectedContent?.id === content.id;
                                 return (
-                                    <div key={content.id} onClick={() => setSelectedContent(content)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: isSelected ? 'var(--color-surface)' : 'var(--color-card)', borderRadius: 'var(--radius-sm)', marginBottom: 8, cursor: 'pointer', borderLeft: `4px solid ${brandColor}`, outline: isSelected ? '2px solid var(--color-primary)' : 'none' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <span style={{ color: 'var(--color-muted)' }}>{TypeIcons[content.type as ContentType] || TypeIcons['VIDEO']}</span>
+                                    <GlassSurface
+                                        key={content.id}
+                                        onClick={() => setSelectedContent(content)}
+                                        className={`group relative flex items-center justify-between p-4 mb-3 rounded-xl cursor-pointer transition-all duration-300 border-l-[4px] border-l-[${brandColor}] hover:translate-y-[-2px] hover:shadow-lg`}
+                                        style={{ borderLeftColor: brandColor }}
+                                        intensity="light"
+                                        glowOnHover
+                                        glowColor="blue"
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                            <span className="text-muted-foreground bg-white/5 p-3 rounded-lg flex items-center justify-center w-10 h-10 group-hover:bg-white/10 transition-colors">{TypeIcons[content.type as ContentType] || TypeIcons['VIDEO']}</span>
                                             <div>
-                                                <p style={{ fontWeight: 600 }}>{content.title}</p>
-                                                <p style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                                                    <span style={{ backgroundColor: brandColor, color: 'white', padding: '1px 6px', borderRadius: 10, fontSize: 10 }}>{brandName}</span>
-                                                    {content.deliveryDate && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{Icons.Calendar} {new Date(content.deliveryDate).toLocaleDateString('tr-TR')}</span>}
+                                                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{content.title}</p>
+                                                <div style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                                    <span style={{ backgroundColor: brandColor + '20', color: brandColor, padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 500 }}>{brandName}</span>
+                                                    {content.deliveryDate && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="text-white/60 font-medium">{Icons.Calendar} {new Date(content.deliveryDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>}
                                                     {/* Atanan kişiler */}
-                                                    {(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map(assignee => (
-                                                        <span
-                                                            key={assignee}
-                                                            style={{
-                                                                fontSize: 10,
-                                                                padding: '2px 6px',
-                                                                backgroundColor: (teamMemberColors[assignee] || '#6B7B80') + '20',
-                                                                color: teamMemberColors[assignee] || '#6B7B80',
-                                                                borderRadius: 10,
-                                                                fontWeight: 500
-                                                            }}
-                                                        >
-                                                            {assignee.split(' ')[0]}
-                                                        </span>
-                                                    ))}
-                                                </p>
+                                                    <div className="flex -space-x-2 ml-1">
+                                                        <AssigneeStack
+                                                            assignees={(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map((id: string) => {
+                                                                // Find user in activeTeam to get real name
+                                                                const user = activeTeam.find(u => u.id === id);
+                                                                const name = user ? user.name : id;
+                                                                return {
+                                                                    id: id,
+                                                                    name: name,
+                                                                    color: teamMemberColors[name] || teamMemberColors[id]
+                                                                };
+                                                            })}
+                                                            size={24}
+                                                            max={4}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            {isOverdue(content) && <Badge style={{ backgroundColor: '#E13A3A', color: 'white', fontWeight: 700 }}>ACİL</Badge>}
-                                            <Badge style={{ backgroundColor: contentStatuses[content.status].color, color: 'white' }}>{contentStatuses[content.status].label}</Badge>
+                                            {isOverdue(content) && <Badge style={{ backgroundColor: '#E13A3A', color: 'white', fontWeight: 700, padding: '4px 8px', fontSize: 10 }}>ACİL</Badge>}
+                                            <Badge style={{ backgroundColor: contentStatuses[content.status].color + '20', color: contentStatuses[content.status].color, border: `1px solid ${contentStatuses[content.status].color}40`, padding: '4px 8px', fontSize: 11 }}>{contentStatuses[content.status].label}</Badge>
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); openModal(content); }}
+                                                onClick={(e) => { e.stopPropagation(); openModal({ ...content, brandName }); }}
                                                 title="Düzenle"
-                                                style={{
-                                                    padding: '4px 8px',
-                                                    backgroundColor: 'transparent',
-                                                    border: '1px solid var(--color-border)',
-                                                    borderRadius: 4,
-                                                    cursor: 'pointer',
-                                                    fontSize: 12,
-                                                    color: 'var(--color-muted)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                }}
+                                                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white"
                                             >{Icons.Edit}</button>
                                         </div>
-                                    </div>
+                                    </GlassSurface>
                                 );
                             })}
                         </div>
@@ -436,6 +478,7 @@ export function ContentProductionPageClient() {
                             onClose={() => setSelectedContent(null)}
                             onUpdateStatus={updateStatus}
                             onUpdateNotes={updateNotes}
+                            onDelete={handleDelete}
                             noteHistory={noteHistory}
                             teamMemberColors={teamMemberColors}
                             activeTeam={activeTeam}

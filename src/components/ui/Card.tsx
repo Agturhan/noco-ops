@@ -20,11 +20,13 @@ interface CardHeaderProps {
     title: React.ReactNode;
     description?: string;
     action?: React.ReactNode;
+    className?: string;
+    style?: React.CSSProperties;
 }
 
-export function CardHeader({ title, description, action }: CardHeaderProps) {
+export function CardHeader({ title, description, action, className = '', style }: CardHeaderProps) {
     return (
-        <div className="card-header">
+        <div className={`card-header ${className}`} style={style}>
             <div>
                 <h3 className="card-title">{title}</h3>
                 {description && <p className="card-description">{description}</p>}

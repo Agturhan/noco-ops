@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, Button, Badge } from '@/components/ui';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassSurface } from '@/components/ui/GlassSurface';
 import { getBrandName, contentStatuses, contentTypes, ContentStatus, ContentType, getSimpleStatus, getStagesForType } from '@/lib/data';
 import { StatusIcons, TypeIcons, Icons } from './icons';
 import {
-    Clock
+    Clock,
+    Trash2
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface ContentItem {
     id: string;
@@ -39,6 +43,7 @@ interface ContentDetailPanelProps {
     onClose?: () => void;
     onUpdateStatus: (id: string, status: ContentStatus) => Promise<void>;
     onUpdateNotes: (id: string, note: string) => void; // Debounced update
+    onDelete: (id: string) => Promise<void>;
     noteHistory: NoteHistoryEntry[];
     teamMemberColors: Record<string, string>;
     activeTeam: { id: string; name: string }[];
@@ -50,6 +55,7 @@ export function ContentDetailPanel({
     onClose,
     onUpdateStatus,
     onUpdateNotes,
+    onDelete,
     noteHistory,
     teamMemberColors,
     activeTeam,
@@ -66,17 +72,15 @@ export function ContentDetailPanel({
 
     if (!content) {
         return (
-            <Card style={{ position: 'sticky', top: 'var(--space-2)', height: 'fit-content' }}>
-                <CardContent>
-                    <div style={{ textAlign: 'center', padding: 'var(--space-4)', color: 'var(--color-muted)' }}>
-                        <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>👈</p>
-                        <p style={{ fontWeight: 600, marginBottom: '8px' }}>İçerik Seç</p>
-                        <p style={{ fontSize: 'var(--text-body-sm)' }}>
-                            Soldaki listeden bir içeriğe tıklayarak detaylarını görüntüleyebilirsin.
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
+            <GlassCard style={{ position: 'sticky', top: 'var(--space-6)', height: 'fit-content' }} className="p-8 text-center" intensity="light">
+                <div style={{ color: 'var(--color-muted)' }}>
+                    <p style={{ fontSize: '48px', marginBottom: 'var(--space-4)', opacity: 0.5 }}>👈</p>
+                    <p style={{ fontWeight: 600, marginBottom: '8px', fontSize: '18px', color: 'var(--color-ink)' }}>İçerik Seç</p>
+                    <p style={{ fontSize: 'var(--text-body)', opacity: 0.7 }}>
+                        Soldaki listeden bir içeriğe tıklayarak detaylarını görüntüleyebilirsin.
+                    </p>
+                </div>
+            </GlassCard>
         );
     }
 
@@ -89,126 +93,88 @@ export function ContentDetailPanel({
     const StatusIcon = StatusIcons[content.status as ContentStatus] || <Clock size={18} />;
 
     return (
-        <Card style={{ position: 'sticky', top: 'var(--space-2)', height: 'fit-content', maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
-            <CardHeader
-                title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{TypeIcon} <span>{content.title}</span></div>}
-                description={brandName}
-                action={onClose && <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>}
-            />
-            <CardContent>
-                {/* Tarihler */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                    <div style={{ padding: 'var(--space-2)', backgroundColor: 'rgba(50, 159, 245, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid #329FF5' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: '#329FF5', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {Icons.Camera} Çekim/Teslim
-                        </p>
-                        <p style={{ fontWeight: 700, fontSize: 'var(--text-body)' }}>
-                            {content.deliveryDate ? new Date(content.deliveryDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Belirlenmedi'}
-                        </p>
+        <GlassCard style={{ position: 'sticky', top: 'var(--space-6)', height: 'fit-content', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }} className="p-0 overflow-hidden flex flex-col shadow-2xl mr-1" intensity="medium" glowOnHover glowColor="blue">
+            <div className="p-6 border-b border-white/10 bg-white/5 sticky top-0 z-20 backdrop-blur-md">
+                <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-3 text-lg font-bold">
+                        <span className="bg-primary/20 p-2 rounded-lg text-primary scale-90">{TypeIcon}</span>
+                        <span className="truncate max-w-[200px]" title={content.title}>{content.title}</span>
                     </div>
-                    {(content.publishDate || (content.type as string) !== 'TASARIM') && (
-                        <div style={{ padding: 'var(--space-2)', backgroundColor: 'rgba(0, 245, 176, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid #00F5B0' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: '#00F5B0', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {Icons.Activity} Paylaşım
-                            </p>
-                            <p style={{ fontWeight: 700, fontSize: 'var(--text-body)' }}>
-                                {content.publishDate ? new Date(content.publishDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
-                            </p>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={async () => {
+                                if (confirm('Bu içeriği silmek istediğinize emin misiniz?')) {
+                                    await onDelete(content.id);
+                                }
+                            }}
+                            className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-colors text-muted-foreground mr-1"
+                            title="Sil"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                        {onClose && <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-muted-foreground hover:text-white">✕</button>}
+                    </div>
+                </div>
+                <div className="text-sm text-muted-foreground ml-1">{brandName}</div>
+            </div>
+
+            <div className="p-5 space-y-5 overflow-y-auto custom-scrollbar pb-10">
+                {/* Tarihler */}
+                <div className="grid grid-cols-2 gap-4">
+                    <GlassSurface intensity="light" className="p-4 border-l-4 border-l-[#329FF5] bg-[#329FF5]/5">
+                        <p className="text-xs text-[#329FF5] mb-2 flex items-center gap-2 font-medium uppercase tracking-wider">
+                            {Icons.Camera} Çekim
+                        </p>
+                        <p className="font-bold text-lg">
+                            {content.deliveryDate ? new Date(content.deliveryDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '---'}
+                        </p>
+                    </GlassSurface>
+
+                    <GlassSurface intensity="light" className="p-4 border-l-4 border-l-[#00F5B0] bg-[#00F5B0]/5">
+                        <p className="text-xs text-[#00F5B0] mb-2 flex items-center gap-2 font-medium uppercase tracking-wider">
+                            {Icons.Activity} Paylaşım
+                        </p>
+                        <p className="font-bold text-lg">
+                            {content.publishDate ? new Date(content.publishDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '-'}
+                        </p>
+                    </GlassSurface>
                 </div>
 
-                {/* Status Dropdown */}
-                <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* Status Progress Bar (Aesthetic) */}
+                <div className="mb-6">
+                    <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
                         {Icons.Activity} Durum
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', border: `1px solid ${statusInfo.color}` }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ color: statusInfo.color }}>{StatusIcon}</span>
-                            <div>
-                                <p style={{ fontWeight: 600 }}>{getSimpleStatus(content.status) === 'DONE' ? 'Tamamlandı' : 'Yapılacak'}</p>
-                                <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>{contentStatuses[content.status]?.label}</p>
-                            </div>
-                        </div>
-                        {/* Hızlı Aksiyon Butonları */}
-                        <div style={{ display: 'flex', gap: 4 }}>
-                            {getSimpleStatus(content.status) === 'TODO' ? (
+                    <div className="flex items-center justify-between bg-black/40 p-1.5 rounded-2xl border border-white/10 relative">
+                        {['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'].map((stage, index) => {
+                            const info = contentStatuses[stage as ContentStatus] || { label: stage, color: '#888' };
+                            const isActive = content.status === stage;
+                            const isPast = ['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'].indexOf(content.status) > index;
+
+                            return (
                                 <button
-                                    onClick={() => onUpdateStatus(content.id, 'PAYLASILD')}
-                                    style={{
-                                        padding: '6px 12px',
-                                        backgroundColor: '#00F5B0',
-                                        color: '#004D40',
-                                        border: 'none',
-                                        borderRadius: 'var(--radius-sm)',
-                                        fontSize: '12px',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
+                                    key={stage}
+                                    onClick={() => onUpdateStatus(content.id, stage as ContentStatus)}
+                                    className={`relative z-10 flex-1 py-3 px-2 rounded-xl text-[11px] font-bold transition-all duration-300 flex flex-col items-center gap-1.5 ${isActive ? 'bg-white/10 text-white shadow-lg ring-1 ring-white/20' : isPast ? 'text-white/60' : 'text-white/20 hover:bg-white/5'}`}
                                 >
-                                    ✓ Tamamla
+                                    <span style={{ color: isActive || isPast ? info.color : 'inherit', filter: isActive ? 'drop-shadow(0 0 8px currentColor)' : 'none' }}>
+                                        {StatusIcons[stage as ContentStatus] || <Clock size={16} />}
+                                    </span>
+                                    <span>{info.label}</span>
+                                    {isActive && (
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-current" style={{ color: info.color }} />
+                                    )}
                                 </button>
-                            ) : (
-                                <button
-                                    onClick={() => onUpdateStatus(content.id, 'PLANLANDI')}
-                                    style={{
-                                        padding: '6px 12px',
-                                        backgroundColor: '#FF9800',
-                                        color: '#3E2723',
-                                        border: 'none',
-                                        borderRadius: 'var(--radius-sm)',
-                                        fontSize: '12px',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    ↩ Geri Al
-                                </button>
-                            )}
-                        </div>
+                            );
+                        })}
                     </div>
-                    {/* Detaylı Durum Seçimi (Opsiyonel / İkincil) */}
-                    <details style={{ marginTop: '8px' }}>
-                        <summary style={{ fontSize: '11px', color: 'var(--color-muted)', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            {Icons.ChevronDown} Detaylı durum değiştir
-                        </summary>
-                        <div style={{ marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                            {getStagesForType(content.type).map((stage) => {
-                                const info = contentStatuses[stage];
-                                return (
-                                    <button
-                                        key={stage}
-                                        onClick={() => onUpdateStatus(content.id, stage)}
-                                        style={{
-                                            padding: '6px',
-                                            backgroundColor: content.status === stage ? info.color + '20' : 'transparent',
-                                            border: content.status === stage ? `1px solid ${info.color}` : '1px solid var(--color-border)',
-                                            borderRadius: 4,
-                                            fontSize: '11px',
-                                            textAlign: 'left',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6
-                                        }}
-                                    >
-                                        <span style={{ color: content.status === stage ? info.color : 'var(--color-muted)' }}>
-                                            {StatusIcons[stage] || <Clock size={16} />}
-                                        </span>
-                                        <span style={{ color: content.status === stage ? info.color : 'inherit' }}>{info.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </details>
                 </div>
 
                 {/* Açıklama & Notlar */}
-                <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div>
+                    <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
                         {Icons.FileText} Açıklama & Notlar
-                        {content.notes && <span style={{ marginLeft: '8px', color: '#4CAF50', display: 'flex', alignItems: 'center', gap: 4 }}>{Icons.Check} İçerik Hazır</span>}
+                        {content.notes && <span className="ml-auto text-[#4CAF50] bg-[#4CAF50]/10 px-2 py-0.5 rounded text-[10px] font-bold">KAYDEDİLDİ</span>}
                     </p>
                     <textarea
                         value={editingNotes}
@@ -219,40 +185,30 @@ export function ContentDetailPanel({
                             }
                         }}
                         placeholder="İçerik için not ekle..."
-                        style={{
-                            width: '100%',
-                            padding: 'var(--space-2)',
-                            backgroundColor: 'var(--color-surface)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: 'var(--radius-sm)',
-                            minHeight: '100px',
-                            fontSize: 'var(--text-body)',
-                            lineHeight: '1.6',
-                            resize: 'vertical',
-                            fontFamily: 'inherit'
-                        }}
+                        className="w-full p-4 bg-black/20 border border-white/10 rounded-xl min-h-[140px] text-sm leading-relaxed resize-y focus:outline-none focus:border-primary/50 focus:bg-black/30 transition-all placeholder:text-white/20 text-white"
                     />
                 </div>
 
                 {/* Atanan Kişiler */}
                 {(content.assigneeIds?.length > 0 || content.assigneeId) && (
-                    <div style={{ marginBottom: 'var(--space-3)' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {Icons.User} Atanan
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
+                            {Icons.User} Atanan Ekip
                         </p>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <div className="flex gap-2 flex-wrap bg-black/20 p-3 rounded-xl border border-white/5">
                             {(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map((assignee: string) => {
                                 const member = activeTeam.find(t => t.id === assignee || t.name === assignee);
                                 const displayName = member?.name || assignee;
                                 const color = teamMemberColors[displayName] || teamMemberColors[assignee] || '#6B7B80';
                                 return (
                                     <span key={assignee} style={{
-                                        padding: '4px 12px',
+                                        padding: '6px 14px',
                                         backgroundColor: color + '20',
                                         color: color,
-                                        borderRadius: 16,
-                                        fontWeight: 500,
-                                        fontSize: 13
+                                        borderRadius: 20,
+                                        border: `1px solid ${color}40`,
+                                        fontWeight: 600,
+                                        fontSize: 12
                                     }}>
                                         {displayName}
                                     </span>
@@ -264,36 +220,27 @@ export function ContentDetailPanel({
 
                 {/* Not Geçmişi */}
                 {noteHistory && noteHistory.filter(n => n.contentId === content.id).length > 0 && (
-                    <div style={{ marginBottom: 'var(--space-3)' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 6 }}>{Icons.History} Değişiklik Geçmişi</p>
-                        <div style={{
-                            maxHeight: '150px',
-                            overflowY: 'auto',
-                            backgroundColor: 'var(--color-surface)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '8px'
-                        }}>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">{Icons.History} Son İşlemler</p>
+                        <div className="bg-black/20 rounded-xl p-2 max-h-[150px] overflow-y-auto border border-white/5">
                             {noteHistory
                                 .filter(n => n.contentId === content.id)
                                 .slice(-5)
                                 .reverse()
                                 .map(n => (
-                                    <div key={n.id} style={{
-                                        fontSize: '11px',
-                                        padding: '4px 0',
-                                        borderBottom: '1px solid var(--color-border)'
-                                    }}>
-                                        <span style={{ fontWeight: 600 }}>{n.user}</span>
-                                        <span style={{ color: 'var(--color-muted)' }}> • {new Date(n.timestamp).toLocaleString('tr-TR')}</span>
-                                        <br />
-                                        <span style={{ color: '#666' }}>{n.action}</span>
+                                    <div key={n.id} className="text-[11px] p-2 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="font-bold text-white/90">{n.user}</span>
+                                            <span className="text-white/30">{new Date(n.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                        <span className="text-white/50">{n.action}</span>
                                     </div>
                                 ))
                             }
                         </div>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </GlassCard>
     );
 }

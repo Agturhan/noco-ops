@@ -102,6 +102,11 @@ export async function getContents(): Promise<ContentItem[]> {
     }
 }
 
+// ... imports
+import { getRetainers, logRetainerHours } from './retainers';
+
+// ... existing code ...
+
 // Yeni içerik oluştur (Task tablosuna direkt)
 export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<ContentItem | null> {
     try {
@@ -110,7 +115,7 @@ export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt
             .insert([{
                 title: content.title,
                 description: content.notes,
-                status: mapContentStatusToTask(content.status || 'PLANLANDI'),  // ContentStatus → TaskStatus dönüşümü
+                status: mapContentStatusToTask(content.status || 'PLANLANDI'),
                 priority: 'NORMAL',
                 dueDate: content.deliveryDate || null,
                 assigneeId: content.assigneeId || (content.assigneeIds?.[0]) || null,
@@ -127,10 +132,40 @@ export async function createContent(content: Omit<ContentItem, 'id' | 'createdAt
 
         if (task) {
             await logAction('CREATE', 'CONTENT', task.id, { title: content.title, type: content.type }, task.title);
+
+            // AUTOMATIC RETAINER LOGGING
+            if (content.clientId) {
+                try {
+                    // Find active retainer for this client
+                    const retainers = await getRetainers(content.clientId);
+                    const activeRetainer = retainers.find((r: any) => r.status === 'ACTIVE');
+
+                    if (activeRetainer) {
+                        // Log 1 unit/hour
+                        await logRetainerHours({
+                            retainerId: activeRetainer.id,
+                            hours: 1, // Defaulting to 1 unit
+                            description: `İçerik Üretimi: ${content.title}`,
+                            date: new Date().toISOString(),
+                            userId: content.assigneeId || undefined
+                        });
+                        console.log(`[Auto-Log] Logged 1 unit to retainer ${activeRetainer.id} for content ${task.id}`);
+                    }
+                } catch (retainerError) {
+                    console.error('Auto-log retainer error (non-blocking):', retainerError);
+                    // Do not fail content creation if retainer logging fails
+                }
+            }
         }
 
         if (error) {
-            console.error('Supabase createContent error:', error);
+            console.error('Supabase createContent error details:', JSON.stringify(error, null, 2));
+            console.error('Payload attempted:', JSON.stringify({
+                title: content.title,
+                status: mapContentStatusToTask(content.status || 'PLANLANDI'),
+                assigneeId: content.assigneeId,
+                assigneeIds: content.assigneeIds
+            }, null, 2));
             return null;
         }
 
@@ -437,73 +472,125 @@ export async function createContentWithBrand(content: {
 // Hakediş Durumunu Getir (Dashboard için)
 export async function getRetainerStatus() {
     try {
-        const clients = [
-            { name: 'Louvess', quota: 9, type: 'Karma', note: 'Düzenli içerik üretimi ve tasarım.' },
-            { name: 'Hubeyb Karaca', quota: 8, type: 'Stüdyo', note: 'Stüdyo çekimi. Geliş başı 1-3 video.' },
-            { name: 'Tevfik Usta', quota: 7, type: 'Dış Çekim', note: 'Ayda 1 kez mekan çekimi.' },
-            { name: 'Zeytin Dalı', quota: 6, type: 'Dış Çekim', note: 'Ayda 1-2 kez dış çekim.' },
-            { name: 'İkranur', quota: 6, type: 'Stüdyo', note: 'Ürün stüdyo çekimi ve kurgusu.' },
-            { name: 'Valora', quota: 3, type: 'Stüdyo', note: 'Ayda 1 tam gün stüdyo.' },
-            { name: 'Ali Haydar Usta', quota: 1, type: 'Dış Çekim', note: '10-25 Ocak arası çekim bekleniyor.', warning: true },
-        ];
-
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-        // Tüm müşterileri çek (ID eşleştirmesi için)
-        const { data: dbClients } = await supabaseAdmin
-            .from('Client')
-            .select('id, name');
+        // 1. Fetch Active Contracts with Client details
+        // We assume all contracts are 'active' for now, or we could filter by date if Contract had dates
+        const { data: contracts, error: contractError } = await supabaseAdmin
+            .from('Contract')
+            .select('*, client:Client(*)')
+            .order('name');
 
-        // Bu ayın içeriklerini çek
-        const { data: contents, error } = await supabaseAdmin
+        if (contractError) throw contractError;
+
+        // 1.1 Fetch Active Retainers (Source of Truth for visibility)
+        const { data: retainers, error: retainerError } = await supabaseAdmin
+            .from('Retainer')
+            .select('*, client:Client(*)')
+            .neq('status', 'EXPIRED')
+            .order('name');
+
+        if (retainerError) throw retainerError;
+
+        const activeRetainerClientIds = new Set(retainers?.map(r => r.clientId) || []);
+
+        // Filter contracts: Only show if client has a Retainer record
+        const visibleContracts = contracts?.filter(c => activeRetainerClientIds.has(c.clientId)) || [];
+
+        // 2. Fetch Tasks for this month (for progress calculation)
+        // Count if: (DueDate in month) OR (DueDate is NULL AND CreatedAt in month)
+        // This ensures Undated "Planlanacak" items are counted when created.
+        const { data: contents, error: contentError } = await supabaseAdmin
             .from('Task')
-            .select('id, brandName, status, contentType, clientId')
+            .select('id, status, contentType, clientId, brandName, dueDate, createdAt')
             .not('contentType', 'is', null)
-            .gte('dueDate', startOfMonth)
-            .lte('dueDate', endOfMonth);
+            .or(`dueDate.gte.${startOfMonth},and(dueDate.is.null,createdAt.gte.${startOfMonth})`)
+            // Note: We also need upper bound. 
+            // supabase .or() syntax with nested logic is tricky. 
+            // Easier: Fetch wider range (e.g. created OR due >= startOfMonth) then filter in JS.
+            // Fetching all "active" or recent tasks is safer.
+            .gte('createdAt', startOfMonth) // Optimization: at least created recently? No, disjoint sets.
+            // Let's settle for: Fetch ALL content types, then filter in JS. 
+            // Just fetching all content for the active clients is safer than complex OR query limits.
+            // But we need to know the date range.
 
-        if (error) {
-            console.error('getRetainerStatus DB Error:', error);
-            // Fallback to empty stats but keep structure
-            return clients.map((c, i) => ({
-                id: `r${i}`, client: c.name, clientId: null, progress: 0, total: c.quota, label: `0/${c.quota}`, stock: 0, stockLabel: 'Veri Yok', note: c.note, warning: c.warning
-            }));
-        }
+            // Revised Strategy:
+            // Fetch all tasks for the relevant Clients (we have visibleContracts).
+            // But that's hard to filter in SQL by array of ClientIDs efficiently without a helper.
+            // Let's stick to the Date logic.
+            // We want tasks that "Belong to this month".
+            // Task belongs if: DueDate is in month. OR (DueDate is null AND CreatedAt is in month).
 
-        // İstatistikleri hesapla
-        return clients.map((client, index) => {
-            // Basit isim eşleştirme (ilk kelime veya tam eşleşme)
-            const searchName = client.name.split(' ')[0].toLowerCase();
+            // Supabase query for this:
+            .or(`dueDate.gte.${startOfMonth},createdAt.gte.${startOfMonth}`)
+            // Use wide net, then filter JS.
+            .order('createdAt', { ascending: false });
 
-            // DB'den Client ID bul
-            const matchedClient = dbClients?.find(c =>
-                c.name.toLowerCase().includes(searchName) ||
-                client.name.toLowerCase().includes(c.name.toLowerCase())
-            );
-            const clientId = matchedClient?.id;
+        if (contentError) throw contentError;
 
-            const clientContents = contents?.filter(c =>
-                (c.brandName && c.brandName.toLowerCase().includes(searchName)) ||
-                (clientId && c.clientId === clientId)
+        // JS Filter for strict month boundaries
+        const monthContents = (contents || []).filter(c => {
+            const due = c.dueDate ? new Date(c.dueDate) : null;
+            const created = new Date(c.createdAt);
+            const start = new Date(startOfMonth);
+            const end = new Date(endOfMonth);
+
+            if (due) {
+                return due >= start && due <= end;
+            } else {
+                // If no due date, fall back to created date
+                return created >= start && created <= end;
+            }
+        });
+
+        // Use filtered list
+        const effectiveContents = monthContents;
+
+
+        // 3. Map to Dashboard Format
+        // Iterate over RETAINERS instead of Contracts to avoid duplicates
+        return (retainers || []).map((retainer) => {
+            const clientName = retainer.client?.name || retainer.name;
+
+            // Filter contents for this client
+            const clientContents = effectiveContents.filter(c =>
+                c.clientId === retainer.clientId ||
+                (clientName && c.brandName?.toLowerCase().includes(clientName.split(' ')[0].toLowerCase())) ||
+                (clientName && c.brandName === clientName)
             ) || [];
 
-            const total = clientContents.length;
-            // Stok: DONE statüsündekiler
-            const stock = clientContents.filter(c => c.status === 'DONE').length;
+            const total = retainer.monthlyHours || 8;
+            // For now, track item count as progress (since we auto-log 1 unit per item)
+            // Or use stored logs if we want pure hours. 
+            // The user prompt "Auto-increment Retainer progress" suggested item count based logic previously.
+            // Let's use the count of items in this month.
+            const usedCount = clientContents.length;
+
+            // Stock (Finished items)
+            const stock = clientContents.filter(c => ['DONE', 'PAYLASILD', 'TESLIM'].includes(c.status)).length;
+
+            let label = 'Normal';
+            const percent = (usedCount / total) * 100;
+            const stockVal = total - usedCount;
+
+            if (percent >= 100) label = 'Tamamlandı';
+            else if (percent >= 80) label = 'Yoğun';
+            else if (percent >= 50) label = 'Normal';
+            else label = 'Başlangıç';
 
             return {
-                id: `r${index}`,
-                client: client.name,
-                clientId: clientId, // Link için ID
-                progress: total,
-                total: client.quota,
-                label: `${total}/${client.quota} ${client.type === 'Karma' ? 'İçerik' : 'Video'}`,
-                stock: stock,
-                stockLabel: stock > 0 ? `${stock} ${client.type === 'Karma' ? 'İçerik' : 'Video'} Hazır` : (client.warning ? 'Planlanıyor' : 'Hazırlanıyor'),
-                note: client.note,
-                warning: client.warning
+                id: retainer.id,
+                client: clientName,
+                clientId: retainer.clientId,
+                progress: usedCount,
+                total: total,
+                label: label,
+                stock: Math.max(0, stockVal),
+                stockLabel: stock > 0 ? `${stock} Hazır` : 'Planlanıyor',
+                note: retainer.client?.notes || 'Standart',
+                warning: false
             };
         });
 

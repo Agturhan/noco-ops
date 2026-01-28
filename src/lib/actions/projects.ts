@@ -118,6 +118,7 @@ export async function updateClient(id: string, data: {
     linkedin?: string;
     website?: string;
     notes?: string;
+    socialCredentials?: string;
 }) {
     const { data: client, error } = await supabaseAdmin
         .from('Client')
@@ -133,6 +134,7 @@ export async function updateClient(id: string, data: {
             linkedin: data.linkedin || null,
             website: data.website || null,
             notes: data.notes || null,
+            socialCredentials: data.socialCredentials || null,
         })
         .eq('id', id)
         .select()
@@ -247,7 +249,7 @@ export async function createContract(data: {
             clientId: data.clientId,
             name: data.name,
             maxRevisions: data.maxRevisions || 3,
-            paymentTerms: data.paymentTerms || 'NET30',
+            paymentTerms: data.paymentTerms || 'NET_30',
             rawAssetsIncluded: data.rawAssetsIncluded || false,
             retainerHours: data.retainerHours || null,
             monthlyVideoQuota: data.monthlyVideoQuota || 0,
@@ -259,7 +261,7 @@ export async function createContract(data: {
 
     if (error) {
         console.error('Error creating contract:', error);
-        throw new Error('Sözleşme oluşturulurken hata oluştu');
+        throw new Error('Sözleşme oluşturulurken hata oluştu: ' + error.message + ' ' + (error.details || ''));
     }
 
     // Audit log

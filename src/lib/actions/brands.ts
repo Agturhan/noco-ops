@@ -160,3 +160,22 @@ export async function getBrandProjects(clientId: string) {
         return [];
     }
 }
+
+export async function deleteBrand(id: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('Client')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        await logAction('DELETE', 'Brand', id, {}, 'Deleted Brand');
+
+        revalidatePath('/dashboard/system/clients');
+        return { success: true };
+    } catch (error) {
+        console.error('deleteBrand error:', error);
+        return { success: false, error };
+    }
+}

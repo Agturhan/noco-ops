@@ -61,7 +61,7 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* ===== Spacing (8pt grid) ===== */
+  /* ===== Spacing (8pt grid - More Whitespace) ===== */
   --space-1: 8px;
   --space-2: 16px;
   --space-3: 24px;
@@ -70,21 +70,22 @@
   --space-6: 48px;
   --space-8: 64px;
 
-  /* ===== Border Radius ===== */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* ===== Border Radius (Apple Smooth Corner feel) ===== */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  /* Recommended 18px */
+  --radius-xl: 24px;
 
   /* ===== Shadows (premium soft) ===== */
   --shadow-z1: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-z2: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-z3: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-z2: 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-z3: 0 8px 24px rgba(0, 0, 0, 0.05);
 
   /* ===== Transitions ===== */
-  --transition-fast: 150ms ease;
-  --transition-base: 200ms ease;
+  --transition-fast: 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-base: 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
 
   /* ===== Layout ===== */
   --container-max: 1200px;
@@ -94,134 +95,84 @@
 /* ===== Dark Theme (Premium — okunaklı versiyon) ===== */
 [data-theme="dark"] {
   /* Core */
-  --color-background: #0B0F14;
+  --color-background: #000000;
+  /* Deep black for maximizing OLED/premium feel */
   --color-surface: #0B0F14;
-  --color-card: #111827;
-  --color-surface-2: #161F2C;
-  --color-border: #1F2937;
-  --color-zebra: #161F2C;
+  --color-card: #151921;
+  /* Slightly lighter than bg */
+  --color-surface-2: #1A1F29;
+  --color-border: rgba(255, 255, 255, 0.08);
+  /* Soft border */
+  --color-zebra: rgba(255, 255, 255, 0.02);
 
   /* Text — koyu temada okunur */
-  --color-ink: #F3F4F6;
-  --color-sub-ink: #CBD5E1;
-  --color-muted: #94A3B8;
+  --color-ink: #F5F5F7;
+  /* Apple-ish white */
+  --color-sub-ink: rgba(245, 245, 247, 0.6);
+  /* Reduced opacity for secondary */
+  --color-muted: rgba(245, 245, 247, 0.4);
 
-  /* Brand */
-  --color-primary: #1B6FD8;
-  --color-primary-hover: #329FF4;
-  --color-primary-light: rgba(27, 111, 216, 0.15);
+  /* Brand - Electric Blue / Deep Cyan */
+  --color-primary: #2997FF;
+  /* Apple System Blue-ish */
+  --color-primary-hover: #007AFF;
+  --color-primary-light: rgba(41, 151, 255, 0.15);
 
-  /* Semantic (aynı kalır) */
-  --color-success: #00C98F;
-  --color-warning: #C9A227;
-  --color-error: #E13A3A;
+  /* Additional Accents */
+  --color-cyan-electric: #00D4FF;
+  /* For progress bars */
+  --color-purple-deep: #BF5AF2;
+
+  /* Semantic */
+  --color-success: #30D158;
+  /* Apple Success */
+  --color-warning: #FFD60A;
+  /* Apple Warning */
+  --color-error: #FF453A;
+  /* Apple Error */
+
+  /* Glass Tokens */
+  --glass-bg: rgba(30, 30, 35, 0.45);
+  /* More "frosted", less opaque */
+  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-blur: 25px;
+  /* Increased blur for depth */
 }
 
-/* ===== Base Styles ===== */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* ===== Dashboard Reskin (Scoped) ===== */
+[data-dashboard="true"] {
+  /* Dark Glass Theme */
+  --color-background: #000000;
+
+  /* Glass card base */
+  --color-surface: rgba(25, 25, 30, 0.4);
+  --color-card: rgba(25, 25, 30, 0.4);
+
+  /* Glass Tokens - Dashboard Specific */
+  --glass-bg: rgba(20, 20, 25, 0.5);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.06);
+  --glass-blur: 30px;
+  /* Heavy blur for depth */
+
+  /* Neon Glows - More Subtle */
+  --shadow-neon-blue: 0 0 16px rgba(41, 151, 255, 0.25);
+  --shadow-neon-green: 0 0 16px rgba(48, 209, 88, 0.25);
+
+  /* Overrides */
+  --radius-lg: 18px;
+  /* Enforce 18px */
+
+  /* Text adjustments for dark mode */
+  --color-ink: #FFFFFF;
+  --color-sub-ink: rgba(255, 255, 255, 0.65);
+  --color-muted: rgba(255, 255, 255, 0.45);
+  --color-border: rgba(255, 255, 255, 0.08);
 }
 
-body {
-  font-family: var(--font-body);
-  font-size: var(--text-body);
-  line-height: var(--leading-body);
-  color: var(--color-ink);
-  background-color: var(--color-background);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ===== Typography ===== */
-h1,
-h2,
-h3 {
-  font-family: var(--font-heading);
-  font-weight: var(--weight-semibold);
-  color: var(--color-ink);
-}
-
-h1 {
-  font-size: var(--text-h1);
-  line-height: var(--leading-h1);
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  font-size: var(--text-h2);
-  line-height: var(--leading-h2);
-  letter-spacing: -0.01em;
-}
-
-h3 {
-  font-size: var(--text-h3);
-  line-height: var(--leading-h3);
-}
-
-p {
-  color: var(--color-sub-ink);
-  max-width: 65ch;
-}
-
-a {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: var(--weight-medium);
-  transition: color var(--transition-fast);
-}
-
-a:hover {
-  color: var(--color-primary-hover);
-}
-
-/* Focus Ring */
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* ===== Utility Classes ===== */
-.text-muted {
-  color: var(--color-muted);
-}
-
-.text-success {
-  color: var(--color-success);
-}
-
-.text-warning {
-  color: var(--color-warning);
-}
-
-.text-error {
-  color: var(--color-error);
-}
-
-.bg-surface {
-  background-color: var(--color-surface);
-}
-
-.bg-card {
-  background-color: var(--color-card);
-}
-
-/* ===== Layout ===== */
-.container {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: 0 var(--gutter);
-}
-
-/* ===== Responsive Typography ===== */
-@media (max-width: 768px) {
-  :root {
-    --text-h1: 20px;
-    --text-h2: 18px;
-    --text-h3: 16px;
-    --leading-h1: 28px;
-    --leading-h2: 24px;
-    --leading-h3: 22px;
-  }
+[data-dashboard="true"] .glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }

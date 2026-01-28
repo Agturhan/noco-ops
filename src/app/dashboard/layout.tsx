@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/layout';
 import { AuditTracker } from '@/components/audit/AuditTracker';
 import '@/styles/tokens.css';
 import '@/styles/components.css';
+import { flags } from '@/lib/flags';
 
 export default function DashboardLayout({
     children,
@@ -35,7 +36,10 @@ export default function DashboardLayout({
     };
 
     return (
-        <div className={`layout ${isDark ? 'dark' : ''}`}>
+        <div
+            className={`layout ${isDark ? 'dark' : ''} ${flags.dashboardReskin ? 'dashboard-skin' : ''}`}
+            data-dashboard={flags.dashboardReskin ? "true" : undefined}
+        >
             <AuditTracker />
             <Sidebar
                 userRole="OPS"

@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { GlassSurface } from '@/components/ui/GlassSurface';
+import { MagicBento } from '@/components/react-bits/MagicBento';
+import { ShinyText } from '@/components/react-bits/TextAnimations';
 import { brands, getBrandName, getBrandColor } from '@/lib/data';
 import { getEquipment, getStudioCheckIns, createStudioCheckIn, completeStudioCheckOut, getTodayStudioStatus, calculatePaintCharge } from '@/lib/actions/studio';
+import { Calendar, Clock, MapPin, Camera, Video, Mic, ChevronLeft, ChevronRight, Plus, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 // ===== STÜDYO BOOKING SİSTEMİ =====
 
@@ -19,32 +23,31 @@ interface Booking {
     type: 'PHOTO' | 'VIDEO' | 'PODCAST' | 'OTHER';
     status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
     notes: string;
-    waiverSigned: boolean;
     equipment: string[];
 }
 
 // Gerçek marka rezervasyonları
 const initialBookings: Booking[] = [
-    { id: 'b1', date: '2026-01-15', startTime: '10:00', endTime: '14:00', client: 'Valora Psikoloji', brandId: 'valora', project: 'Ürün Fotoğrafları', type: 'PHOTO', status: 'CONFIRMED', notes: 'Beyaz fon, ürün standları gerekli', waiverSigned: true, equipment: ['Softbox', 'Backdrop', 'Tripod'] },
-    { id: 'b2', date: '2026-01-17', startTime: '09:00', endTime: '18:00', client: 'Zoks Studio', brandId: 'zoks', project: 'Konsept Çekim', type: 'VIDEO', status: 'CONFIRMED', notes: 'Full gün çekim, yemek dahil', waiverSigned: true, equipment: ['Kamera', 'Işık Seti', 'Mikrofon', 'Gimbal'] },
-    { id: 'b3', date: '2026-01-20', startTime: '14:00', endTime: '16:00', client: 'Hair Chef', brandId: 'hairchef', project: 'Podcast Kaydı', type: 'PODCAST', status: 'PENDING', notes: '2 kişilik podcast kaydı', waiverSigned: false, equipment: ['Mikrofon x2', 'Mixer', 'Kulaklık x2'] },
-    { id: 'b4', date: '2026-01-22', startTime: '10:00', endTime: '12:00', client: 'Zeytindalı Gıda', brandId: 'zeytindali', project: 'Kurumsal Fotoğraf', type: 'PHOTO', status: 'PENDING', notes: 'Yönetim kurulu fotoğrafları', waiverSigned: false, equipment: ['Portrait Lens', 'Softbox'] },
-    { id: 'b5', date: '2026-01-25', startTime: '10:00', endTime: '14:00', client: 'İkra Giyim', brandId: 'ikra', project: 'Ürün Çekimi', type: 'PHOTO', status: 'CONFIRMED', notes: 'Yeni sezon kıyafet çekimi', waiverSigned: true, equipment: ['Backdrop', 'Softbox', 'Manken'] },
-    { id: 'b6', date: '2026-01-28', startTime: '09:00', endTime: '13:00', client: 'Tevfik Usta', brandId: 'tevfik', project: 'Mekan Çekimi', type: 'VIDEO', status: 'CONFIRMED', notes: 'Restoran iç çekim', waiverSigned: true, equipment: ['Gimbal', 'Drone', 'Mikrofon'] },
+    { id: 'b1', date: '2026-01-15', startTime: '10:00', endTime: '14:00', client: 'Valora Psikoloji', brandId: 'valora', project: 'Ürün Fotoğrafları', type: 'PHOTO', status: 'CONFIRMED', notes: 'Beyaz fon, ürün standları gerekli', equipment: ['Softbox', 'Backdrop', 'Tripod'] },
+    { id: 'b2', date: '2026-01-17', startTime: '09:00', endTime: '18:00', client: 'Zoks Studio', brandId: 'zoks', project: 'Konsept Çekim', type: 'VIDEO', status: 'CONFIRMED', notes: 'Full gün çekim, yemek dahil', equipment: ['Kamera', 'Işık Seti', 'Mikrofon', 'Gimbal'] },
+    { id: 'b3', date: '2026-01-20', startTime: '14:00', endTime: '16:00', client: 'Hair Chef', brandId: 'hairchef', project: 'Podcast Kaydı', type: 'PODCAST', status: 'PENDING', notes: '2 kişilik podcast kaydı', equipment: ['Mikrofon x2', 'Mixer', 'Kulaklık x2'] },
+    { id: 'b4', date: '2026-01-22', startTime: '10:00', endTime: '12:00', client: 'Zeytindalı Gıda', brandId: 'zeytindali', project: 'Kurumsal Fotoğraf', type: 'PHOTO', status: 'PENDING', notes: 'Yönetim kurulu fotoğrafları', equipment: ['Portrait Lens', 'Softbox'] },
+    { id: 'b5', date: '2026-01-25', startTime: '10:00', endTime: '14:00', client: 'İkra Giyim', brandId: 'ikra', project: 'Ürün Çekimi', type: 'PHOTO', status: 'CONFIRMED', notes: 'Yeni sezon kıyafet çekimi', equipment: ['Backdrop', 'Softbox', 'Manken'] },
+    { id: 'b6', date: '2026-01-28', startTime: '09:00', endTime: '13:00', client: 'Tevfik Usta', brandId: 'tevfik', project: 'Mekan Çekimi', type: 'VIDEO', status: 'CONFIRMED', notes: 'Restoran iç çekim', equipment: ['Gimbal', 'Drone', 'Mikrofon'] },
 ];
 
-const typeConfig: Record<string, { label: string; icon: string; color: string }> = {
-    PHOTO: { label: 'Fotoğraf', icon: 'Fotoğraf', color: '#329FF5' },
-    VIDEO: { label: 'Video', icon: '🎬', color: '#FF4242' },
-    PODCAST: { label: 'Podcast', icon: '🎙️', color: '#9C27B0' },
-    OTHER: { label: 'Diğer', icon: '📌', color: '#6B7B80' },
+const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string; border: string }> = {
+    PHOTO: { label: 'Fotoğraf', icon: <Camera size={14} />, color: 'rgba(50, 159, 245, 0.2)', border: '#329FF5' },
+    VIDEO: { label: 'Video', icon: <Video size={14} />, color: 'rgba(255, 66, 66, 0.2)', border: '#FF4242' },
+    PODCAST: { label: 'Podcast', icon: <Mic size={14} />, color: 'rgba(156, 39, 176, 0.2)', border: '#9C27B0' },
+    OTHER: { label: 'Diğer', icon: <MapPin size={14} />, color: 'rgba(107, 123, 128, 0.2)', border: '#6B7B80' },
 };
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    PENDING: { label: 'Onay Bekliyor', color: '#F6D73C', bgColor: '#FFF9E6' },
-    CONFIRMED: { label: 'Onaylandı', color: '#00F5B0', bgColor: '#E8F5E9' },
-    COMPLETED: { label: 'Tamamlandı', color: '#4CAF50', bgColor: '#E8F5E9' },
-    CANCELLED: { label: 'İptal', color: '#6B7B80', bgColor: '#F5F5F5' },
+    PENDING: { label: 'Onay Bekliyor', color: '#F6D73C', bgColor: 'rgba(246, 215, 60, 0.1)' },
+    CONFIRMED: { label: 'Onaylandı', color: '#00F5B0', bgColor: 'rgba(0, 245, 176, 0.1)' },
+    COMPLETED: { label: 'Tamamlandı', color: '#4CAF50', bgColor: 'rgba(76, 175, 80, 0.1)' },
+    CANCELLED: { label: 'İptal', color: '#9CA3AF', bgColor: 'rgba(156, 163, 175, 0.1)' },
 };
 
 const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
@@ -147,7 +150,8 @@ export function StudioBookingPageClient() {
     const [formProject, setFormProject] = useState('');
     const [formType, setFormType] = useState<Booking['type']>('PHOTO');
     const [formStartTime, setFormStartTime] = useState('');
-    const [formEndTime, setFormEndTime] = useState('');
+    // const [formEndTime, setFormEndTime] = useState(''); // Removed in favor of duration
+    const [formDuration, setFormDuration] = useState<number>(2);
     const [formNotes, setFormNotes] = useState('');
 
     // DnD Handlers
@@ -216,7 +220,7 @@ export function StudioBookingPageClient() {
         setFormProject('');
         setFormType('PHOTO');
         setFormStartTime(time);
-        setFormEndTime(`${parseInt(time.split(':')[0]) + 2}:00`);
+        setFormDuration(2); // Default 2 hours
         setFormNotes('');
         setShowBookingModal(true);
     };
@@ -241,163 +245,160 @@ export function StudioBookingPageClient() {
     const pendingCount = bookingList.filter(b => b.status === 'PENDING').length;
     const todayBookings = bookingList.filter(b => b.date === formatLocalDate(new Date()));
 
+    // Stats for Bento Grid
+    const statsItems = [
+        {
+            title: "Bu Hafta",
+            value: bookingList.filter(b => weekDays.some(d => d.date === b.date)).length.toString(),
+            subtitle: "Rezervasyon",
+            icon: <Calendar size={24} className="text-[#329FF5]" />,
+            type: "stat"
+        },
+        {
+            title: "Bugün",
+            value: todayBookings.length.toString(),
+            subtitle: "Çekim",
+            icon: <Camera size={24} className="text-[#00F5B0]" />,
+            type: "stat"
+        },
+        {
+            title: "Popüler",
+            value: "Fotoğraf",
+            subtitle: "En çok tercih edilen",
+            icon: <Clock size={24} className="text-[#9C27B0]" />,
+            type: "stat"
+        },
+        {
+            title: "Doluluk",
+            value: "%65",
+            subtitle: "Bu hafta",
+            icon: <CheckCircle size={24} className="text-[#F6D73C]" />,
+            type: "stat"
+        }
+    ];
+
     return (
-        <>
-            <Header
-                title="Stüdyo Rezervasyonu"
-                subtitle="Çekim ve kayıt planlaması"
-                actions={
-                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                        <Button variant="secondary" size="sm" onClick={prevWeek}>◀ Önceki</Button>
-                        <Button variant="secondary" size="sm" onClick={() => setCurrentWeekStart(getCurrentWeekStart())}>Bu Hafta</Button>
-                        <Button variant="secondary" size="sm" onClick={nextWeek}>Sonraki ▶</Button>
-                        <Button variant="primary" onClick={() => { setSelectedSlot(null); setShowBookingModal(true); }}>+ Yeni Rezervasyon</Button>
+        <div className="p-4 md:p-6 min-h-screen pt-6">
+            {/* Header Section */}
+            <div className="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 className="text-4xl font-bold tracking-tight mb-1 flex items-center gap-3">
+                        <ShinyText text="Stüdyo Yönetimi" disabled={false} speed={3} className="text-[#2997FF]" />
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Çekim ve kayıt planlaması
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="secondary" size="sm" onClick={prevWeek} className="glass-button"><ChevronLeft size={16} /></Button>
+                    <Button variant="secondary" size="sm" onClick={() => setCurrentWeekStart(getCurrentWeekStart())} className="glass-button">Bu Hafta</Button>
+                    <Button variant="secondary" size="sm" onClick={nextWeek} className="glass-button"><ChevronRight size={16} /></Button>
+                    <Button variant="primary" onClick={() => { setSelectedSlot(null); setShowBookingModal(true); }} className="shadow-lg shadow-blue-500/20">
+                        <Plus size={16} className="mr-2" /> Yeni Rezervasyon
+                    </Button>
+                </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <GlassSurface className="overflow-hidden p-0 backdrop-blur-3xl min-h-[600px] mt-4">
+                <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="sm" onClick={prevWeek} className="h-8 w-8 p-0 rounded-full hover:bg-white/10 text-white/70">◀</Button>
+                        <h2 className="font-semibold text-white/90 text-lg">
+                            {currentWeekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - {weekDays[6].dayNum} {currentWeekStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
+                        </h2>
+                        <Button variant="ghost" size="sm" onClick={nextWeek} className="h-8 w-8 p-0 rounded-full hover:bg-white/10 text-white/70">▶</Button>
                     </div>
-                }
-            />
-
-            <div style={{ padding: 'var(--space-3)' }}>
-                {/* Uyarılar */}
-                {pendingCount > 0 && (
-                    <Card style={{ marginBottom: 'var(--space-2)', backgroundColor: '#FFF9E6', borderLeft: '4px solid #F6D73C' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                            <span style={{ fontSize: '24px' }}>⏳</span>
-                            <div>
-                                <p style={{ fontWeight: 600, color: '#F57F17' }}>{pendingCount} rezervasyon onay bekliyor</p>
-                                <p style={{ fontSize: 'var(--text-caption)', color: '#F9A825' }}>
-                                    Feragatname imzalanmadan rezervasyon onaylanamaz
-                                </p>
-                            </div>
-                        </div>
-                    </Card>
-                )}
-
-                {/* Üst Kartlar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                    <Card>
-                        <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>BU HAFTA</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-primary)' }}>
-                                {bookingList.filter(b => weekDays.some(d => d.date === b.date)).length}
-                            </p>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>rezervasyon</p>
-                        </div>
-                    </Card>
-                    <Card>
-                        <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>BUGÜN</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700, color: todayBookings.length > 0 ? '#00F5B0' : 'var(--color-muted)' }}>
-                                {todayBookings.length}
-                            </p>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>çekim</p>
-                        </div>
-                    </Card>
-                    <Card style={{ background: '#E3F2FD' }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>EN POPÜLER</p>
-                            <p style={{ fontSize: '28px' }}>Fotoğraf</p>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Fotoğraf</p>
-                        </div>
-                    </Card>
-                    <Card>
-                        <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>DOLULUK</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-success)' }}>%65</p>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>bu hafta</p>
-                        </div>
-                    </Card>
+                    <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" onClick={() => setCurrentWeekStart(getCurrentWeekStart())} className="glass-button">Bu Hafta</Button>
+                    </div>
                 </div>
 
-                {/* Haftalık Takvim Grid */}
-                <Card>
-                    <CardHeader
-                        title={`Tarih: ${currentWeekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - ${weekDays[6].dayNum} ${currentWeekStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}`}
-                    />
-                    <CardContent>
-                        <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', gap: '1px', backgroundColor: 'var(--color-border)' }}>
-                            {/* Header Row */}
-                            <div style={{ padding: '12px', backgroundColor: 'var(--color-surface)', fontWeight: 600, textAlign: 'center' }}>Saat</div>
-                            {weekDays.map(day => (
-                                <div key={day.date} style={{
-                                    padding: '12px',
-                                    backgroundColor: day.isToday ? 'rgba(50, 159, 245, 0.1)' : 'var(--color-surface)',
-                                    fontWeight: 600,
-                                    textAlign: 'center'
-                                }}>
-                                    <p style={{ color: day.isToday ? 'var(--color-primary)' : 'inherit' }}>{day.dayName}</p>
-                                    <p style={{ fontSize: '18px', color: day.isToday ? 'var(--color-primary)' : 'inherit' }}>{day.dayNum}</p>
-                                </div>
-                            ))}
-
-                            {/* Time Slots */}
-                            {timeSlots.map(time => (
-                                <React.Fragment key={time}>
-                                    <div style={{ padding: '8px', backgroundColor: 'var(--color-card)', textAlign: 'center', fontSize: 'var(--text-caption)' }}>
-                                        {time}
-                                    </div>
-                                    {weekDays.map(day => {
-                                        const slotBookings = getBookingsForSlot(day.date, time);
-                                        return (
-                                            <div
-                                                key={`${day.date}-${time}`}
-                                                onClick={() => slotBookings.length === 0 && openBookingModal(day.date, time)}
-                                                onDragOver={handleDragOver}
-                                                onDrop={() => handleDrop(day.date, time)}
-                                                style={{
-                                                    padding: '4px',
-                                                    backgroundColor: 'var(--color-card)',
-                                                    minHeight: 40,
-                                                    cursor: slotBookings.length === 0 ? 'pointer' : 'default',
-                                                    transition: 'background-color 0.2s'
-                                                }}
-                                            >
-                                                {slotBookings.map(booking => (
-                                                    <div
-                                                        key={booking.id}
-                                                        draggable
-                                                        onDragStart={() => handleDragStart(booking)}
-                                                        onClick={(e) => { e.stopPropagation(); openDetailModal(booking); }}
-                                                        style={{
-                                                            padding: '4px 6px',
-                                                            backgroundColor: typeConfig[booking.type].color,
-                                                            color: 'white',
-                                                            borderRadius: '4px',
-                                                            fontSize: '10px',
-                                                            fontWeight: 500,
-                                                            cursor: 'move',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '4px',
-                                                            marginBottom: '2px',
-                                                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                                                        }}
-                                                    >
-                                                        {!booking.waiverSigned && <span>⚠️</span>}
-                                                        <span>{typeConfig[booking.type].icon}</span>
-                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{booking.client}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Tip Legendi */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
-                    {Object.entries(typeConfig).map(([key, config]) => (
-                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--text-caption)' }}>
-                            <span style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: config.color }} />
-                            <span>{config.icon} {config.label}</span>
+                <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-white/5 auto-rows-[minmax(60px,auto)]">
+                    {/* Header Row */}
+                    <div className="p-4 bg-black/40 font-medium text-center text-xs text-muted-foreground flex items-center justify-center border-b border-r border-white/5">
+                        Saat
+                    </div>
+                    {weekDays.map(day => (
+                        <div key={day.date} className={`p-3 text-center border-b border-r border-white/5 ${day.isToday ? 'bg-[#329FF5]/10' : 'bg-black/40'}`}>
+                            <p className={`${day.isToday ? 'text-[#329FF5]' : 'text-muted-foreground'} text-xs font-medium uppercase mb-1`}>{day.dayName}</p>
+                            <p className={`${day.isToday ? 'text-[#329FF5]' : 'text-white'} text-xl font-bold`}>{day.dayNum}</p>
                         </div>
                     ))}
-                    <span style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginLeft: 'auto' }}>
-                        ⚠️ = Feragatname imzalanmamış
-                    </span>
+
+                    {/* Time Slots */}
+                    {timeSlots.map(time => (
+                        <React.Fragment key={time}>
+                            <div className="p-2 bg-black/20 text-center text-xs text-muted-foreground flex items-start justify-center pt-3 border-r border-b border-white/5 font-medium">
+                                {time}
+                            </div>
+                            {weekDays.map(day => {
+                                const slotBookings = getBookingsForSlot(day.date, time);
+                                // Filter to find bookings starting at this slot
+                                const startingBookings = slotBookings.filter(b => b.startTime.startsWith(time.split(':')[0]));
+
+                                return (
+                                    <div
+                                        key={`${day.date}-${time}`}
+                                        onClick={() => slotBookings.length === 0 && openBookingModal(day.date, time)}
+                                        onDragOver={handleDragOver}
+                                        onDrop={() => handleDrop(day.date, time)}
+                                        className={`
+                                            relative border-b border-r border-white/5 transition-all min-h-[60px] p-1
+                                            ${slotBookings.length === 0 ? 'hover:bg-white/5 cursor-pointer bg-black/20' : 'bg-black/20'}
+                                            ${day.isToday ? 'bg-white/[0.02]' : ''}
+                                        `}
+                                    >
+                                        {/* Render only if booking starts here */}
+                                        {startingBookings.map(booking => {
+                                            const startHour = parseInt(booking.startTime.split(':')[0]);
+                                            const endHour = parseInt(booking.endTime.split(':')[0]);
+                                            const durationSlots = endHour - startHour;
+                                            const heightPercentage = durationSlots * 100;
+
+                                            return (
+                                                <div
+                                                    key={booking.id}
+                                                    draggable
+                                                    onDragStart={() => handleDragStart(booking)}
+                                                    onClick={(e) => { e.stopPropagation(); openDetailModal(booking); }}
+                                                    className="absolute inset-x-1 top-1 rounded-lg text-xs font-medium cursor-move flex flex-col justify-center gap-1 shadow-lg border border-white/10 transform hover:scale-[1.02] transition-transform z-10 p-2"
+                                                    style={{
+                                                        height: `calc(${heightPercentage}% - 8px)`,
+                                                        backgroundColor: typeConfig[booking.type].color.replace('0.2', '0.6'),
+                                                        borderColor: typeConfig[booking.type].border,
+                                                        color: 'white',
+                                                        backdropFilter: 'blur(8px)'
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-1.5 font-bold">
+                                                        <span>{typeConfig[booking.type].icon}</span>
+                                                        <span className="truncate">{booking.client}</span>
+                                                    </div>
+                                                    {durationSlots > 1 && (
+                                                        <div className="opacity-80 truncate text-[10px]">
+                                                            {booking.project}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })}
+                        </React.Fragment>
+                    ))}
                 </div>
+            </GlassSurface>
+
+            {/* Tip Legendi */}
+            <div className="flex gap-4 mt-4 px-2">
+                {Object.entries(typeConfig).map(([key, config]) => (
+                    <div key={key} className="flex items-center gap-2 text-xs text-muted-foreground bg-black/20 px-3 py-1.5 rounded-full border border-white/5">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.border }} />
+                        <span>{config.label}</span>
+                    </div>
+                ))}
             </div>
 
             {/* Rezervasyon Modal */}
@@ -412,17 +413,22 @@ export function StudioBookingPageClient() {
                         <Button variant="primary" onClick={() => {
                             if (!formClient) { alert('Müşteri adı zorunludur'); return; }
 
+                            const startHour = parseInt(formStartTime.split(':')[0]) || 9;
+                            const endHour = startHour + formDuration;
+                            // Ensure double digits
+                            const formattedStart = `${startHour.toString().padStart(2, '0')}:00`;
+                            const formattedEnd = `${endHour.toString().padStart(2, '0')}:00`;
+
                             const newBooking: Booking = {
                                 id: `b${Date.now()}`,
                                 date: selectedSlot ? selectedSlot.date : (document.querySelector('input[type="date"]') as HTMLInputElement)?.value || formatLocalDate(new Date()),
-                                startTime: selectedSlot ? selectedSlot.time : formStartTime,
-                                endTime: selectedSlot ? `${parseInt(selectedSlot.time.split(':')[0]) + 2}:00` : formEndTime,
+                                startTime: formattedStart,
+                                endTime: formattedEnd,
                                 client: formClient,
                                 project: formProject || 'Genel Çekim',
                                 type: formType,
                                 status: 'PENDING',
                                 notes: formNotes,
-                                waiverSigned: false,
                                 equipment: []
                             };
                             setBookingList([...bookingList, newBooking]);
@@ -431,36 +437,63 @@ export function StudioBookingPageClient() {
                     </>
                 }
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <div className="flex flex-col gap-4">
                     {selectedSlot && (
-                        <div style={{ padding: 'var(--space-2)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Seçilen Tarih</p>
-                            <p style={{ fontWeight: 600 }}>{selectedSlot.date} • {selectedSlot.time}</p>
+                        <div className="p-3 bg-[#329FF5]/10 rounded-lg border border-[#329FF5]/20">
+                            <p className="text-xs text-[#329FF5]/80 uppercase font-semibold">Seçilen Slot</p>
+                            <p className="font-bold text-white flex items-center gap-2">
+                                <Calendar size={14} /> {selectedSlot.date}
+                                <span className="opacity-50">|</span>
+                                <Clock size={14} /> {selectedSlot.time}
+                            </p>
                         </div>
                     )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                        <Input label="Müşteri *" value={formClient} onChange={(e) => setFormClient(e.target.value)} />
-                        <Input label="Proje *" value={formProject} onChange={(e) => setFormProject(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Müşteri *" value={formClient} onChange={(e) => setFormClient(e.target.value)} placeholder="Firma adı..." />
+                        <Input label="Proje" value={formProject} onChange={(e) => setFormProject(e.target.value)} placeholder="Proje adı..." />
                     </div>
-                    <Select
-                        label="Çekim Türü"
-                        value={formType}
-                        onChange={(e) => setFormType(e.target.value as Booking['type'])}
-                        options={Object.entries(typeConfig).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))}
-                    />
-                    {!selectedSlot && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)' }}>
-                            <Input label="Tarih" type="date" />
-                            <Input label="Başlangıç" type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} />
-                            <Input label="Bitiş" type="time" value={formEndTime} onChange={(e) => setFormEndTime(e.target.value)} />
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase">Çekim Türü</label>
+                        <div className="grid grid-cols-4 gap-2">
+                            {Object.entries(typeConfig).map(([key, config]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setFormType(key as any)}
+                                    className={`
+                                        p-2 rounded-lg border text-xs font-medium flex flex-col items-center gap-1 transition-all
+                                        ${formType === key
+                                            ? `bg-[${config.border}]/20 border-[${config.border}] text-white`
+                                            : 'bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5'
+                                        }
+                                    `}
+                                    style={formType === key ? { backgroundColor: config.color, borderColor: config.border } : {}}
+                                >
+                                    {config.icon}
+                                    {config.label}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                    <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} placeholder="Ekipman, özel gereksinimler..." />
-                    <div style={{ padding: 'var(--space-2)', backgroundColor: '#FFF3E0', borderRadius: 'var(--radius-sm)' }}>
-                        <p style={{ fontSize: 'var(--text-caption)', color: '#E65100' }}>
-                            ⚠️ Rezervasyon onayı için feragatname (sorumluluk belgesi) imzalanmalıdır.
-                        </p>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-black/20 p-3 rounded-lg border border-white/5">
+                        {!selectedSlot && <Input label="Tarih" type="date" />}
+                        <Input label="Başlangıç" type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)} />
+
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium text-white/60">Süre</label>
+                            <select
+                                value={formDuration}
+                                onChange={(e) => setFormDuration(parseInt(e.target.value))}
+                                className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#329FF5] transition-colors"
+                            >
+                                {[1, 2, 3, 4, 5, 6, 8, 10].map(h => (
+                                    <option key={h} value={h} className="bg-black text-white">{h} Saat</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <Textarea label="Notlar" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={3} placeholder="Ekipman listesi, özel istekler..." />
                 </div>
             </Modal>
 
@@ -468,72 +501,75 @@ export function StudioBookingPageClient() {
             <Modal
                 isOpen={showDetailModal}
                 onClose={() => setShowDetailModal(false)}
-                title={selectedBooking ? `${typeConfig[selectedBooking.type].icon} ${selectedBooking.project}` : 'Rezervasyon'}
+                title={selectedBooking ? selectedBooking.project : 'Rezervasyon Detayı'}
                 size="md"
                 footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
+                    <div className="flex justify-between w-full">
                         {selectedBooking && (
-                            <Button variant="ghost" style={{ color: '#d32f2f', marginRight: 'auto' }} onClick={() => handleDeleteBooking(selectedBooking.id)}>Sil</Button>
+                            <Button variant="danger" size="sm" onClick={() => handleDeleteBooking(selectedBooking.id)}>Sil</Button>
                         )}
-                        {selectedBooking?.status === 'PENDING' && !selectedBooking.waiverSigned && (
-                            <Button variant="warning">Feragatname Gönder</Button>
-                        )}
-                        {selectedBooking?.status === 'PENDING' && selectedBooking.waiverSigned && (
-                            <Button variant="success">✅ Onayla</Button>
-                        )}
-                    </>
+                        <div className="flex gap-2">
+                            <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
+                        </div>
+                    </div>
                 }
             >
                 {selectedBooking && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                        <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                    <div className="flex flex-col gap-6">
+                        {/* Status Header */}
+                        <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center`} style={{ backgroundColor: typeConfig[selectedBooking.type].color, border: `1px solid ${typeConfig[selectedBooking.type].border}` }}>
+                                    {typeConfig[selectedBooking.type].icon}
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg">{selectedBooking.client}</h3>
+                                    <p className="text-xs text-muted-foreground">{selectedBooking.project}</p>
+                                </div>
+                            </div>
                             <Badge style={{ backgroundColor: statusConfig[selectedBooking.status].bgColor, color: statusConfig[selectedBooking.status].color }}>
                                 {statusConfig[selectedBooking.status].label}
                             </Badge>
-                            <Badge style={{ backgroundColor: typeConfig[selectedBooking.type].color, color: 'white' }}>
-                                {typeConfig[selectedBooking.type].icon} {typeConfig[selectedBooking.type].label}
-                            </Badge>
-                            {!selectedBooking.waiverSigned && <Badge variant="error">Feragatname Yok</Badge>}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                            <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Müşteri</p>
-                                <p style={{ fontWeight: 600 }}>🏢 {selectedBooking.client}</p>
+                        {/* Info Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground uppercase font-bold">Tarih</p>
+                                <p className="font-medium flex items-center gap-2"><Calendar size={14} className="text-blue-400" /> {selectedBooking.date}</p>
                             </div>
-                            <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Tarih</p>
-                                <p>Tarih: {selectedBooking.date}</p>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground uppercase font-bold">Saat</p>
+                                <p className="font-medium flex items-center gap-2"><Clock size={14} className="text-green-400" /> {selectedBooking.startTime} - {selectedBooking.endTime}</p>
                             </div>
-                            <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Saat</p>
-                                <p>🕐 {selectedBooking.startTime} - {selectedBooking.endTime}</p>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground uppercase font-bold">Süre</p>
+                                <p className="font-medium">{parseInt(selectedBooking.endTime) - parseInt(selectedBooking.startTime)} Saat</p>
                             </div>
-                            <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Süre</p>
-                                <p>{parseInt(selectedBooking.endTime) - parseInt(selectedBooking.startTime)} saat</p>
+                            <div className="space-y-1">
                             </div>
                         </div>
 
+                        {/* Notes */}
                         {selectedBooking.notes && (
-                            <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Notlar</p>
-                                <p>{selectedBooking.notes}</p>
+                            <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                                <p className="text-xs text-muted-foreground uppercase font-bold mb-1">Notlar</p>
+                                <p className="text-sm">{selectedBooking.notes}</p>
                             </div>
                         )}
 
+                        {/* Equipment */}
                         <div>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '8px' }}>Ekipman</p>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                {selectedBooking.equipment.map(eq => (
-                                    <Badge key={eq} variant="info">{eq}</Badge>
-                                ))}
+                            <p className="text-xs text-muted-foreground uppercase font-bold mb-2">Ekipman & Gereksinimler</p>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedBooking.equipment.length > 0 ? selectedBooking.equipment.map(eq => (
+                                    <Badge key={eq} variant="info" className="bg-blue-500/10 text-blue-400 border-blue-500/20">{eq}</Badge>
+                                )) : <span className="text-xs text-muted-foreground italic">Ekipman belirtilmemiş</span>}
                             </div>
                         </div>
                     </div>
                 )}
             </Modal>
-        </>
+        </div>
     );
 }

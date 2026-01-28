@@ -99,7 +99,7 @@ export async function createRetainer(data: RetainerCreate) {
 
     if (error) {
         console.error('Error creating retainer:', error);
-        throw new Error('Retainer oluşturulurken hata oluştu');
+        throw new Error('Retainer oluşturulurken hata oluştu: ' + error.message + ' ' + (error.details || ''));
     }
 
     // Audit log
@@ -224,6 +224,30 @@ export async function logRetainerHours(data: HourLogCreate) {
     return hourLog;
 }
 
+// ===== DELETE HOUR LOG =====
+
+export async function deleteRetainerLog(id: string) {
+    const { error } = await supabaseAdmin
+        .from('RetainerHourLog')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error deleting hour log:', error);
+        throw new Error('Kayıt silinirken hata oluştu');
+    }
+
+    // Audit log
+    await supabaseAdmin.from('AuditLog').insert([{
+        action: 'DELETE_LOG',
+        entityType: 'RETAINER_LOG',
+        entityId: id,
+        details: {},
+    }]);
+
+    revalidatePath('/dashboard/retainers');
+}
+
 // ===== GET MONTHLY SUMMARY =====
 
 export async function getRetainerMonthlySummary(retainerId: string, month?: string) {
@@ -277,4 +301,38 @@ export async function getAllRetainerSummaries(month?: string) {
             isWarning: remainingHours < retainer.monthlyHours * 0.2, // %20 altında uyarı
         };
     });
+}
+// ===== PAYMENTS =====
+
+import { createIncome } from './accounting';
+
+export async function createRetainerPayment(data: {
+    retainerId: string;
+    amount: number;
+    paymentType: 'FULL' | 'PARTIAL';
+    notes?: string;
+}) {
+    const retainer = await getRetainerById(data.retainerId);
+    if (!retainer) throw new Error('Retainer not found');
+
+    // Create Income record
+    await createIncome({
+        title: `Retainer Ödemesi - ${retainer.name}`,
+        amount: data.amount,
+        category: 'MARKETING', // Or specialized category
+        source: retainer.client?.name || 'Retainer',
+        notes: data.notes,
+        date: new Date().toISOString()
+    });
+
+    // Audit Log
+    await supabaseAdmin.from('AuditLog').insert([{
+        action: 'PAYMENT',
+        entityType: 'RETAINER',
+        entityId: data.retainerId,
+        details: { amount: data.amount, type: data.paymentType },
+    }]);
+
+    revalidatePath('/dashboard/retainers');
+    return { success: true };
 }

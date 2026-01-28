@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Input, Modal, Badge } from '@/components/ui'; // Reduced imports
 import { Icons } from '@/components/content/icons';
-import { getBrands, createBrand, Brand } from '@/lib/actions/brands';
+import { getBrands, createBrand, deleteBrand, Brand } from '@/lib/actions/brands';
 import { useRouter } from 'next/navigation';
+import { Trash2 } from 'lucide-react';
 
 export function SystemClientsPageClient() {
     const router = useRouter();
@@ -128,7 +129,26 @@ export function SystemClientsPageClient() {
                                 <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
                                     {new Date(brand.createdAt).toLocaleDateString('tr-TR')}
                                 </span>
-                                <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-primary)' }}>Detaylar &rarr;</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`${brand.name} markasını silmek istediğinize emin misiniz?`)) {
+                                                const res = await deleteBrand(brand.id);
+                                                if (res.success) {
+                                                    loadBrands();
+                                                } else {
+                                                    alert('Marka silinemedi.');
+                                                }
+                                            }
+                                        }}
+                                        className="p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-md transition-colors text-muted-foreground"
+                                        title="Sil"
+                                    >
+                                        {<Trash2 size={16} />}
+                                    </button>
+                                    <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-primary)' }}>Detaylar &rarr;</span>
+                                </div>
                             </div>
                         </div>
                     ))}
