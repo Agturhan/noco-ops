@@ -11,19 +11,21 @@ import { ContentStatus, ContentType } from '@/lib/data';
 export const StatusIcons: Record<ContentStatus | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED', React.ReactNode> = {
     PLANLANDI: <Calendar size={16} />,
     ICERIK_HAZIRLANDI: <PenTool size={16} />,
+    CEKILIYOR: <Video size={16} />,
     CEKILDI: <Camera size={16} />,
     FOTOGRAF_RETOUCH: <Palette size={16} />,
     TASARLANIYOR: <Brush size={16} />,
     TASARLANDI: <ImageIcon size={16} />,
     KURGULANIYOR: <Scissors size={16} />,
     KURGULANDI: <Film size={16} />,
+    REVİZE: <History size={16} />,
     ONAY: <Clock size={16} />,
     PAYLASILD: <Share2 size={16} />,
     TESLIM: <Package size={16} />,
     TODO: <Calendar size={16} />,
     IN_PROGRESS: <Clock size={16} />,
     IN_REVIEW: <Clock size={16} />,
-    BLOCKED: <Clock size={16} />
+    BLOCKED: <AlertCircle size={16} />
 };
 
 export const TypeIcons: Record<ContentType, React.ReactNode> = {

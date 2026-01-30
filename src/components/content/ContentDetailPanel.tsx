@@ -62,11 +62,13 @@ export function ContentDetailPanel({
     currentUser
 }: ContentDetailPanelProps) {
     const [editingNotes, setEditingNotes] = useState('');
+    const [optimisticStatus, setOptimisticStatus] = useState<ContentStatus | null>(null);
 
     useEffect(() => {
         if (content) {
             // eslint-disable-next-line
             setEditingNotes(content.notes || content.description || '');
+            setOptimisticStatus(content.status);
         }
     }, [content]);
 
@@ -93,76 +95,121 @@ export function ContentDetailPanel({
     const StatusIcon = StatusIcons[content.status as ContentStatus] || <Clock size={18} />;
 
     return (
-        <GlassCard style={{ position: 'sticky', top: 'var(--space-6)', height: 'fit-content', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }} className="p-0 overflow-hidden flex flex-col shadow-2xl mr-1" intensity="medium" glowOnHover glowColor="blue">
-            <div className="p-6 border-b border-white/10 bg-white/5 sticky top-0 z-20 backdrop-blur-md">
-                <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-3 text-lg font-bold">
-                        <span className="bg-primary/20 p-2 rounded-lg text-primary scale-90">{TypeIcon}</span>
-                        <span className="truncate max-w-[200px]" title={content.title}>{content.title}</span>
+        <div className="h-full flex flex-col bg-[var(--surface-bg)] border-l border-white/5 shadow-2xl relative z-40">
+            {/* Header */}
+            <div className="p-4 md:p-6 border-b border-white/5 bg-[var(--surface-bg)] relative md:sticky md:top-0 z-20">
+                <div className="flex flex-col gap-3 mb-2">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 text-lg font-bold text-[var(--ink)] min-w-0 flex-1">
+                            <span className="bg-[var(--color-primary-light)] p-2 rounded-lg text-[var(--color-primary)] scale-90 shrink-0 mt-0.5">{TypeIcon}</span>
+                            <span className="text-base md:text-lg leading-tight break-words whitespace-normal line-clamp-3 md:line-clamp-none">{content.title}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                            <button
+                                onClick={async () => {
+                                    if (confirm('Bu içeriği silmek istediğinize emin misiniz?')) {
+                                        await onDelete(content.id);
+                                    }
+                                }}
+                                className="p-2 hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)] rounded-full transition-colors text-[var(--muted)]"
+                                title="Sil"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                            {onClose && <button onClick={onClose} className="p-2 hover:bg-[var(--hover-bg)] rounded-full transition-colors text-[var(--muted)] hover:text-[var(--ink)]">✕</button>}
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={async () => {
-                                if (confirm('Bu içeriği silmek istediğinize emin misiniz?')) {
-                                    await onDelete(content.id);
-                                }
-                            }}
-                            className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-colors text-muted-foreground mr-1"
-                            title="Sil"
-                        >
-                            <Trash2 size={18} />
-                        </button>
-                        {onClose && <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-muted-foreground hover:text-white">✕</button>}
-                    </div>
+                    <div className="text-sm text-[var(--muted)] ml-1 truncate">{brandName}</div>
                 </div>
-                <div className="text-sm text-muted-foreground ml-1">{brandName}</div>
             </div>
 
-            <div className="p-5 space-y-5 overflow-y-auto custom-scrollbar pb-10">
+            <div className="p-4 md:p-5 space-y-6 overflow-y-auto custom-scrollbar flex-1 pb-32 md:pb-20">
                 {/* Tarihler */}
-                <div className="grid grid-cols-2 gap-4">
-                    <GlassSurface intensity="light" className="p-4 border-l-4 border-l-[#329FF5] bg-[#329FF5]/5">
-                        <p className="text-xs text-[#329FF5] mb-2 flex items-center gap-2 font-medium uppercase tracking-wider">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 md:p-4 border-l-4 border-l-[#329FF5] bg-[#329FF5]/5 rounded-r-lg">
+                        <p className="text-xs text-[#329FF5] mb-1 flex items-center gap-2 font-medium uppercase tracking-wider">
                             {Icons.Camera} Çekim
                         </p>
-                        <p className="font-bold text-lg">
+                        <p className="font-bold text-lg text-[var(--ink)]">
                             {content.deliveryDate ? new Date(content.deliveryDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '---'}
                         </p>
-                    </GlassSurface>
+                    </div>
 
-                    <GlassSurface intensity="light" className="p-4 border-l-4 border-l-[#00F5B0] bg-[#00F5B0]/5">
-                        <p className="text-xs text-[#00F5B0] mb-2 flex items-center gap-2 font-medium uppercase tracking-wider">
+                    <div className="p-3 md:p-4 border-l-4 border-l-[#00F5B0] bg-[#00F5B0]/5 rounded-r-lg">
+                        <p className="text-xs text-[#00F5B0] mb-1 flex items-center gap-2 font-medium uppercase tracking-wider">
                             {Icons.Activity} Paylaşım
                         </p>
-                        <p className="font-bold text-lg">
+                        <p className="font-bold text-lg text-[var(--ink)]">
                             {content.publishDate ? new Date(content.publishDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '-'}
                         </p>
-                    </GlassSurface>
+                    </div>
                 </div>
 
-                {/* Status Progress Bar (Aesthetic) */}
+                {/* Status Progress Bar */}
                 <div className="mb-6">
-                    <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
+                    <p className="text-xs text-[var(--muted)] mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
                         {Icons.Activity} Durum
                     </p>
-                    <div className="flex items-center justify-between bg-black/40 p-1.5 rounded-2xl border border-white/10 relative">
-                        {['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'].map((stage, index) => {
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {(getStagesForType(content.type) || []).map((stage, index) => {
                             const info = contentStatuses[stage as ContentStatus] || { label: stage, color: '#888' };
-                            const isActive = content.status === stage;
-                            const isPast = ['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'].indexOf(content.status) > index;
+                            const currentStatus = optimisticStatus || content.status;
+                            const isActive = currentStatus === stage;
+                            const isPast = (getStagesForType(content.type) || []).indexOf(currentStatus) > index;
+                            const isWorkingStage = ['CEKILIYOR', 'KURGULANIYOR', 'TASARLANIYOR'].includes(stage);
 
                             return (
                                 <button
                                     key={stage}
-                                    onClick={() => onUpdateStatus(content.id, stage as ContentStatus)}
-                                    className={`relative z-10 flex-1 py-3 px-2 rounded-xl text-[11px] font-bold transition-all duration-300 flex flex-col items-center gap-1.5 ${isActive ? 'bg-white/10 text-white shadow-lg ring-1 ring-white/20' : isPast ? 'text-white/60' : 'text-white/20 hover:bg-white/5'}`}
+                                    onClick={async () => {
+                                        setOptimisticStatus(stage as ContentStatus); // Instant update
+                                        await onUpdateStatus(content.id, stage as ContentStatus);
+                                        if (currentUser) {
+                                            if (isWorkingStage) {
+                                                const { startTimeLog } = await import('@/lib/actions/timelogs');
+                                                await startTimeLog(content.id, currentUser.id, info.label);
+                                            } else {
+                                                const { stopActiveTimer } = await import('@/lib/actions/timelogs');
+                                                await stopActiveTimer(currentUser.id);
+                                            }
+                                        }
+                                    }}
+                                    className={`
+                                        relative group flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all duration-200
+                                        ${isActive
+                                            ? 'bg-white/[0.03] scale-[1.02]'
+                                            : 'bg-transparent border-transparent hover:bg-white/[0.02] hover:border-white/5 opacity-60 hover:opacity-100'
+                                        }
+                                    `}
+                                    style={{
+                                        borderColor: isActive ? info.color : 'transparent',
+                                        boxShadow: isActive ? `0 0 0 1px ${info.color}40` : 'none',
+                                    }}
                                 >
-                                    <span style={{ color: isActive || isPast ? info.color : 'inherit', filter: isActive ? 'drop-shadow(0 0 8px currentColor)' : 'none' }}>
-                                        {StatusIcons[stage as ContentStatus] || <Clock size={16} />}
+                                    <span
+                                        style={{ color: isActive || isPast ? info.color : 'currentColor' }}
+                                        className={`transition-colors ${isActive ? 'scale-110' : ''}`}
+                                    >
+                                        {StatusIcons[stage as ContentStatus] || <Clock size={18} />}
                                     </span>
-                                    <span>{info.label}</span>
+
+                                    <span className={`text-[10px] font-medium tracking-wide text-center leading-tight ${isActive ? 'text-[var(--ink)]' : 'text-[var(--muted)]'}`}>
+                                        {info.label}
+                                    </span>
+
+                                    {/* Active/Recording Dot */}
                                     {isActive && (
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-current" style={{ color: info.color }} />
+                                        <div className="absolute top-2 right-2">
+                                            {isWorkingStage ? (
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                </span>
+                                            ) : (
+                                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: info.color }} />
+                                            )}
+                                        </div>
                                     )}
                                 </button>
                             );
@@ -170,11 +217,24 @@ export function ContentDetailPanel({
                     </div>
                 </div>
 
+                {/* Time Tracker - Otomatik (Gizli) */}
+                {currentUser && content.id && (
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between text-xs text-[var(--muted)] bg-[var(--control-bg)] p-2 rounded-lg border border-white/5">
+                            <div className="flex items-center gap-2">
+                                <Clock size={12} />
+                                <span className="uppercase tracking-wider font-bold">Toplam Efor</span>
+                            </div>
+                            <TotalDurationDisplay taskId={content.id} />
+                        </div>
+                    </div>
+                )}
+
                 {/* Açıklama & Notlar */}
                 <div>
-                    <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
+                    <p className="text-[13px] text-[var(--muted)] mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
                         {Icons.FileText} Açıklama & Notlar
-                        {content.notes && <span className="ml-auto text-[#4CAF50] bg-[#4CAF50]/10 px-2 py-0.5 rounded text-[10px] font-bold">KAYDEDİLDİ</span>}
+                        {content.notes && <span className="ml-auto text-[#4CAF50] bg-[#4CAF50]/5 px-2 py-0.5 rounded text-[10px] font-bold opacity-80">KAYDEDİLDİ</span>}
                     </p>
                     <textarea
                         value={editingNotes}
@@ -185,17 +245,17 @@ export function ContentDetailPanel({
                             }
                         }}
                         placeholder="İçerik için not ekle..."
-                        className="w-full p-4 bg-black/20 border border-white/10 rounded-xl min-h-[140px] text-sm leading-relaxed resize-y focus:outline-none focus:border-primary/50 focus:bg-black/30 transition-all placeholder:text-white/20 text-white"
+                        className="w-full p-4 bg-[var(--control-bg)] border border-white/5 rounded-xl min-h-[140px] text-sm leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]/50 transition-all placeholder:text-[var(--muted)] text-[var(--control-text)]"
                     />
                 </div>
 
                 {/* Atanan Kişiler */}
                 {(content.assigneeIds?.length > 0 || content.assigneeId) && (
                     <div>
-                        <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
+                        <p className="text-xs text-[var(--muted)] mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">
                             {Icons.User} Atanan Ekip
                         </p>
-                        <div className="flex gap-2 flex-wrap bg-black/20 p-3 rounded-xl border border-white/5">
+                        <div className="flex gap-2 flex-wrap bg-[var(--control-bg)] p-3 rounded-xl border border-white/5">
                             {(content.assigneeIds || (content.assigneeId ? [content.assigneeId] : [])).map((assignee: string) => {
                                 const member = activeTeam.find(t => t.id === assignee || t.name === assignee);
                                 const displayName = member?.name || assignee;
@@ -203,10 +263,10 @@ export function ContentDetailPanel({
                                 return (
                                     <span key={assignee} style={{
                                         padding: '6px 14px',
-                                        backgroundColor: color + '20',
+                                        backgroundColor: color + '15',
                                         color: color,
-                                        borderRadius: 20,
-                                        border: `1px solid ${color}40`,
+                                        borderRadius: 6,
+                                        border: `1px solid ${color}30`,
                                         fontWeight: 600,
                                         fontSize: 12
                                     }}>
@@ -221,19 +281,19 @@ export function ContentDetailPanel({
                 {/* Not Geçmişi */}
                 {noteHistory && noteHistory.filter(n => n.contentId === content.id).length > 0 && (
                     <div>
-                        <p className="text-xs text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">{Icons.History} Son İşlemler</p>
-                        <div className="bg-black/20 rounded-xl p-2 max-h-[150px] overflow-y-auto border border-white/5">
+                        <p className="text-xs text-[var(--muted)] mb-3 flex items-center gap-2 uppercase tracking-wider font-semibold">{Icons.History} Son İşlemler</p>
+                        <div className="bg-[var(--control-bg)] rounded-xl p-2 max-h-[150px] overflow-y-auto border border-[var(--control-border)]">
                             {noteHistory
                                 .filter(n => n.contentId === content.id)
                                 .slice(-5)
                                 .reverse()
                                 .map(n => (
-                                    <div key={n.id} className="text-[11px] p-2 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                                    <div key={n.id} className="text-[11px] p-2 border-b border-[var(--divider)] last:border-0 hover:bg-[var(--hover-bg)] transition-colors">
                                         <div className="flex justify-between mb-1">
-                                            <span className="font-bold text-white/90">{n.user}</span>
-                                            <span className="text-white/30">{new Date(n.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span className="font-bold text-[var(--ink)]">{n.user}</span>
+                                            <span className="text-[var(--sub-ink)]">{new Date(n.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
-                                        <span className="text-white/50">{n.action}</span>
+                                        <span className="text-[var(--muted)]">{n.action}</span>
                                     </div>
                                 ))
                             }
@@ -241,6 +301,26 @@ export function ContentDetailPanel({
                     </div>
                 )}
             </div>
-        </GlassCard>
+        </div>
     );
+}
+
+function TotalDurationDisplay({ taskId }: { taskId: string }) {
+    const [totalMinutes, setTotalMinutes] = useState<number | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        // Dynamic import to avoid circular dependencies if any, or just standard import
+        import('@/lib/actions/timelogs').then(async ({ getTaskLogs }) => {
+            const res = await getTaskLogs(taskId);
+            if (mounted && res.success) {
+                const total = res.data.reduce((acc: number, log: any) => acc + (log.durationMinutes || 0), 0);
+                setTotalMinutes(total);
+            }
+        });
+        return () => { mounted = false; };
+    }, [taskId]);
+
+    if (totalMinutes === null) return <span className="animate-pulse">...</span>;
+    return <span className="font-mono text-[var(--ink)] font-bold">{(totalMinutes / 60).toFixed(1)} Saat</span>;
 }

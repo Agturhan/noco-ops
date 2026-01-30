@@ -98,7 +98,7 @@
 }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-background);
   color: var(--color-ink);
   font-family: var(--font-body);
 }

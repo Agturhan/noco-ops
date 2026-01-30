@@ -41,6 +41,9 @@ const calendarEventTypes = {
 // GERÇEK VERİLER - Takvim etkinlikleri (Aralık 2025 - Ocak 2026)
 const initialEvents: CalendarEvent[] = [];
 
+import { ContentFilterBar } from '@/components/content/ContentFilterBar';
+import { getActiveTeamMembers } from '@/lib/actions/users';
+
 export function CalendarPageClient() {
     const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
     const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
@@ -53,6 +56,10 @@ export function CalendarPageClient() {
     // Filtreler
     const [filterBrand, setFilterBrand] = useState<string>('all');
     const [filterType, setFilterType] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterAssignee, setFilterAssignee] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeTeam, setActiveTeam] = useState<any[]>([]);
 
     // Kişi renkleri (atanan kişiye göre renklendirme için)
     const [memberColors, setMemberColors] = useState<Record<string, string>>({});
@@ -64,6 +71,7 @@ export function CalendarPageClient() {
         }).catch(() => {
             setMemberColors({});
         });
+        getActiveTeamMembers().then(setActiveTeam);
     }, []);
 
     // Etkinlik rengini belirle - ATANAN KİŞİ(LER)E GÖRE
@@ -256,233 +264,248 @@ export function CalendarPageClient() {
         .slice(0, 8);
 
     return (
-        <>
-            <Header
-                title="Takvim"
-                subtitle="Sürükle & Bırak ile Planlama"
-                actions={<Button variant="primary" onClick={(e) => openNewEventModal(e)}>+ Etkinlik</Button>}
+        <div className="h-full flex flex-col">
+            <ContentFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filterBrand={filterBrand}
+                onFilterBrandChange={setFilterBrand}
+                filterStatus={filterStatus}
+                onFilterStatusChange={setFilterStatus}
+                filterAssignee={filterAssignee}
+                onFilterAssigneeChange={setFilterAssignee}
+                viewMode="calendar"
+                onViewModeChange={() => { }}
+                activeTeam={activeTeam}
             />
+            <div className="p-4 md:p-6 min-h-screen pt-2">
+                <Header
+                    title="Takvim"
+                    subtitle="Sürükle & Bırak ile Planlama"
+                    actions={<Button variant="primary" onClick={(e) => openNewEventModal(e)}>+ Etkinlik</Button>}
+                />
 
-            <div className="calendar-layout" style={{ padding: 'var(--space-3)', gap: 'var(--space-3)' }}>
-                {/* Ana Takvim */}
-                <Card>
-                    <CardContent>
-
-
-                        {/* Ay navigasyonu */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-                            <Button variant="secondary" size="sm" onClick={goToToday}>Bugün</Button>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                <Button variant="secondary" size="sm" onClick={goToPreviousMonth}>◀</Button>
-                                <h3 style={{ fontWeight: 600, minWidth: 150, textAlign: 'center' }}>{monthNames[month]} {year}</h3>
-                                <Button variant="secondary" size="sm" onClick={goToNextMonth}>▶</Button>
-                            </div>
-                            <div style={{ width: 60 }}></div>
-                        </div>
-
-                        {/* Takvim Grid */}
-                        <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 1, backgroundColor: 'var(--color-border)' }}>
-                            {dayNames.map(day => (
-                                <div key={day} style={{ padding: 'var(--space-1)', backgroundColor: 'var(--color-surface)', textAlign: 'center', fontWeight: 600, fontSize: 'var(--text-caption)' }}>{day}</div>
-                            ))}
-                            {calendarDays.map((day, index) => {
-                                const dayEvents = getEventsForDay(day);
-                                return (
-                                    <div
-                                        key={index}
-                                        onClick={() => {
-                                            if (day) {
-                                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                                openNewEventModal(dateStr);
-                                            }
-                                        }}
-                                        onDragOver={(e) => {
-                                            if (day) {
-                                                e.preventDefault();
-                                                e.dataTransfer.dropEffect = 'move';
-                                            }
-                                        }}
-                                        onDrop={(e) => {
-                                            if (day) {
-                                                e.preventDefault();
-                                                handleDrop(day);
-                                            }
-                                        }}
-                                        style={{
-                                            minHeight: 120, // Increased height
-                                            padding: 'var(--space-1)',
-                                            backgroundColor: day ? (isToday(day) ? 'var(--color-primary-light)' : 'var(--color-card)') : 'var(--color-surface)',
-                                            borderRadius: isToday(day) ? 'var(--radius-sm)' : 0,
-                                            border: isToday(day) ? '2px solid var(--color-primary)' : 'none',
-                                            cursor: day ? 'pointer' : 'default'
-                                        }}
-                                    >
-                                        {day && (
-                                            <>
-                                                <div style={{ fontWeight: isToday(day) ? 700 : 500, color: isToday(day) ? 'var(--color-primary)' : 'inherit', marginBottom: 4 }}>{day}</div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                    {dayEvents.slice(0, 4).map(event => {
-                                                        const eventColor = getEventColor(event);
-                                                        return (
-                                                            <div
-                                                                key={event.id}
-                                                                draggable
-                                                                onDragStart={() => handleDragStart(event)}
-                                                                onDragEnd={handleDragEnd}
-                                                                onClick={() => openEventDetail(event)}
-                                                                style={{
-                                                                    padding: '3px 6px',
-                                                                    backgroundColor: eventColor,
-                                                                    color: 'white',
-                                                                    borderRadius: 4,
-                                                                    fontSize: 10,
-                                                                    cursor: 'grab',
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 4,
-                                                                    maxWidth: '100%'
-                                                                }}
-                                                                title={event.title}
-                                                            >
-                                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {dayEvents.length > 4 && (
-                                                        <div style={{ fontSize: 10, color: 'var(--color-muted)' }}>+{dayEvents.length - 4} daha</div>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Sağ Panel */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    {/* Yaklaşan Etkinlikler */}
+                <div className="calendar-layout" style={{ padding: 'var(--space-3)', gap: 'var(--space-3)' }}>
+                    {/* Ana Takvim */}
                     <Card>
-                        <CardHeader title="Yaklaşan Etkinlikler" />
                         <CardContent>
-                            {upcomingEvents.length === 0 ? (
-                                <p style={{ color: 'var(--color-muted)', fontSize: 'var(--text-caption)', textAlign: 'center' }}>Bu ay etkinlik yok</p>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {upcomingEvents.map(event => {
-                                        const eventColor = getEventColor(event);
-                                        const typeInfo = calendarEventTypes[event.type] || calendarEventTypes['OTHER'];
-                                        return (
-                                            <div key={event.id} onClick={() => openEventDetail(event)} style={{ padding: 10, backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${eventColor}`, cursor: 'pointer' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                                    <span style={{ fontWeight: 600, fontSize: 13 }}>{event.title}</span>
-                                                    <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>{new Date(event.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                    <Badge style={{ backgroundColor: typeInfo.color, color: 'white', fontSize: 9 }}>{typeInfo.label}</Badge>
-                                                    {event.brandId && (
-                                                        <span style={{ fontSize: 10, color: eventColor, fontWeight: 500 }}>
-                                                            {getBrandName(event.brandId)}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+
+
+                            {/* Ay navigasyonu */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+                                <Button variant="secondary" size="sm" onClick={goToToday}>Bugün</Button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                    <Button variant="secondary" size="sm" onClick={goToPreviousMonth}>◀</Button>
+                                    <h3 style={{ fontWeight: 600, minWidth: 150, textAlign: 'center' }}>{monthNames[month]} {year}</h3>
+                                    <Button variant="secondary" size="sm" onClick={goToNextMonth}>▶</Button>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                <div style={{ width: 60 }}></div>
+                            </div>
 
-                    {/* Marka İstatistikleri */}
-                    <Card>
-                        <CardHeader title="Bu Ay" />
-                        <CardContent>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {brandEventCounts.slice(0, 8).map(b => (
-                                    <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: b.color, flexShrink: 0 }}></span>
-                                        <span style={{ flex: 1, fontSize: 12 }}>{b.name}</span>
-                                        <span style={{ fontSize: 12, fontWeight: 600, color: b.color }}>{b.count}</span>
-                                    </div>
+                            {/* Takvim Grid */}
+                            <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 1, backgroundColor: 'var(--color-border)' }}>
+                                {dayNames.map(day => (
+                                    <div key={day} style={{ padding: 'var(--space-1)', backgroundColor: 'var(--color-surface)', textAlign: 'center', fontWeight: 600, fontSize: 'var(--text-caption)' }}>{day}</div>
                                 ))}
+                                {calendarDays.map((day, index) => {
+                                    const dayEvents = getEventsForDay(day);
+                                    return (
+                                        <div
+                                            key={index}
+                                            onClick={() => {
+                                                if (day) {
+                                                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                                    openNewEventModal(dateStr);
+                                                }
+                                            }}
+                                            onDragOver={(e) => {
+                                                if (day) {
+                                                    e.preventDefault();
+                                                    e.dataTransfer.dropEffect = 'move';
+                                                }
+                                            }}
+                                            onDrop={(e) => {
+                                                if (day) {
+                                                    e.preventDefault();
+                                                    handleDrop(day);
+                                                }
+                                            }}
+                                            style={{
+                                                minHeight: 120, // Increased height
+                                                padding: 'var(--space-1)',
+                                                backgroundColor: day ? (isToday(day) ? 'var(--color-primary-light)' : 'var(--color-card)') : 'var(--color-surface)',
+                                                borderRadius: isToday(day) ? 'var(--radius-sm)' : 0,
+                                                border: isToday(day) ? '2px solid var(--color-primary)' : 'none',
+                                                cursor: day ? 'pointer' : 'default'
+                                            }}
+                                        >
+                                            {day && (
+                                                <>
+                                                    <div style={{ fontWeight: isToday(day) ? 700 : 500, color: isToday(day) ? 'var(--color-primary)' : 'inherit', marginBottom: 4 }}>{day}</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                        {dayEvents.slice(0, 4).map(event => {
+                                                            const eventColor = getEventColor(event);
+                                                            return (
+                                                                <div
+                                                                    key={event.id}
+                                                                    draggable
+                                                                    onDragStart={() => handleDragStart(event)}
+                                                                    onDragEnd={handleDragEnd}
+                                                                    onClick={() => openEventDetail(event)}
+                                                                    style={{
+                                                                        padding: '3px 6px',
+                                                                        backgroundColor: eventColor,
+                                                                        color: 'white',
+                                                                        borderRadius: 4,
+                                                                        fontSize: 10,
+                                                                        cursor: 'grab',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4,
+                                                                        maxWidth: '100%'
+                                                                    }}
+                                                                    title={event.title}
+                                                                >
+                                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {dayEvents.length > 4 && (
+                                                            <div style={{ fontSize: 10, color: 'var(--color-muted)' }}>+{dayEvents.length - 4} daha</div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </CardContent>
                     </Card>
-                </div>
-            </div>
 
-            {/* Etkinlik Oluştur/Düzenle Modal */}
-            {/* Yeni İçerik Modal (Calendar Integration) */}
-            <NewContentModal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                initialDate={formDate}
-                initialContent={editingEvent ? {
-                    id: editingEvent.sourceId || (editingEvent.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent.id),
-                    title: editingEvent.title,
-                    brandId: editingEvent.brandId,
-                    type: editingEvent.type,
-                    status: editingEvent.status,
-                    notes: editingEvent.description,
-                    deliveryDate: editingEvent.date,
-                    assigneeIds: editingEvent.assigneeIds || (editingEvent.assigneeId ? [editingEvent.assigneeId] : [])
-                } : undefined}
-                onSuccess={(newContent) => {
-                    // Check if update or create based on editingEvent
-                    const eventId = `content-${newContent.id}`;
+                    {/* Sağ Panel */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        {/* Yaklaşan Etkinlikler */}
+                        <Card>
+                            <CardHeader title="Yaklaşan Etkinlikler" />
+                            <CardContent>
+                                {upcomingEvents.length === 0 ? (
+                                    <p style={{ color: 'var(--color-muted)', fontSize: 'var(--text-caption)', textAlign: 'center' }}>Bu ay etkinlik yok</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        {upcomingEvents.map(event => {
+                                            const eventColor = getEventColor(event);
+                                            const typeInfo = calendarEventTypes[event.type] || calendarEventTypes['OTHER'];
+                                            return (
+                                                <div key={event.id} onClick={() => openEventDetail(event)} style={{ padding: 10, backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${eventColor}`, cursor: 'pointer' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                                        <span style={{ fontWeight: 600, fontSize: 13 }}>{event.title}</span>
+                                                        <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>{new Date(event.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                        <Badge style={{ backgroundColor: typeInfo.color, color: 'white', fontSize: 9 }}>{typeInfo.label}</Badge>
+                                                        {event.brandId && (
+                                                            <span style={{ fontSize: 10, color: eventColor, fontWeight: 500 }}>
+                                                                {getBrandName(event.brandId)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                    const newEvent: CalendarEvent = {
-                        id: eventId,
-                        sourceId: newContent.id,
-                        title: newContent.title,
-                        description: newContent.notes || '',
-                        date: newContent.deliveryDate || formDate,
-                        type: newContent.type || 'TASK',
-                        allDay: true,
-                        brandId: newContent.brandId || undefined,
-                        status: newContent.status,
-                        assigneeIds: newContent.assigneeIds
-                    };
-
-                    if (editingEvent) {
-                        setEvents(events.map(e => e.id === editingEvent.id ? newEvent : e));
-                    } else {
-                        setEvents([...events, newEvent]);
-                    }
-                }}
-            />
-
-            {/* Etkinlik Detay Modal */}
-            <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={selectedEvent?.title || ''} size="sm" footer={
-                <>
-                    <Button variant="secondary" onClick={() => setShowEventModal(false)}>Kapat</Button>
-                    <Button variant="primary" onClick={() => { setShowEventModal(false); selectedEvent && openEditEventModal(selectedEvent); }}>Düzenle</Button>
-                </>
-            }>
-                {selectedEvent && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <Badge style={{ backgroundColor: calendarEventTypes[selectedEvent.type].color, color: 'white' }}>
-                                {calendarEventTypes[selectedEvent.type].icon} {calendarEventTypes[selectedEvent.type].label}
-                            </Badge>
-                            {selectedEvent.brandId && (
-                                <Badge style={{ backgroundColor: getBrandColor(selectedEvent.brandId), color: 'white' }}>
-                                    {getBrandName(selectedEvent.brandId)}
-                                </Badge>
-                            )}
-                        </div>
-                        <p><strong>Tarih:</strong> {new Date(selectedEvent.date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                        {selectedEvent.time && <p><strong>Saat:</strong> {selectedEvent.time}</p>}
-                        {selectedEvent.description && <p><strong>Açıklama:</strong> {selectedEvent.description}</p>}
+                        {/* Marka İstatistikleri */}
+                        <Card>
+                            <CardHeader title="Bu Ay" />
+                            <CardContent>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {brandEventCounts.slice(0, 8).map(b => (
+                                        <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: b.color, flexShrink: 0 }}></span>
+                                            <span style={{ flex: 1, fontSize: 12 }}>{b.name}</span>
+                                            <span style={{ fontSize: 12, fontWeight: 600, color: b.color }}>{b.count}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                )}
-            </Modal>
-        </>
+                </div>
+
+                {/* Etkinlik Oluştur/Düzenle Modal */}
+                {/* Yeni İçerik Modal (Calendar Integration) */}
+                <NewContentModal
+                    isOpen={showModal}
+                    onClose={() => setShowModal(false)}
+                    initialDate={formDate}
+                    initialContent={editingEvent ? {
+                        id: editingEvent.sourceId || (editingEvent.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent.id),
+                        title: editingEvent.title,
+                        brandId: editingEvent.brandId,
+                        type: editingEvent.type,
+                        status: editingEvent.status,
+                        notes: editingEvent.description,
+                        deliveryDate: editingEvent.date,
+                        assigneeIds: editingEvent.assigneeIds || (editingEvent.assigneeId ? [editingEvent.assigneeId] : [])
+                    } : undefined}
+                    onSuccess={(newContent) => {
+                        // Check if update or create based on editingEvent
+                        const eventId = `content-${newContent.id}`;
+
+                        const newEvent: CalendarEvent = {
+                            id: eventId,
+                            sourceId: newContent.id,
+                            title: newContent.title,
+                            description: newContent.notes || '',
+                            date: newContent.deliveryDate || formDate,
+                            type: newContent.type || 'TASK',
+                            allDay: true,
+                            brandId: newContent.brandId || undefined,
+                            status: newContent.status,
+                            assigneeIds: newContent.assigneeIds
+                        };
+
+                        if (editingEvent) {
+                            setEvents(events.map(e => e.id === editingEvent.id ? newEvent : e));
+                        } else {
+                            setEvents([...events, newEvent]);
+                        }
+                    }}
+                />
+
+                {/* Etkinlik Detay Modal */}
+                <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={selectedEvent?.title || ''} size="sm" footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setShowEventModal(false)}>Kapat</Button>
+                        <Button variant="primary" onClick={() => { setShowEventModal(false); selectedEvent && openEditEventModal(selectedEvent); }}>Düzenle</Button>
+                    </>
+                }>
+                    {selectedEvent && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <Badge style={{ backgroundColor: calendarEventTypes[selectedEvent.type].color, color: 'white' }}>
+                                    {calendarEventTypes[selectedEvent.type].icon} {calendarEventTypes[selectedEvent.type].label}
+                                </Badge>
+                                {selectedEvent.brandId && (
+                                    <Badge style={{ backgroundColor: getBrandColor(selectedEvent.brandId), color: 'white' }}>
+                                        {getBrandName(selectedEvent.brandId)}
+                                    </Badge>
+                                )}
+                            </div>
+                            <p><strong>Tarih:</strong> {new Date(selectedEvent.date).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                            {selectedEvent.time && <p><strong>Saat:</strong> {selectedEvent.time}</p>}
+                            {selectedEvent.description && <p><strong>Açıklama:</strong> {selectedEvent.description}</p>}
+                        </div>
+                    )}
+                </Modal>
+            </div>
+        </div>
     );
 }

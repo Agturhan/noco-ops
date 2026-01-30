@@ -42,13 +42,13 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
             className={`glass-surface ${glowOnHover ? `glass-glow-${glowColor}` : ''} ${isActive ? 'active' : ''} ${className}`}
             style={{
                 position: 'relative',
-                background: bgOpacity[intensity],
+                background: `var(--glass-bg)`,
                 backdropFilter: `blur(${blurAmount[intensity]})`,
                 WebkitBackdropFilter: `blur(${blurAmount[intensity]})`,
                 border: isActive
                     ? `1px solid var(--noco-${glowColor}, #329FF4)`
                     : 'var(--glass-border, 1px solid rgba(255, 255, 255, 0.08))',
-                boxShadow: isActive ? getGlowShadow() : '0 8px 32px 0 rgba(0, 0, 0, 0.36)',
+                boxShadow: isActive ? getGlowShadow() : 'var(--card-shadow, 0 8px 32px 0 rgba(0, 0, 0, 0.36))',
                 borderRadius: 'var(--radius-lg, 16px)',
                 color: 'var(--color-ink, #fff)',
                 transition: 'all 0.3s ease',

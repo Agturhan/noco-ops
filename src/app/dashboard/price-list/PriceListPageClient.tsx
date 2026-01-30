@@ -55,7 +55,7 @@ export function PriceListPageClient() {
                 {activeTab === 'packages' && (
                     <>
                         {smPackages.map((pkg, index) => (
-                            <div key={pkg.id} className={`col-span-1 md:col-span-6 lg:col-span-3 ${pkg.popular ? 'lg:col-span-4' : ''}`}>
+                            <div key={pkg.id} className={`col-span-12 md:col-span-6 lg:col-span-3 ${pkg.popular ? 'lg:col-span-4' : ''}`}>
                                 <div className={`relative h-full group ${pkg.popular ? 'transform md:-translate-y-4' : ''}`}>
                                     {pkg.popular && <StarBorder color={pkg.color} speed="3s" />}
 

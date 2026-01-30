@@ -258,21 +258,26 @@ export function DashboardPageClient() {
 
                 let studioData: any[] = [];
                 if (typeof window !== 'undefined') { try { const saved = localStorage.getItem('studioBookings'); if (saved) studioData = JSON.parse(saved); } catch (e) { } }
-                const studioNow = new Date();
-                studioNow.setHours(0, 0, 0, 0);
+
+                // Fix Date Comparison: Use Day Strings to avoid Timezone issues
+                const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+
                 const filteredStudio = studioData
                     .filter((b: any) => {
-                        const bDate = new Date(b.date);
-                        const diffDays = Math.ceil((bDate.getTime() - studioNow.getTime()) / (1000 * 60 * 60 * 24));
-                        return diffDays >= 0 && diffDays <= 7;
+                        // Compare date strings directly (YYYY-MM-DD)
+                        return b.date >= todayStr;
                     })
-                    .sort((a: any, b: any) => new Date(a.date + 'T' + a.startTime).getTime() - new Date(b.date + 'T' + b.startTime).getTime());
+                    .sort((a: any, b: any) => new Date(a.date + 'T' + a.startTime).getTime() - new Date(b.date + 'T' + b.startTime).getTime())
+                    .slice(0, 5); // Limit to 5 items
 
                 const groupedStudio: any[] = [];
                 filteredStudio.forEach((b: any) => {
-                    const dateStr = b.date;
-                    let group = groupedStudio.find(g => g.date === dateStr);
-                    if (!group) { group = { date: dateStr, bookings: [] }; groupedStudio.push(group); }
+                    const dateObj = new Date(b.date);
+                    // Format explicitly to Turkish
+                    const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+
+                    let group = groupedStudio.find(g => g.rawDate === b.date);
+                    if (!group) { group = { date: dateStr, rawDate: b.date, bookings: [] }; groupedStudio.push(group); }
                     group.bookings.push(b);
                 });
                 setUpcomingStudio(groupedStudio);
@@ -293,12 +298,12 @@ export function DashboardPageClient() {
             {/* Header Section Removed (Duplicate) */}
 
             {/* HEADER SECTION */}
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight mb-1 flex items-center gap-3">
+                    <h1 className="text-4xl font-bold tracking-tight mb-1 flex items-center gap-3 text-[var(--color-ink)]">
                         {getGreeting()}, <ShinyText text={currentUser?.name?.split(' ')[0] || 'Misafir'} disabled={false} speed={3} className="text-[#2997FF]" />!
                     </h1>
-                    <div className="text-white/40 text-sm font-medium tracking-wide uppercase">{currentDate}</div>
+                    <div className="text-[var(--color-muted)] text-sm font-medium tracking-wide uppercase">{currentDate}</div>
                 </div>
                 <Link href="/dashboard/content-production?action=new">
                     <Button variant="primary" className="h-[42px] px-6 text-[13px] font-semibold bg-[#0A84FF] hover:bg-[#007AFF] shadow-[0_0_20px_rgba(10,132,255,0.3)] border-none rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
@@ -315,17 +320,17 @@ export function DashboardPageClient() {
                     <GlassSurface className="h-full w-full" intensity="medium">
                         {/* Header: px-6 pt-6 pb-2 */}
                         <div className="px-6 pt-6 pb-2 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-white tracking-tight flex items-center gap-2">
+                            <h3 className="text-[16px] font-semibold text-[var(--color-ink)] tracking-tight flex items-center gap-2">
                                 {taskViewMode === 'today' ? 'Bugünkü Görevlerim' : 'Sıradaki İşler'}
                                 {taskViewMode === 'upcoming' && <Badge variant="success" className="text-[10px] h-5 px-2 font-medium bg-[#30D158]/20 text-[#30D158] border-none">Bugün Boş</Badge>}
                             </h3>
                             <Link href="/dashboard/tasks">
-                                <Button size="sm" variant="ghost" className="text-[12px] h-auto p-0 text-white/40 hover:text-white transition-colors">Tümünü Gör</Button>
+                                <Button size="sm" variant="ghost" className="text-[12px] h-auto p-0 text-[var(--color-muted)] hover:text-[var(--color-ink)] transition-colors">Tümünü Gör</Button>
                             </Link>
                         </div>
                         {/* Body: px-6 pb-6 */}
                         <div className="px-6 pb-6">
-                            <p className="text-[12px] text-white/40 font-medium mb-4">
+                            <p className="text-[12px] text-[var(--color-muted)] font-medium mb-4">
                                 {taskViewMode === 'today' ? <>{todayTasks.filter(t => !t.completed).length} aktif görev</> : 'Checking upcoming items...'}
                             </p>
                             <AnimatedList className="flex flex-col gap-2">
@@ -333,24 +338,24 @@ export function DashboardPageClient() {
                                     <div
                                         key={task.id}
                                         onClick={() => setSelectedTask(task)}
-                                        className="relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.08] hover:scale-[1.005] border border-white/5 bg-white/[0.03]"
+                                        className="relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-300 hover:bg-[var(--color-surface-2)] hover:scale-[1.005] border border-[var(--color-border)] bg-[var(--color-card)]"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div
                                                 onClick={(e) => { e.stopPropagation(); handleToggleTask(task.id); }}
-                                                className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-300 ${task.completed ? 'border-[#30D158] bg-[#30D158]' : 'border-white/20 hover:border-[#30D158]/60'
+                                                className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-300 ${task.completed ? 'border-[#30D158] bg-[#30D158]' : 'border-[var(--color-border)] hover:border-[#30D158]/60'
                                                     }`}
                                             >
                                                 {task.completed && <Check size={12} color="white" strokeWidth={3} />}
                                             </div>
                                             {/* Priority Dot */}
-                                            <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'urgent' ? 'bg-[#FF453A] shadow-[0_0_8px_rgba(255,69,58,0.6)]' : task.priority === 'high' ? 'bg-[#FFD60A]' : 'bg-[#2997FF]'
+                                            <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'urgent' ? 'bg-[#FF453A] shadow-sm' : task.priority === 'high' ? 'bg-[#FFD60A]' : 'bg-[#2997FF]'
                                                 }`} />
                                             <div>
-                                                <p className={`text-[14px] font-medium leading-snug ${task.completed ? 'line-through text-white/30' : 'text-white/90'}`}>
+                                                <p className={`text-[14px] font-medium leading-snug ${task.completed ? 'line-through text-[var(--color-muted)]' : 'text-[var(--color-ink)]'}`}>
                                                     {task.title}
                                                 </p>
-                                                <p className="text-[11px] text-white/40">{task.brand}</p>
+                                                <p className="text-[11px] text-[var(--color-muted)]">{task.brand}</p>
                                             </div>
                                         </div>
                                         {!task.completed && task.assigneeIds?.length > 0 && (
@@ -361,7 +366,7 @@ export function DashboardPageClient() {
                                         )}
                                     </div>
                                 )) : (
-                                    <div className="text-center py-10 text-white/20 text-xs text-sm">
+                                    <div className="text-center py-10 text-[var(--color-muted)] text-xs text-sm">
                                         Bugün için atanmış görev yok!
                                     </div>
                                 )}
@@ -373,28 +378,28 @@ export function DashboardPageClient() {
                 {/* 2. DEADLINES (Side Top) - Col span 4 */}
                 <div className="md:col-span-4 group relative rounded-[20px] overflow-hidden h-full shadow-sm">
                     <StarBorder color="#FF453A" speed="5s" />
-                    <GlassSurface className="h-full w-full" intensity="medium">
-                        <div className="px-6 pt-6 pb-4">
-                            <h3 className="text-[16px] font-semibold text-white tracking-tight">Bu Hafta Deadline</h3>
+                    <GlassSurface className="h-full w-full flex flex-col" intensity="medium">
+                        <div className="px-6 pt-6 pb-4 shrink-0">
+                            <h3 className="text-[16px] font-semibold text-[var(--color-ink)] tracking-tight">Bu Hafta Deadline</h3>
                         </div>
-                        <div className="px-6 pb-6 flex flex-col gap-3">
+                        <div className="px-6 pb-6 flex flex-col gap-3 overflow-y-auto flex-1 min-h-0">
                             {weekDeadlines.length > 0 ? (
                                 weekDeadlines.every(dl => dl.status === 'DONE') ? (
                                     <div className="flex flex-col items-center justify-center py-8 text-center">
-                                        <p className="text-[13px] font-medium text-white/80 px-4 leading-relaxed">{CELEBRATION_MESSAGES[0]}</p>
+                                        <p className="text-[13px] font-medium text-[var(--color-sub-ink)] px-4 leading-relaxed">{CELEBRATION_MESSAGES[0]}</p>
                                     </div>
                                 ) : (
                                     weekDeadlines.map(dl => (
                                         <div
                                             key={dl.id}
                                             onClick={() => setSelectedTask(dl)} /* Tıklanabilirlik eklendi */
-                                            className="flex items-center justify-between p-4 border border-white/5 rounded-2xl bg-black/20 hover:bg-white/[0.06] cursor-pointer transition-colors"
+                                            className="flex items-center justify-between p-4 border border-[var(--color-border)] rounded-2xl bg-[var(--color-card)] hover:bg-[var(--color-surface-2)] cursor-pointer transition-colors"
                                         >
                                             <div className="flex flex-col gap-1.5">
-                                                <span className="text-[14px] font-medium text-white/90 leading-tight">{dl.title}</span>
-                                                <span className={`text-[12px] font-medium flex items-center gap-1.5 ${dl.daysLeft <= 1 ? 'text-[#FF453A]' : 'text-white/50'}`}>
+                                                <span className="text-[14px] font-medium text-[var(--color-ink)] leading-tight">{dl.title}</span>
+                                                <span className={`text-[12px] font-medium flex items-center gap-1.5 ${dl.daysLeft <= 1 ? 'text-[#FF453A]' : 'text-[var(--color-muted)]'}`}>
                                                     <span className="opacity-90 tracking-wide text-[11px] uppercase">{dl.date}</span>
-                                                    <span className="w-0.5 h-0.5 rounded-full bg-white/40"></span>
+                                                    <span className="w-0.5 h-0.5 rounded-full bg-[var(--color-muted)]"></span>
                                                     <span>{dl.status === 'DONE' ? 'Tamamlandı' : `${dl.daysLeft} gün kaldı`}</span>
                                                 </span>
                                             </div>
@@ -408,7 +413,7 @@ export function DashboardPageClient() {
                                     ))
                                 )
                             ) : (
-                                <div className="text-white/30 text-xs text-center py-10">
+                                <div className="text-[var(--color-muted)] text-xs text-center py-10">
                                     Bu hafta teslim edilecek iş yok.
                                 </div>
                             )}
@@ -421,8 +426,8 @@ export function DashboardPageClient() {
                     <StarBorder color="#BF5AF2" speed="6s" />
                     <GlassSurface className="h-full w-full" intensity="medium">
                         <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-                            <h3 className="text-[16px] font-semibold text-white tracking-tight">Stüdyo Programı</h3>
-                            <Link href="/dashboard/studio"><Button variant="ghost" size="sm" className="text-[12px] h-auto p-0 text-white/40 hover:text-white transition-colors">Detay →</Button></Link>
+                            <h3 className="text-[16px] font-semibold text-[var(--color-ink)] tracking-tight">Stüdyo Programı</h3>
+                            <Link href="/dashboard/studio"><Button variant="ghost" size="sm" className="text-[12px] h-auto p-0 text-[var(--color-muted)] hover:text-[var(--color-ink)] transition-colors">Detay →</Button></Link>
                         </div>
                         <div className="px-6 pb-6 pt-1">
                             <div className="flex flex-col gap-6">
@@ -434,19 +439,19 @@ export function DashboardPageClient() {
                                                 <div
                                                     key={booking.id}
                                                     onClick={() => setSelectedBooking(booking)}
-                                                    className="flex items-center gap-3.5 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/[0.08] cursor-pointer transition-colors"
+                                                    className="flex items-center gap-3.5 p-3 bg-[var(--color-card)] rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-2)] cursor-pointer transition-colors"
                                                 >
-                                                    <span className="text-[12px] font-bold min-w-[64px] text-center bg-white/[0.08] py-1.5 rounded-lg text-white/90">{booking.time}</span>
+                                                    <span className="text-[12px] font-bold min-w-[64px] text-center bg-[var(--color-surface-2)] py-1.5 rounded-lg text-[var(--color-ink)]">{booking.time}</span>
                                                     <div className="flex flex-col gap-0.5">
-                                                        <span className="text-[13px] font-semibold text-white/90">{booking.client}</span>
-                                                        <span className="text-[11px] text-white/50">{booking.project}</span>
+                                                        <span className="text-[13px] font-semibold text-[var(--color-ink)]">{booking.client}</span>
+                                                        <span className="text-[11px] text-[var(--color-muted)]">{booking.project}</span>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )) : (
-                                    <div className="text-center py-8 text-white/30 text-xs">Program boş</div>
+                                    <div className="text-center py-8 text-[var(--color-muted)] text-xs">Program boş</div>
                                 )}
                             </div>
                         </div>
@@ -459,26 +464,26 @@ export function DashboardPageClient() {
                     <GlassSurface className="h-full w-full" intensity="medium">
                         <div className="px-8 pt-8 pb-5 flex items-center justify-between">
                             <div>
-                                <h3 className="text-[18px] font-semibold text-white tracking-tight">Hakediş Paneli</h3>
-                                <p className="text-[12px] text-white/40 mt-1">Aylık Üretim (Ocak 2026)</p>
+                                <h3 className="text-[18px] font-semibold text-[var(--color-ink)] tracking-tight">Hakediş Paneli</h3>
+                                <p className="text-[12px] text-[var(--color-muted)] mt-1">Aylık Üretim (Ocak 2026)</p>
                             </div>
-                            <Link href="/dashboard/retainers"><Button variant="ghost" size="sm" className="text-[13px] h-auto p-0 text-white/40 hover:text-white transition-colors">Rapor</Button></Link>
+                            <Link href="/dashboard/retainers"><Button variant="ghost" size="sm" className="text-[13px] h-auto p-0 text-[var(--color-muted)] hover:text-[var(--color-ink)] transition-colors">Rapor</Button></Link>
                         </div>
                         <div className="px-8 pb-8">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
-                                        <tr className="border-b border-white/[0.08] text-white/40 text-[11px] uppercase tracking-wider">
+                                        <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)] text-[11px] uppercase tracking-wider">
                                             <th className="pb-4 pl-2 font-medium">Müşteri</th>
                                             <th className="pb-4 font-medium w-[40%]">Durum</th>
                                             <th className="pb-4 font-medium">Stok</th>
                                             <th className="pb-4 font-medium text-right pr-2">Not</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/[0.04]">
+                                    <tbody className="divide-y divide-[var(--color-border)]">
                                         {retainerStats.length > 0 ? retainerStats.map((item) => (
-                                            <tr key={item.id} className="group/row hover:bg-white/[0.02] transition-colors">
-                                                <td className="py-3.5 pl-2 font-medium text-white text-[14px]">
+                                            <tr key={item.id} className="group/row hover:bg-[var(--color-surface-2)] transition-colors">
+                                                <td className="py-3.5 pl-2 font-medium text-[var(--color-ink)] text-[14px]">
                                                     <Link
                                                         href={item.clientId ? `/dashboard/system/clients?id=${item.clientId}` : `/dashboard/system/clients`}
                                                         className="no-underline hover:text-[#2997FF] transition-colors relative group-link"
@@ -492,7 +497,7 @@ export function DashboardPageClient() {
                                                             const isFilled = i < (item.progress || 0);
                                                             // Calculate color based on percentage
                                                             const usagePercent = item.total > 0 ? (item.progress / item.total) * 100 : 0;
-                                                            let bgColor = 'rgba(255,255,255,0.1)';
+                                                            let bgColor = 'var(--color-surface-2)';
 
                                                             if (isFilled) {
                                                                 if (usagePercent >= 100) bgColor = '#FF453A'; // Red
@@ -513,14 +518,14 @@ export function DashboardPageClient() {
                                                         })}
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] bg-white/[0.08] text-white/80 px-2 py-0.5 rounded-md font-medium">{item.label}</span>
+                                                        <span className="text-[10px] bg-[var(--color-surface-2)] text-[var(--color-sub-ink)] px-2 py-0.5 rounded-md font-medium">{item.label}</span>
                                                     </div>
                                                 </td>
-                                                <td className="py-3.5 font-medium text-[13px] text-white/90">{item.stock} ad.</td>
-                                                <td className="py-3.5 text-[12px] text-white/40 text-right pr-2 max-w-[180px] truncate">{item.note}</td>
+                                                <td className="py-3.5 font-medium text-[13px] text-[var(--color-ink)]">{item.stock} ad.</td>
+                                                <td className="py-3.5 text-[12px] text-[var(--color-muted)] text-right pr-2 max-w-[180px] truncate">{item.note}</td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan={4} className="text-center py-6 text-white/30">Veri yok...</td></tr>
+                                            <tr><td colSpan={4} className="text-center py-6 text-[var(--color-muted)]">Veri yok...</td></tr>
                                         )}
                                     </tbody>
                                 </table>

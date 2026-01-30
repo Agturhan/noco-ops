@@ -371,32 +371,27 @@ export async function getUserWeekDeadlines(userId: string) {
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
-    // 1. Get Overdue Tasks (Last 30 days)
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 30);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    // 1. Get Upcoming Tasks (Next 7 days) STARTING FROM TOMORROW
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const { data: overdueData } = await supabaseAdmin
-        .from('Task')
-        .select('id, title, dueDate, priority, status, assigneeId, assigneeIds, brandName, project:Project(name, contract:Contract(client:Client(name)))')
-        .not('dueDate', 'is', null)
-        .gte('dueDate', startDate.toISOString().split('T')[0])
-        .lte('dueDate', yesterday.toISOString().split('T')[0])
-        .neq('status', 'DONE') // Overdue'da sadece yapılmamışlar
-        .limit(20);
+    // Fix Timezone Issue: toISOString() uses UTC, which might be "Yesterday" late at night.
+    // We want LOCAL YYYY-MM-DD.
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    const tomorrowStr = `${year}-${month}-${day}`;
 
-    // 2. Get Upcoming Tasks (Next 7 days)
     const { data: upcomingData } = await supabaseAdmin
         .from('Task')
-        .select('id, title, description, notes, dueDate, priority, status, assigneeId, assigneeIds, brandName, project:Project(name, contract:Contract(client:Client(name)))')
+        .select('id, title, description, notes, dueDate, priority, status, assigneeId, assigneeIds, brandName')
         .not('dueDate', 'is', null)
-        .gte('dueDate', yesterday.toISOString().split('T')[0])
+        .gte('dueDate', tomorrowStr) // Use local date string
         .lte('dueDate', weekEnd.toISOString().split('T')[0])
         .limit(50);
 
-    // Combine
-    const allData = [...(overdueData || []), ...(upcomingData || [])];
+    // Combine - Just upcoming
+    const allData = upcomingData || [];
 
     // Sort: Date Ascending
     const sortedData = allData.sort((a: any, b: any) => {
@@ -418,7 +413,7 @@ export async function getUserWeekDeadlines(userId: string) {
             daysLeft,
             priority: t.priority,
             status: t.status,
-            brand: t.brandName || t.project?.name || t.project?.contract?.client?.name || 'Genel',
+            brand: t.brandName || 'Genel',
             assigneeIds: t.assigneeIds || (t.assigneeId ? [t.assigneeId] : [])
         };
     });

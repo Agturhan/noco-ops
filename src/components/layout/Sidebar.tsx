@@ -1,430 +1,114 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Modal, Button, Input, Select, Textarea } from '@/components/ui';
-import { createFeedback } from '@/lib/actions/feedback';
+import { X } from 'lucide-react';
+import { navGroups } from '@/config/navigation';
+import { SidebarItem } from './sidebar/SidebarItem';
+import { UserProfile } from './sidebar/UserProfile';
+import { FeedbackModal } from './sidebar/FeedbackModal';
 
-// Lucide Icons
-import {
-    LayoutDashboard,
-    Clapperboard,
-    ImageIcon,
-    CheckSquare,
-    Calendar,
-    Camera,
-    Users,
-    Timer,
-    Bell,
-    Building2,
-    FileText,
-    Receipt,
-    PieChart,
-    BadgeDollarSign,
-    BarChart3,
-    Shield,
-    Settings,
-    Sun,
-    Moon,
-    MessageSquare,
-    ChevronDown,
-    X,
-    ListTodo, // New icon for Tasks
-    type LucideIcon
-} from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface SidebarProps {
-    userRole?: 'OWNER' | 'OPS' | 'STUDIO' | 'DIGITAL' | 'CLIENT';
+    userRole?: string;
     isOpen?: boolean;
     onClose?: () => void;
-    onToggleTheme?: () => void;
-    isDark?: boolean;
 }
 
-interface NavItem {
-    href: string;
-    label: string;
-    icon: LucideIcon;
-    roles?: string[];
-    isSubmenu?: boolean;
-    submenuItems?: NavItem[];
-}
-
-interface NavGroup {
-    title: string;
-    items: NavItem[];
-}
-
-// Gruplandırılmış navigasyon
-const navGroups: NavGroup[] = [
-    {
-        title: 'ANA',
-        items: [
-            { href: '/dashboard', label: 'Gösterge Paneli', icon: LayoutDashboard },
-        ]
-    },
-    {
-        title: 'OPERASYON',
-        items: [
-            {
-                href: '/dashboard/work',
-                label: 'İş Yönetimi',
-                icon: Clapperboard,
-                isSubmenu: true,
-                roles: ['OWNER', 'OPS', 'DIGITAL', 'STUDIO'],
-                submenuItems: [
-                    { href: '/dashboard/content-production', label: 'Üretim Paneli', icon: Clapperboard },
-                    { href: '/dashboard/tasks', label: 'Görevler', icon: ListTodo },
-                    { href: '/dashboard/calendar', label: 'Takvim', icon: Calendar },
-                    { href: '/dashboard/studio', label: 'Stüdyo', icon: Camera },
-                ]
-            },
-            // { href: '/dashboard/clients', label: 'Müşteriler', icon: Users, roles: ['OWNER', 'OPS'] }, // Moved to System
-            { href: '/dashboard/retainers', label: 'Retainer', icon: Timer, roles: ['OWNER', 'OPS'] },
-        ]
-    },
-    {
-        title: 'FİNANS',
-        items: [
-            { href: '/dashboard/proposals', label: 'Teklifler', icon: FileText, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/invoices', label: 'Faturalar', icon: Receipt, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/accounting', label: 'Muhasebe', icon: PieChart, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/price-list', label: 'Fiyat Listesi', icon: BadgeDollarSign, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/reports', label: 'Raporlar', icon: BarChart3, roles: ['OWNER', 'OPS'] },
-        ]
-    },
-    {
-        title: 'SİSTEM',
-        items: [
-            { href: '/dashboard/system/clients', label: 'Müşteriler', icon: Building2, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/system/users', label: 'Kullanıcılar', icon: Users, roles: ['OWNER', 'OPS'] },
-            { href: '/dashboard/system/settings', label: 'Ayarlar', icon: Settings, roles: ['OWNER'] },
-            { href: '/dashboard/audit-log', label: 'Denetim Kaydı', icon: Shield, roles: ['OWNER', 'OPS'] },
-            // { href: '/dashboard/notifications', label: 'Bildirimler', icon: Bell }, // Less important
-        ]
-    }
-];
-
-export function Sidebar({ userRole = 'OPS', isOpen = true, onClose, onToggleTheme, isDark = false }: SidebarProps) {
-    const pathname = usePathname();
-    const [user, setUser] = useState<any>(null);
+export function Sidebar({ userRole = 'OPS', isOpen = true, onClose }: SidebarProps) {
     const [showFeedback, setShowFeedback] = useState(false);
-    const [feedbackType, setFeedbackType] = useState('BUG');
-    const [feedbackMessage, setFeedbackMessage] = useState('');
-    const [feedbackUrl, setFeedbackUrl] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-
-    useEffect(() => {
-        const stored = localStorage.getItem('currentUser');
-        if (stored) {
-            try {
-                setUser(JSON.parse(stored));
-            } catch (e) {
-                console.error('Kullanıcı verisi okunamadı');
-            }
-        }
-        setFeedbackUrl(window.location.href);
-    }, [pathname]);
-
-    const handleFeedbackSubmit = async () => {
-        if (!feedbackMessage || !user) return;
-
-        try {
-            setSubmitting(true);
-            await createFeedback({
-                userId: user.id || 'anonymous',
-                userName: user.name || 'Anonymous',
-                type: feedbackType as any,
-                message: feedbackMessage,
-                url: feedbackUrl,
-            });
-            setShowFeedback(false);
-            setFeedbackMessage('');
-            setFeedbackType('BUG');
-            alert('Geri bildiriminiz alındı, teşekkürler!');
-        } catch (error) {
-            console.error('Feedback error:', error);
-            alert('Bir hata oluştu.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const isItemVisible = (item: NavItem) => {
-        if (!item.roles) return true;
-        return item.roles.includes(userRole);
-    };
-
-    const isActive = (href: string) => {
-        if (href === '/dashboard') return pathname === '/dashboard';
-        return pathname === href || pathname.startsWith(href + '/');
-    };
-
-    const [expandedMenus, setExpandedMenus] = useState<string[]>(['İş Yönetimi']); // Default open
-
-    const toggleMenu = (label: string) => {
-        setExpandedMenus(prev =>
-            prev.includes(label)
-                ? prev.filter(l => l !== label)
-                : [...prev, label]
-        );
-    };
-
-    const isMenuOpen = (label: string) => expandedMenus.includes(label);
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
 
     return (
         <>
-            {/* Mobil overlay */}
             {isOpen && (
                 <div
-                    className="sidebar-overlay"
+                    className="sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={onClose}
                 />
             )}
 
-            <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{ background: 'var(--color-surface)', backdropFilter: 'blur(20px)', borderRight: '1px solid var(--color-border)' }}>
-                <div className="sidebar-header">
-                    <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <aside
+                className={`sidebar fixed top-0 left-0 flex flex-col w-[260px] h-screen bg-[var(--color-surface)] border-r border-[var(--color-border)] transition-transform duration-300 z-50 ${isOpen ? 'open translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                style={{ backdropFilter: 'blur(20px)' }}
+            >
+                {/* Header */}
+                <div className="sidebar-header p-4 border-b border-[var(--color-border)] flex items-center justify-between">
+                    <Link href="/dashboard" className="flex items-center gap-3 no-underline">
                         <Image
                             src="/noco-logo-icon.jpg"
                             alt="NOCO"
                             width={40}
                             height={40}
-                            style={{ borderRadius: '8px' }}
+                            className="rounded-lg shadow-sm"
                         />
                         <div>
-                            <h1 style={{
-                                fontSize: '20px',
-                                fontWeight: 700,
-                                color: 'var(--color-primary)',
-                                fontFamily: 'var(--font-heading)',
-                                margin: 0
-                            }}>
+                            <h1 className="text-lg font-bold text-[var(--color-primary)] m-0 leading-tight">
                                 NOCO Ops
                             </h1>
-                            <span style={{
-                                fontSize: 'var(--text-caption)',
-                                color: 'var(--color-muted)'
-                            }}>
+                            <span className="text-xs text-[var(--color-muted)] font-medium">
                                 Creative Operations
                             </span>
                         </div>
                     </Link>
 
-                    {/* Mobilde kapatma butonu */}
                     <button
-                        className="sidebar-close"
                         onClick={onClose}
+                        className="lg:hidden p-1 text-[var(--color-muted)] hover:text-[var(--color-ink)] transition-colors"
                         aria-label="Close menu"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
-                <nav className="sidebar-nav">
+                {/* Navigation */}
+                <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
                     {navGroups.map((group) => {
-                        const visibleItems = group.items.filter(isItemVisible);
+                        // Filter items based on role
+                        const visibleItems = group.items.filter(item =>
+                            !item.roles || item.roles.includes(userRole)
+                        );
+
                         if (visibleItems.length === 0) return null;
 
                         return (
-                            <div key={group.title} style={{ marginBottom: 'var(--space-2)' }}>
-                                <div style={{
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    color: 'var(--color-muted)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    padding: '8px 12px 4px',
-                                    marginTop: group.title !== 'ANA' ? '8px' : 0
-                                }}>
-                                    {group.title}
-                                </div>
-                                {visibleItems.map((item) => {
-                                    const Icon = item.icon;
-                                    const active = isActive(item.href);
-                                    const hasSubmenu = item.isSubmenu && item.submenuItems && item.submenuItems.length > 0;
-                                    const isOpen = isMenuOpen(item.label);
-
-                                    if (hasSubmenu) {
-                                        // Check if any child is active to auto-expand or mark parent active
-                                        const isChildActive = item.submenuItems?.some(sub => isActive(sub.href));
-
-                                        return (
-                                            <div key={item.label}>
-                                                <button
-                                                    onClick={() => toggleMenu(item.label)}
-                                                    className={`sidebar-link ${isChildActive ? 'active' : ''}`}
-                                                    style={{ gap: '10px', width: '100%', justifyContent: 'space-between' }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                        <Icon size={18} strokeWidth={isChildActive ? 2 : 1.5} />
-                                                        <span>{item.label}</span>
-                                                    </div>
-                                                    <ChevronDown
-                                                        size={16}
-                                                        style={{
-                                                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                            transition: 'transform 0.2s ease'
-                                                        }}
-                                                    />
-                                                </button>
-
-                                                {isOpen && (
-                                                    <div style={{
-                                                        paddingLeft: '34px',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: '4px',
-                                                        marginBottom: '4px'
-                                                    }}>
-                                                        {item.submenuItems?.map(sub => {
-                                                            const SubIcon = sub.icon;
-                                                            const subActive = isActive(sub.href);
-                                                            return (
-                                                                <Link
-                                                                    key={sub.href}
-                                                                    href={sub.href}
-                                                                    className={`sidebar-link ${subActive ? 'active' : ''}`}
-                                                                    onClick={onClose}
-                                                                    style={{ gap: '10px', fontSize: '13px', height: '36px' }}
-                                                                >
-                                                                    {/* <SubIcon size={16} strokeWidth={subActive ? 2 : 1.5} /> */}
-                                                                    <span>{sub.label}</span>
-                                                                </Link>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    }
-
-                                    return (
-                                        <Link
+                            <div key={group.title}>
+                                {group.title !== 'ANA' && (
+                                    <div className="px-3 mb-2 text-[11px] font-semibold text-[var(--color-muted)] uppercase tracking-wider">
+                                        {group.title}
+                                    </div>
+                                )}
+                                <div className="flex flex-col gap-0.5">
+                                    {visibleItems.map((item) => (
+                                        <SidebarItem
                                             key={item.href}
-                                            href={item.href}
-                                            className={`sidebar-link ${active ? 'active' : ''}`}
-                                            onClick={onClose}
-                                            style={{ gap: '10px' }}
-                                        >
-                                            <Icon size={18} strokeWidth={active ? 2 : 1.5} />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    );
-                                })}
+                                            item={item}
+                                            userRole={userRole}
+                                            onClose={onClose}
+                                            isDark={isDark}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         );
                     })}
                 </nav>
 
-                <div style={{
-                    padding: 'var(--space-2)',
-                    borderTop: '1px solid var(--color-border)',
-                    marginTop: 'auto'
-                }}>
-                    {/* Theme Toggle */}
-                    <Button
-                        variant="ghost"
-                        style={{ width: '100%', marginBottom: '8px', justifyContent: 'flex-start', color: 'var(--color-muted)', gap: '10px' }}
-                        onClick={onToggleTheme}
-                    >
-                        {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                        {isDark ? 'Açık Tema' : 'Koyu Tema'}
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        style={{ width: '100%', marginBottom: '12px', justifyContent: 'flex-start', color: 'var(--color-muted)', gap: '10px' }}
-                        onClick={() => setShowFeedback(true)}
-                    >
-                        <MessageSquare size={18} />
-                        Geri Bildirim
-                    </Button>
-
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--space-1)',
-                        padding: '10px 12px'
-                    }}>
-                        <Image
-                            src="/noco-logo-icon.jpg"
-                            alt="NOCO"
-                            width={32}
-                            height={32}
-                            style={{ borderRadius: '50%' }}
-                        />
-                        <div>
-                            <div style={{ fontWeight: 500, fontSize: 'var(--text-body-sm)' }}>
-                                NOCO Digital
-                            </div>
-                            <div style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>
-                                {userRole}
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => import('next-auth/react').then(({ signOut }) => signOut({ callbackUrl: '/login' }))}
-                            style={{
-                                marginLeft: 'auto',
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: 'var(--color-muted)',
-                                padding: '8px'
-                            }}
-                            title="Çıkış Yap"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
+                {/* Footer / User Profile */}
+                <UserProfile
+                    userRole={userRole}
+                    onOpenFeedback={() => setShowFeedback(true)}
+                />
             </aside>
 
-            <Modal
+            {/* Feedback Modal */}
+            <FeedbackModal
                 isOpen={showFeedback}
                 onClose={() => setShowFeedback(false)}
-                title="Geri Bildirim & Hata Bildirimi"
-                footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setShowFeedback(false)}>İptal</Button>
-                        <Button
-                            variant="primary"
-                            onClick={handleFeedbackSubmit}
-                            disabled={submitting || !feedbackMessage}
-                        >
-                            {submitting ? 'Gönderiliyor...' : 'Gönder'}
-                        </Button>
-                    </>
-                }
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    <Select
-                        label="Bildirim Tipi"
-                        value={feedbackType}
-                        onChange={(e) => setFeedbackType(e.target.value)}
-                        options={[
-                            { value: 'BUG', label: 'Hata (Bug)' },
-                            { value: 'FEATURE', label: 'Yeni Özellik İsteği' },
-                            { value: 'UX', label: 'Tasarım/Kullanım Önerisi' },
-                            { value: 'OTHER', label: 'Diğer' },
-                        ]}
-                    />
-                    <Textarea
-                        placeholder="Lütfen yaşadığınız durumu veya önerinizi detaylıca anlatın..."
-                        value={feedbackMessage}
-                        onChange={(e) => setFeedbackMessage(e.target.value)}
-                        rows={4}
-                    />
-                    <Input
-                        label="İlgili Sayfa URL"
-                        value={feedbackUrl}
-                        onChange={(e) => setFeedbackUrl(e.target.value)}
-                        disabled
-                    />
-                </div>
-            </Modal>
+            />
         </>
     );
 }

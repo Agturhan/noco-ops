@@ -84,16 +84,21 @@ export const getActiveTeamMembers = (): TeamMember[] => teamMembers.filter(m => 
 // ========================================
 // İÇERİK TÜRLERİ VE DURUMLARI (Dinamik Aşamalar)
 // ========================================
+// ========================================
+// İÇERİK TÜRLERİ VE DURUMLARI (Dinamik Aşamalar)
+// ========================================
 export type ContentStatus =
     | 'PLANLANDI'       // Planlanacak (En baş)
     | 'ICERIK_HAZIRLANDI' // Metin/Copy
+    | 'CEKILIYOR'       // Çekim Yapılıyor (Time Tracking)
     | 'CEKILDI'
     | 'FOTOGRAF_RETOUCH'
-    | 'TASARLANIYOR'
+    | 'TASARLANIYOR'    // Tasarım Yapılıyor (Time Tracking)
     | 'TASARLANDI'
-    | 'KURGULANIYOR'
+    | 'KURGULANIYOR'    // Kurgu Yapılıyor (Time Tracking)
     | 'KURGULANDI'
     | 'ONAY'            // Onay Bekliyor
+    | 'REVİZE'          // Revizyon
     | 'PAYLASILD'       // Sonuç
     | 'TESLIM';         // Sonuç
 
@@ -103,13 +108,15 @@ export const contentStatuses: Record<string, { label: string; color: string; ico
     // Content statuses
     PLANLANDI: { label: 'Planlanacak', color: '#6B7B80', icon: '📅' },
     ICERIK_HAZIRLANDI: { label: 'İçerik Hazırlandı', color: '#795548', icon: '📝' },
+    CEKILIYOR: { label: 'Çekiliyor', color: '#E91E63', icon: '🎥' }, // Active State
     CEKILDI: { label: 'Çekildi', color: '#2196F3', icon: '📷' },
     FOTOGRAF_RETOUCH: { label: 'Fotoğraf Retouch', color: '#9C27B0', icon: '🎨' },
-    TASARLANIYOR: { label: 'Tasarlanıyor', color: '#FF9800', icon: '🖌️' },
+    TASARLANIYOR: { label: 'Tasarlanıyor', color: '#FF9800', icon: '🖌️' }, // Active State
     TASARLANDI: { label: 'Tasarlandı', color: '#F6D73C', icon: '🖼️' },
-    KURGULANIYOR: { label: 'Kurgulanıyor', color: '#2196F3', icon: '✂️' },
+    KURGULANIYOR: { label: 'Kurgulanıyor', color: '#2196F3', icon: '✂️' }, // Active State
     KURGULANDI: { label: 'Kurgulandı', color: '#4CAF50', icon: '🎬' },
     ONAY: { label: 'Onay Bekliyor', color: '#FF5722', icon: '⏳' },
+    REVİZE: { label: 'Revize', color: '#D32F2F', icon: '📝' },
     PAYLASILD: { label: 'Paylaşıldı', color: '#00F5B0', icon: '✅' },
     TESLIM: { label: 'Teslim Edildi', color: '#00F5B0', icon: '📦' },
 
@@ -140,11 +147,11 @@ export const contentTypes: Record<ContentType, { label: string; icon: string; co
 // Türe göre aşama akışı (dinamik workflow)
 export const contentTypeStages: Record<ContentType, ContentStatus[]> = {
     // 1. Video & Podcast: Çekim ve kurgu odaklı (Sadeleştirilmiş Akış)
-    VIDEO: ['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'],
-    PODCAST: ['PLANLANDI', 'CEKILDI', 'KURGULANDI', 'PAYLASILD'],
+    VIDEO: ['PLANLANDI', 'CEKILIYOR', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'PAYLASILD'],
+    PODCAST: ['PLANLANDI', 'CEKILIYOR', 'CEKILDI', 'KURGULANIYOR', 'KURGULANDI', 'PAYLASILD'],
 
     // 2. Fotoğraf: Görsel işleme odaklı
-    FOTOGRAF: ['PLANLANDI', 'CEKILDI', 'FOTOGRAF_RETOUCH', 'ONAY', 'PAYLASILD'],
+    FOTOGRAF: ['PLANLANDI', 'CEKILIYOR', 'CEKILDI', 'FOTOGRAF_RETOUCH', 'ONAY', 'PAYLASILD'],
 
     // 3. Post & Reklam: Tasarım ve planlama odaklı
     POST: ['PLANLANDI', 'ICERIK_HAZIRLANDI', 'TASARLANIYOR', 'TASARLANDI', 'ONAY', 'PAYLASILD'],
