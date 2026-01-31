@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { notifyApprovalNeeded, notifyRevisionRequested } from './notifications';
+import { notifyRevisionRequested } from './notifications';
 
 // ===== CLIENT DASHBOARD VERİLERİ =====
 export async function getClientDashboard(clientId: string) {

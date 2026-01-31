@@ -253,7 +253,7 @@ export function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
     );
 }
 
-export default {
+const RealtimeHooks = {
     useRealtime,
     useRealtimeNotifications,
     useRealtimeProjects,
@@ -262,3 +262,4 @@ export default {
     usePresence,
     ConnectionStatus,
 };
+export default RealtimeHooks;

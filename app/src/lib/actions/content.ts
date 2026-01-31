@@ -1,6 +1,5 @@
 'use server';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
@@ -499,7 +498,8 @@ export async function getRetainerStatus() {
         const activeRetainerClientIds = new Set(retainers?.map(r => r.clientId) || []);
 
         // Filter contracts: Only show if client has a Retainer record
-        const visibleContracts = contracts?.filter(c => activeRetainerClientIds.has(c.clientId)) || [];
+        // visibleContracts is computed but not used - using retainers directly instead
+        const _visibleContracts = contracts?.filter(c => activeRetainerClientIds.has(c.clientId)) || [];
 
         // 2. Fetch Tasks for this month (for progress calculation)
         // Count if: (DueDate in month) OR (DueDate is NULL AND CreatedAt in month)

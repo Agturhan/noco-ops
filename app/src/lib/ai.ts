@@ -8,7 +8,7 @@ import {
     SERVICES,
     SM_PACKAGES,
     STUDIO_REELS_PACKAGES,
-    VAT_RATE,
+
     PRODUCTION_CAPACITY,
     getCapacityContext,
     getValidServiceIds,

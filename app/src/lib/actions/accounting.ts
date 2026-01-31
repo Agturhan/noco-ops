@@ -1,6 +1,5 @@
 'use server';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use server';
 
 import prisma from '@/lib/prisma';
 
@@ -75,7 +74,7 @@ export async function getYearlyTrend(year: number) {
                 gelir: Number(incomes._sum.amount || 0),
                 gider: Number(expenses._sum.amount || 0),
             });
-        } catch (error) {
+        } catch {
             months.push({
                 month: new Date(year, month - 1).toLocaleString('tr-TR', { month: 'short' }),
                 monthNumber: month,

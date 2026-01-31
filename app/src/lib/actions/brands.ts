@@ -1,10 +1,8 @@
 'use server';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
-import prisma from '@/lib/prisma'; // Use prisma client for complex queries if needed, or supabaseAdmin
 import { logAction } from './audit';
 
 // Define Brand interface matching Client model + extra logic
@@ -60,7 +58,7 @@ export async function getBrandById(id: string) {
 export async function updateBrand(id: string, data: Partial<Brand>) {
     try {
         // Remove readonly fields
-        const { id: _, createdAt, updatedAt, ...updates } = data as any;
+        const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...updates } = data as any;
 
         const { error } = await supabaseAdmin
             .from('Client')
@@ -115,14 +113,14 @@ export async function getBrandStats(clientId: string) {
     try {
         // We can use prisma for aggregation or separate queries
         // Total projects
-        const { count: totalProjects, error: err1 } = await supabaseAdmin
+        const { count: totalProjects } = await supabaseAdmin
             .from('Task') // Assuming Task is Content
             .select('*', { count: 'exact', head: true })
             .eq('clientId', clientId)
             .not('contentType', 'is', null);
 
         // Active projects (not DONE)
-        const { count: activeProjects, error: err2 } = await supabaseAdmin
+        const { count: activeProjects } = await supabaseAdmin
             .from('Task')
             .select('*', { count: 'exact', head: true })
             .eq('clientId', clientId)
@@ -130,7 +128,7 @@ export async function getBrandStats(clientId: string) {
             .neq('status', 'DONE');
 
         // Contracts (mock or real)
-        const { count: contracts, error: err3 } = await supabaseAdmin
+        const { count: contracts } = await supabaseAdmin
             .from('Contract')
             .select('*', { count: 'exact', head: true })
             .eq('clientId', clientId);

@@ -3,7 +3,7 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { FinanceAccount as PrismaFinanceAccount, FinanceTransaction as PrismaFinanceTransaction, FinanceCategory as PrismaFinanceCategory } from '@prisma/client';
+import { FinanceAccount as _PrismaFinanceAccount, FinanceTransaction as _PrismaFinanceTransaction, FinanceCategory as _PrismaFinanceCategory } from '@prisma/client';
 
 // ===== TYPES =====
 // Re-exporting or mapping Prisma types if needed, or keeping interface for frontend compatibility

@@ -1,8 +1,6 @@
 import {
     LayoutDashboard,
     Clapperboard,
-    Calendar,
-    Camera,
     Users,
     Timer,
     Building2,
@@ -13,7 +11,6 @@ import {
     BarChart3,
     Shield,
     Settings,
-    ListTodo,
     type LucideIcon
 } from 'lucide-react';
 

@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button, Input } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
 import { GlassSurface } from '@/components/ui/GlassSurface';
@@ -86,12 +87,12 @@ export default function LoginPage() {
             }}>
                 {/* Logo */}
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-4)' }}>
-                    <img
+                    <Image
                         src="/noco-logo-minimal.jpg"
                         alt="Noco Logo"
+                        width={80}
+                        height={80}
                         style={{
-                            width: '80px',
-                            height: 'auto',
                             objectFit: 'contain',
                             borderRadius: '12px',
                             margin: '0 auto var(--space-2)',

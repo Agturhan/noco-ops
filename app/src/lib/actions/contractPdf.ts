@@ -1,13 +1,13 @@
 'use server';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
 
 // ===== CONTRACT PDF GENERATOR =====
 // Farklı sözleşme şablonları için PDF oluşturucu
 
-interface ContractData {
+// Interface kept for documentation purposes
+interface _ContractData {
     clientName: string;
     clientAddress?: string;
     clientEmail?: string;

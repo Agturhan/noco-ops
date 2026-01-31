@@ -147,7 +147,7 @@ export async function getActiveTimer(userId: string) {
         if (error && error.code !== 'PGRST116') throw error; // 116 = no rows found
 
         return { success: true, data };
-    } catch (error) {
+    } catch {
         return { success: false, data: null };
     }
 }
