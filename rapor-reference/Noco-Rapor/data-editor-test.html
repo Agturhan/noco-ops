@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test</title>
+</head>
+<body>
+<div id="test"></div>
+<script>
+// Test: Event listener çalışıyor mu?
+const campaignMetrics = {
+  'messages': { primary: 'Mesaj', secondary: 'Mesaj Başı Maliyet (₺)' },
+  'traffic': { primary: 'Tıklama', secondary: 'CPC (₺)' }
+};
+
+function updateLabels(id) {
+  const select = document.getElementById(`objective-${id}`);
+  const objective = select.value;
+  const metrics = campaignMetrics[objective];
+  document.getElementById(`label1-${id}`).textContent = metrics.primary;
+  document.getElementById(`label2-${id}`).textContent = metrics.secondary;
+  console.log(`Updated campaign ${id}: ${objective} -> ${metrics.primary} / ${metrics.secondary}`);
+}
+
+function addCampaign() {
+  const id = Date.now();
+  const div = document.createElement('div');
+  div.innerHTML = `
+    <select id="objective-${id}" onchange="updateLabels(${id})">
+      <option value="messages">Mesajlaşma</option>
+      <option value="traffic">Trafik</option>
+    </select>
+    <div id="label1-${id}">?</div>
+    <div id="label2-${id}">?</div>
+  `;
+  document.getElementById('test').appendChild(div);
+  updateLabels(id);
+}
+
+addCampaign();
+addCampaign();
+</script>
+</body>
+</html>

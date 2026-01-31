@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Noco Rapor - Veri Editörü v3.5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg-primary: #E9E2D0;
+  --bg-card: #F2EBD8;
+  --text-primary: #3D4D52;
+  --text-secondary: #6B7B80;
+  --accent-blue: #329FF5;
+  --accent-green: #00F5B0;
+  --accent-yellow: #F6D73C;
+  --accent-red: #FF4242;
+  --border: rgba(61, 77, 82, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 32px 24px;
+}
+
+.container { max-width: 1400px; margin: 0 auto; }
+
+header { text-align: center; margin-bottom: 48px; }
+
+h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle { color: var(--text-secondary); font-size: 16px; }
+
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.card h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.form-group { margin-bottom: 20px; }
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.form-group textarea { resize: vertical; min-height: 100px; }
+
+.dynamic-list { margin-top: 12px; }
+
+.dynamic-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: end;
+}
+
+.dynamic-item.deliverable { grid-template-columns: 1fr auto; }
+.dynamic-item.growth { grid-template-columns: 2fr 1fr auto; }
+.dynamic-item.campaign { grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; }
+
+.btn {
+  padding: 10px 20px;
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn:hover { background: #2888d8; transform: translateY(-1px); }
+.btn-small { padding: 8px 16px; font-size: 13px; }
+.btn-danger { background: var(--accent-red); }
+.btn-danger:hover { background: #d63a3b; }
+.btn-success { background: var(--accent-green); color: var(--text-primary); }
+.btn-success:hover { background: #00d99a; }
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.actions button { min-width: 160px; }
+
+#jsonOutput {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 400px;
+  display: none;
+}
+
+.success-message {
+  background: var(--accent-green);
+  color: var(--text-primary);
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 24px;
+  display: none;
+  font-weight: 500;
+}
+
+.info-box {
+  background: rgba(50, 155, 245, 0.1);
+  border-left: 4px solid var(--accent-blue);
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+}
+
+.info-box p { margin: 0; font-size: 13px; color: var(--text-primary); }
+.add-btn { margin-top: 12px; }
+
+/* Mobil toolbar */
+.mobile-toolbar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 8px;
+  z-index: 999;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 200px;
+}
+
+.mobile-toolbar button {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.mobile-toolbar button:hover {
+  background: var(--accent-blue);
+  color: white;
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* Mobil responsive düzenlemeler */
+@media (max-width: 768px) {
+  body { padding: 80px 16px 32px 16px; }
+  
+  .mobile-toolbar { display: flex; }
+  
+  .container { max-width: 100%; }
+  
+  header { margin-bottom: 32px; }
+  
+  h1 { font-size: 28px; }
+  
+  .card { padding: 20px; }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .dynamic-item {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .dynamic-item.deliverable,
+  .dynamic-item.growth,
+  .dynamic-item.campaign {
+    grid-template-columns: 1fr;
+  }
+  
+  .dynamic-item .btn-danger {
+    width: 100%;
+    justify-self: stretch;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .actions button {
+    width: 100%;
+    min-width: auto;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="mobile-toolbar">
+  <button onclick="generateJSON()" title="JSON Oluştur">📝</button>
+  <button onclick="copyToClipboard()" title="Kopyala">📋</button>
+  <button onclick="downloadJSON()" title="İndir">💾</button>
+  <button onclick="previewReport()" title="Viewer'da Gör">👁️</button>
+</div>
+
+<div class="container">
+  <header>
+    <h1>📊 Noco Rapor - Veri Editörü v3.5</h1>
+    <p class="subtitle">Yeni metrikler ve reklam sistemi ile tam kontrol</p>
+  </header>
+
+  <div class="info-box">
+    <p><strong>💡 Yenilikler:</strong> Görüntülemeler, Profil Hareketleri, Gelişmiş Reklam Metrikleri ve Çoklu Büyüme Trendi eklendi!</p>
+  </div>
+
+  <div id="successMessage" class="success-message">
+    ✓ JSON başarıyla oluşturuldu!
+  </div>
+
+  <!-- Marka Bilgileri -->
+  <div class="card">
+    <h2>🏢 Marka Bilgileri</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Marka Adı</label>
+        <input type="text" id="brandName" placeholder="Örnek Müşteri">
+      </div>
+      <div class="form-group">
+        <label>Rapor Dönemi</label>
+        <input type="text" id="brandPeriod" placeholder="Kasım 2025">
+      </div>
+    </div>
+  </div>
+
+  <!-- Özet Metrikler -->
+  <div class="card">
+    <h2>📈 Özet Metrikler (KPI)</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Takipçi</label>
+        <input type="number" id="followers" placeholder="950">
+      </div>
+      <div class="form-group">
+        <label>Değişim (%)</label>
+        <input type="number" step="0.1" id="followersChange" placeholder="5.2">
+      </div>
+      <div class="form-group">
+        <label>Erişilen Hesap</label>
+        <input type="number" id="reach" placeholder="125000">
+      </div>
+      <div class="form-group">
+        <label>Değişim (%)</label>
+        <input type="number" step="0.1" id="reachChange" placeholder="9">
+      </div>
+      <div class="form-group">
+        <label>Görüntülemeler</label>
+        <input type="number" id="impressions" placeholder="450000">
+      </div>
+      <div class="form-group">
+        <label>Değişim (%)</label>
+        <input type="number" step="0.1" id="impressionsChange" placeholder="5.0">
+      </div>
+      <div class="form-group">
+        <label>% Reklamdan</label>
+        <input type="number" step="0.1" id="impressionsAdsPercent" placeholder="15.5">
+      </div>
+      <div class="form-group">
+        <label>Etkileşim Oranı (%)</label>
+        <input type="number" step="0.1" id="engRate" placeholder="8.2">
+      </div>
+      <div class="form-group">
+        <label>Değişim (%)</label>
+        <input type="number" step="0.1" id="engChange" placeholder="0.9">
+      </div>
+    </div>
+  </div>
+
+  <!-- Profil Hareketleri -->
+  <div class="card">
+    <h2>👤 Profil Hareketleri</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Profil Ziyaretleri</label>
+        <input type="number" id="profileVisits" placeholder="15420">
+      </div>
+      <div class="form-group">
+        <label>Harici Bağlantılara Dokunmalar</label>
+        <input type="number" id="externalLinkTaps" placeholder="850">
+      </div>
+      <div class="form-group">
+        <label>İş Adresine Dokunmalar</label>
+        <input type="number" id="addressTaps" placeholder="124">
+      </div>
+    </div>
+  </div>
+
+  <!-- İçerik Dağılımı -->
+  <div class="card">
+    <h2>📊 İçerik Dağılımı</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Reels (%)</label>
+        <input type="number" id="mixReels" placeholder="50">
+      </div>
+      <div class="form-group">
+        <label>Hikaye (%)</label>
+        <input type="number" id="mixHikaye" placeholder="30">
+      </div>
+      <div class="form-group">
+        <label>Tasarım (%)</label>
+        <input type="number" id="mixDesign" placeholder="20">
+      </div>
+    </div>
+  </div>
+
+  <!-- Büyüme Trendi - Erişilen Hesap -->
+  <div class="card">
+    <h2>📈 Büyüme Trendi - Erişilen Hesap</h2>
+    <div id="growthReachList" class="dynamic-list"></div>
+    <button class="btn btn-small add-btn" onclick="addGrowthReach()">+ Dönem Ekle</button>
+  </div>
+
+  <!-- Büyüme Trendi - Görüntülemeler -->
+  <div class="card">
+    <h2>📈 Büyüme Trendi - Görüntülemeler</h2>
+    <div id="growthImpressionsList" class="dynamic-list"></div>
+    <button class="btn btn-small add-btn" onclick="addGrowthImpressions()">+ Dönem Ekle</button>
+  </div>
+
+  <!-- En İyi İçerikler -->
+  <div class="card">
+    <h2>🏆 En İyi İçerikler</h2>
+    <div id="topContentsList" class="dynamic-list"></div>
+    <button class="btn btn-small add-btn" onclick="addTopContent()">+ İçerik Ekle</button>
+  </div>
+
+  <!-- Reklam / Kampanya -->
+  <div class="card">
+    <h2>🎯 Reklam / Kampanya</h2>
+    <div id="campaignsList" class="dynamic-list"></div>
+    <button class="btn btn-small add-btn" onclick="addCampaign()">+ Kampanya Ekle</button>
+  </div>
+
+  <!-- Stratejiler ve Öneriler -->
+  <div class="card">
+    <h2>💡 Stratejiler</h2>
+    <div class="form-group">
+      <label>Stratejiler (Her satıra bir tane)</label>
+      <textarea id="insights" placeholder="Reels formatı en yüksek organik erişimi sağladı
+Hikaye paylaşımları marka görünürlüğünü artırdı"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎯 Öneriler</h2>
+    <div class="form-group">
+      <label>Öneriler (Her satıra bir tane)</label>
+      <textarea id="nextActions" placeholder="Aralık ayında Reels sayısını %50 artırmak
+Influencer iş birlikleri için görüşmelere başlamak"></textarea>
+    </div>
+  </div>
+
+  <!-- Teslim Edilen İçerikler -->
+  <div class="card">
+    <h2>📦 Teslim Edilen İçerikler</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div>
+        <h3 style="font-size: 16px; margin-bottom: 12px;">Paylaşılan Reels</h3>
+        <div id="reelsList" class="dynamic-list"></div>
+        <button class="btn btn-small add-btn" onclick="addReel()">+ Reel Ekle</button>
+      </div>
+      <div>
+        <h3 style="font-size: 16px; margin-bottom: 12px;">Yapılan Tasarımlar</h3>
+        <div id="designsList" class="dynamic-list"></div>
+        <button class="btn btn-small add-btn" onclick="addDesign()">+ Tasarım Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hizmet Bedeli -->
+  <div class="card">
+    <h2>💰 Hizmet Bedeli</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Tutar (₺)</label>
+        <input type="number" id="serviceFee" placeholder="67500">
+      </div>
+    </div>
+  </div>
+
+  <!-- Aksiyonlar -->
+  <div class="actions">
+    <button class="btn btn-success" onclick="generateJSON()">📝 JSON Oluştur</button>
+    <button class="btn" onclick="copyToClipboard()">📋 Kopyala</button>
+    <button class="btn" onclick="downloadJSON()">💾 JSON İndir</button>
+    <button class="btn" onclick="exportCSV()">📊 CSV İndir</button>
+    <button class="btn" onclick="previewReport()">👁️ Viewer'da Gör</button>
+  </div>
+
+  <!-- JSON Çıktı -->
+  <div class="card">
+    <h2>📄 JSON Çıktı</h2>
+    <pre id="jsonOutput"></pre>
+  </div>
+</div>
+
+<script>
+let currentJSON = null;
+let growthReachCount = 0;
+let growthImpressionsCount = 0;
+let topContentCount = 0;
+let campaignCount = 0;
+let reelCount = 0;
+let designCount = 0;
+
+// Kampanya metrik haritası
+const campaignMetrics = {
+  'awareness': { primary: 'Gösterim', secondary: 'CPM (₺)', calc: (spend, impressions) => impressions > 0 ? (spend / impressions * 1000).toFixed(2) : 0 },
+  'traffic': { primary: 'Tıklama', secondary: 'CPC (₺)', calc: (spend, clicks) => clicks > 0 ? (spend / clicks).toFixed(2) : 0 },
+  'engagement': { primary: 'Etkileşim', secondary: 'Etkileşim Oranı (%)', calc: (impressions, engagement) => impressions > 0 ? ((engagement / impressions) * 100).toFixed(2) : 0 },
+  'leads': { primary: 'Potansiyel Müşteri', secondary: 'Lead Başı Maliyet (₺)', calc: (spend, leads) => leads > 0 ? (spend / leads).toFixed(2) : 0 },
+  'app': { primary: 'İndirme', secondary: 'İndirme Başı Maliyet (₺)', calc: (spend, downloads) => downloads > 0 ? (spend / downloads).toFixed(2) : 0 },
+  'sales': { primary: 'Dönüşüm', secondary: 'ROAS', calc: (revenue, spend) => spend > 0 ? (revenue / spend).toFixed(2) : 0 },
+  'messages': { primary: 'Mesaj', secondary: 'Mesaj Başı Maliyet (₺)', calc: (spend, messages) => messages > 0 ? (spend / messages).toFixed(2) : 0 }
+};
+
+// Büyüme trendi - Erişilen Hesap
+function addGrowthReach() {
+  growthReachCount++;
+  const list = document.getElementById('growthReachList');
+  const div = document.createElement('div');
+  div.className = 'dynamic-item growth';
+  div.id = `growth-reach-${growthReachCount}`;
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Dönem</label>
+      <input type="text" id="growth-reach-period-${growthReachCount}" placeholder="Kasım 2025">
+    </div>
+    <div class="form-group">
+      <label>Erişilen Hesap</label>
+      <input type="number" id="growth-reach-value-${growthReachCount}" placeholder="125000">
+    </div>
+    <button class="btn btn-small btn-danger" onclick="removeItem('growth-reach-${growthReachCount}')">Sil</button>
+  `;
+  list.appendChild(div);
+}
+
+// Büyüme trendi - Görüntülemeler
+function addGrowthImpressions() {
+  growthImpressionsCount++;
+  const list = document.getElementById('growthImpressionsList');
+  const div = document.createElement('div');
+  div.className = 'dynamic-item growth';
+  div.id = `growth-impressions-${growthImpressionsCount}`;
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Dönem</label>
+      <input type="text" id="growth-impressions-period-${growthImpressionsCount}" placeholder="Kasım 2025">
+    </div>
+    <div class="form-group">
+      <label>Görüntüleme</label>
+      <input type="number" id="growth-impressions-value-${growthImpressionsCount}" placeholder="450000">
+    </div>
+    <button class="btn btn-small btn-danger" onclick="removeItem('growth-impressions-${growthImpressionsCount}')">Sil</button>
+  `;
+  list.appendChild(div);
+}
+
+// En iyi içerik ekle
+function addTopContent() {
+  topContentCount++;
+  const list = document.getElementById('topContentsList');
+  const div = document.createElement('div');
+  div.className = 'dynamic-item';
+  div.id = `content-${topContentCount}`;
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Başlık</label>
+      <input type="text" id="content-title-${topContentCount}" placeholder="Black Friday Kampanyası">
+    </div>
+    <div class="form-group">
+      <label>Tür</label>
+      <select id="content-type-${topContentCount}">
+        <option value="Reel">Reel</option>
+        <option value="Hikaye">Hikaye</option>
+        <option value="Tasarım">Tasarım</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Erişim</label>
+      <input type="number" id="content-reach-${topContentCount}" placeholder="8500">
+    </div>
+    <div class="form-group">
+      <label>Etkileşim</label>
+      <input type="number" id="content-eng-${topContentCount}" placeholder="980">
+    </div>
+    <button class="btn btn-small btn-danger" onclick="removeItem('content-${topContentCount}')">Sil</button>
+  `;
+  list.appendChild(div);
+}
+
+// Kampanya ekle
+function addCampaign() {
+  campaignCount++;
+  const list = document.getElementById('campaignsList');
+  const div = document.createElement('div');
+  div.className = 'dynamic-item campaign';
+  div.id = `campaign-${campaignCount}`;
+  const currentId = campaignCount; // Scope için local variable
+  
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Kampanya Adı</label>
+      <input type="text" id="campaign-name-${currentId}" placeholder="Black Friday 2025">
+    </div>
+    <div class="form-group">
+      <label>Amaç</label>
+      <select id="campaign-objective-${currentId}" onchange="updateCampaignLabels(${currentId})">
+        <option value="awareness">Bilinirlik</option>
+        <option value="traffic">Trafik</option>
+        <option value="engagement">Etkileşim</option>
+        <option value="leads">Potansiyel Müşteriler</option>
+        <option value="app">Uygulama Tanıtımı</option>
+        <option value="sales">Satışlar</option>
+        <option value="messages">Mesajlaşma</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Harcama (₺)</label>
+      <input type="number" id="campaign-spend-${currentId}" placeholder="5000">
+    </div>
+    <div class="form-group">
+      <label id="campaign-metric1-label-${currentId}">Birincil Metrik</label>
+      <input type="number" id="campaign-metric1-${currentId}" placeholder="450000">
+    </div>
+    <div class="form-group">
+      <label id="campaign-metric2-label-${currentId}">İkincil Metrik</label>
+      <input type="number" step="0.01" id="campaign-metric2-${currentId}" placeholder="0">
+    </div>
+    <button class="btn btn-small btn-danger" onclick="removeItem('campaign-${currentId}')">Sil</button>
+  `;
+  list.appendChild(div);
+  
+  // Başlangıç label'larını ayarla
+  updateCampaignLabels(currentId);
+}
+
+function updateCampaignLabels(id) {
+  const objective = document.getElementById(`campaign-objective-${id}`).value;
+  const metrics = campaignMetrics[objective];
+  document.getElementById(`campaign-metric1-label-${id}`).textContent = metrics.primary;
+  document.getElementById(`campaign-metric2-label-${id}`).textContent = metrics.secondary;
+}
+
+// Reel ekle
+function addReel() {
+  reelCount++;
+  const list = document.getElementById('reelsList');
+  const div = document.createElement('div');
+  div.className = 'dynamic-item deliverable';
+  div.id = `reel-${reelCount}`;
+  div.innerHTML = `
+    <div class="form-group">
+      <input type="text" id="reel-input-${reelCount}" placeholder="Black Friday Tanıtım">
+    </div>
+    <button class="btn btn-small btn-danger" onclick="removeItem('reel-${reelCount}')">Sil</button>
+  `;
+  list.appendChild(div);
+}
+
+// Tasarım ekle
+function addDesign() {
+  designCount++;
+  const list = document.getElementById('designsList');
+  const div = document.createElement('div');
+  div.className = 'dynamic-item deliverable';
+  div.id = `design-${designCount}`;
+  div.innerHTML = `
+    <div class="form-group">
+      <input type="text" id="design-input-${designCount}" placeholder="Kampanya Görselleri (5 adet)">
+    </div>
+    <button class="btn btn-small btn-danger" onclick="removeItem('design-${designCount}')">Sil</button>
+  `;
+  list.appendChild(div);
+}
+
+// Item sil
+function removeItem(id) {
+  document.getElementById(id).remove();
+}
+
+// JSON oluştur
+function generateJSON() {
+  // Büyüme trendi - Erişilen Hesap
+  const growthReach = [];
+  for (let i = 1; i <= growthReachCount; i++) {
+    const periodEl = document.getElementById(`growth-reach-period-${i}`);
+    const valueEl = document.getElementById(`growth-reach-value-${i}`);
+    if (periodEl && valueEl && periodEl.value) {
+      growthReach.push({
+        period: periodEl.value,
+        value: parseInt(valueEl.value) || 0
+      });
+    }
+  }
+
+  // Büyüme trendi - Görüntülemeler
+  const growthImpressions = [];
+  for (let i = 1; i <= growthImpressionsCount; i++) {
+    const periodEl = document.getElementById(`growth-impressions-period-${i}`);
+    const valueEl = document.getElementById(`growth-impressions-value-${i}`);
+    if (periodEl && valueEl && periodEl.value) {
+      growthImpressions.push({
+        period: periodEl.value,
+        value: parseInt(valueEl.value) || 0
+      });
+    }
+  }
+
+  // En iyi içerikler
+  const topContents = [];
+  for (let i = 1; i <= topContentCount; i++) {
+    const titleEl = document.getElementById(`content-title-${i}`);
+    const typeEl = document.getElementById(`content-type-${i}`);
+    const reachEl = document.getElementById(`content-reach-${i}`);
+    const engEl = document.getElementById(`content-eng-${i}`);
+    
+    if (titleEl && titleEl.value) {
+      const reach = parseInt(reachEl.value) || 0;
+      const eng = parseInt(engEl.value) || 0;
+      const rate = reach > 0 ? ((eng / reach) * 100).toFixed(1) : 0;
+      
+      topContents.push({
+        title: titleEl.value,
+        type: typeEl.value,
+        reach: reach,
+        eng: eng,
+        rate: parseFloat(rate)
+      });
+    }
+  }
+
+  // Kampanyalar
+  const campaigns = [];
+  for (let i = 1; i <= campaignCount; i++) {
+    const nameEl = document.getElementById(`campaign-name-${i}`);
+    const objectiveEl = document.getElementById(`campaign-objective-${i}`);
+    const spendEl = document.getElementById(`campaign-spend-${i}`);
+    const metric1El = document.getElementById(`campaign-metric1-${i}`);
+    const metric2El = document.getElementById(`campaign-metric2-${i}`);
+    
+    if (nameEl && nameEl.value) {
+      const objective = objectiveEl.value;
+      const metrics = campaignMetrics[objective];
+      
+      campaigns.push({
+        name: nameEl.value,
+        objective: objective,
+        spend: parseInt(spendEl.value) || 0,
+        metric1: {
+          label: metrics.primary,
+          value: parseFloat(metric1El.value) || 0
+        },
+        metric2: {
+          label: metrics.secondary,
+          value: parseFloat(metric2El.value) || 0
+        }
+      });
+    }
+  }
+
+  // Reels
+  const reels = [];
+  for (let i = 1; i <= reelCount; i++) {
+    const el = document.getElementById(`reel-input-${i}`);
+    if (el && el.value) reels.push(el.value);
+  }
+
+  // Tasarımlar
+  const designs = [];
+  for (let i = 1; i <= designCount; i++) {
+    const el = document.getElementById(`design-input-${i}`);
+    if (el && el.value) designs.push(el.value);
+  }
+
+  const data = {
+    brand: {
+      name: document.getElementById('brandName').value || "Örnek Müşteri",
+      period: document.getElementById('brandPeriod').value || "Kasım 2025"
+    },
+    summary: {
+      followers: parseInt(document.getElementById('followers').value) || 0,
+      followers_change: parseFloat(document.getElementById('followersChange').value) || 0,
+      reach: parseInt(document.getElementById('reach').value) || 0,
+      reach_change: parseFloat(document.getElementById('reachChange').value) || 0,
+      impressions: parseInt(document.getElementById('impressions').value) || 0,
+      impressions_change: parseFloat(document.getElementById('impressionsChange').value) || 0,
+      impressions_ads_percent: parseFloat(document.getElementById('impressionsAdsPercent').value) || 0,
+      eng_rate: parseFloat(document.getElementById('engRate').value) || 0,
+      engagement_change: parseFloat(document.getElementById('engChange').value) || 0
+    },
+    profile_actions: {
+      profile_visits: parseInt(document.getElementById('profileVisits').value) || 0,
+      external_link_taps: parseInt(document.getElementById('externalLinkTaps').value) || 0,
+      address_taps: parseInt(document.getElementById('addressTaps').value) || 0
+    },
+    content_mix: [
+      {name: "Reels", percent: parseInt(document.getElementById('mixReels').value) || 0},
+      {name: "Hikaye", percent: parseInt(document.getElementById('mixHikaye').value) || 0},
+      {name: "Tasarım", percent: parseInt(document.getElementById('mixDesign').value) || 0}
+    ],
+    growth_trend: {
+      reach: growthReach,
+      impressions: growthImpressions
+    },
+    top_contents: topContents,
+    campaigns: campaigns,
+    strategies: document.getElementById('insights').value.split('\n').filter(line => line.trim()),
+    recommendations: document.getElementById('nextActions').value.split('\n').filter(line => line.trim()),
+    deliverables: {
+      reels: reels,
+      designs: designs
+    },
+    service_fee: {
+      amount: parseInt(document.getElementById('serviceFee').value) || 0,
+      currency: "TRY"
+    },
+    bank_info: {
+      account_name: "NOCO CREATIVE DIGITAL STUDIOS",
+      bank_name: "Garanti BBVA",
+      iban: "TR12 0006 2000 4720 0006 2968 14"
+    }
+  };
+
+  currentJSON = JSON.stringify(data, null, 2);
+  document.getElementById('jsonOutput').textContent = currentJSON;
+  document.getElementById('jsonOutput').style.display = 'block';
+  
+  // LocalStorage'a kaydet
+  localStorage.setItem('report_data', currentJSON);
+  
+  const successMsg = document.getElementById('successMessage');
+  successMsg.style.display = 'block';
+  setTimeout(() => { successMsg.style.display = 'none'; }, 3000);
+  
+  document.getElementById('jsonOutput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function copyToClipboard() {
+  if (!currentJSON) {
+    alert('Önce "JSON Oluştur" butonuna tıklayın!');
+    return;
+  }
+  
+  navigator.clipboard.writeText(currentJSON).then(() => {
+    alert('✓ JSON kopyalandı!');
+  }).catch(() => {
+    alert('Kopyalama başarısız. JSON çıktıyı manuel olarak kopyalayın.');
+  });
+}
+
+function downloadJSON() {
+  if (!currentJSON) {
+    alert('Önce "JSON Oluştur" butonuna tıklayın!');
+    return;
+  }
+  
+  const blob = new Blob([currentJSON], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sample-data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// CSV Export fonksiyonu
+function exportCSV() {
+  if (!currentJSON) {
+    alert('Önce "JSON Oluştur" butonuna tıklayın!');
+    return;
+  }
+  
+  const data = JSON.parse(currentJSON);
+  let csvContent = '';
+  
+  // Başlık
+  csvContent += '=== SOSYAL MEDYA RAPORU ===\n';
+  csvContent += 'Marka,' + (data.brand.name || '') + '\n';
+  csvContent += 'Dönem,' + (data.brand.period || '') + '\n';
+  csvContent += '\n';
+  
+  // Özet Metrikler
+  csvContent += '=== ÖZET METRİKLER ===\n';
+  csvContent += 'Metrik,Değer,Değişim (%)\n';
+  csvContent += 'Takipçi,' + (data.summary.followers || 0) + ',' + (data.summary.followers_change || 0) + '%\n';
+  csvContent += 'Erişilen Hesap,' + (data.summary.reach || 0) + ',' + (data.summary.reach_change || 0) + '%\n';
+  csvContent += 'Görüntülemeler,' + (data.summary.impressions || 0) + ',' + (data.summary.impressions_change || 0) + '%\n';
+  csvContent += 'Etkileşim Oranı,' + (data.summary.eng_rate || 0) + '%,' + (data.summary.engagement_change || 0) + '%\n';
+  csvContent += '% Reklamdan,' + (data.summary.impressions_ads_percent || 0) + '%\n';
+  csvContent += '\n';
+  
+  // Profil Hareketleri
+  csvContent += '=== PROFİL HAREKETLERİ ===\n';
+  csvContent += 'Metrik,Değer\n';
+  csvContent += 'Profil Ziyaretleri,' + (data.profile_actions.profile_visits || 0) + '\n';
+  csvContent += 'Harici Bağlantılara Dokunmalar,' + (data.profile_actions.external_link_taps || 0) + '\n';
+  csvContent += 'İş Adresine Dokunmalar,' + (data.profile_actions.address_taps || 0) + '\n';
+  csvContent += '\n';
+  
+  // İçerik Dağılımı
+  csvContent += '=== İÇERİK DAĞILIMI ===\n';
+  csvContent += 'İçerik Tipi,Yüzde (%)\n';
+  if (data.content_mix) {
+    data.content_mix.forEach(item => {
+      csvContent += item.name + ',' + item.percent + '%\n';
+    });
+  }
+  csvContent += '\n';
+  
+  // Büyüme Trendi - Erişim
+  if (data.growth_trend && data.growth_trend.reach && data.growth_trend.reach.length > 0) {
+    csvContent += '=== BÜYÜME TRENDİ - ERİŞİLEN HESAP ===\n';
+    csvContent += 'Dönem,Erişilen Hesap\n';
+    data.growth_trend.reach.forEach(item => {
+      csvContent += item.period + ',' + item.value + '\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Büyüme Trendi - Görüntüleme
+  if (data.growth_trend && data.growth_trend.impressions && data.growth_trend.impressions.length > 0) {
+    csvContent += '=== BÜYÜME TRENDİ - GÖRÜNTÜLEMELER ===\n';
+    csvContent += 'Dönem,Görüntüleme\n';
+    data.growth_trend.impressions.forEach(item => {
+      csvContent += item.period + ',' + item.value + '\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // En İyi İçerikler
+  if (data.top_contents && data.top_contents.length > 0) {
+    csvContent += '=== EN İYİ İÇERİKLER ===\n';
+    csvContent += 'Başlık,Tür,Erişim,Etkileşim,Oran (%)\n';
+    data.top_contents.forEach(content => {
+      csvContent += '"' + content.title + '",' + content.type + ',' + content.reach + ',' + content.eng + ',' + content.rate + '%\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Kampanyalar
+  if (data.campaigns && data.campaigns.length > 0) {
+    csvContent += '=== KAMPANYALAR ===\n';
+    csvContent += 'Kampanya Adı,Amaç,Bütçe (₺),Metrik 1,Metrik 1 Değer,Metrik 2,Metrik 2 Değer\n';
+    data.campaigns.forEach(campaign => {
+      csvContent += '"' + campaign.name + '",' + campaign.objective + ',' + campaign.spend + ',';
+      csvContent += '"' + (campaign.metric1.label || '') + '",' + (campaign.metric1.value || 0) + ',';
+      csvContent += '"' + (campaign.metric2.label || '') + '",' + (campaign.metric2.value || 0) + '\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Stratejiler
+  if (data.strategies && data.strategies.length > 0) {
+    csvContent += '=== STRATEJİLER ===\n';
+    data.strategies.forEach(strategy => {
+      csvContent += '"' + strategy + '"\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Öneriler
+  if (data.recommendations && data.recommendations.length > 0) {
+    csvContent += '=== ÖNERİLER ===\n';
+    data.recommendations.forEach(rec => {
+      csvContent += '"' + rec + '"\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Teslim Edilen İçerikler - Reels
+  if (data.deliverables && data.deliverables.reels && data.deliverables.reels.length > 0) {
+    csvContent += '=== PAYLAŞILAN REELS ===\n';
+    data.deliverables.reels.forEach(reel => {
+      csvContent += '"' + reel + '"\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Teslim Edilen İçerikler - Tasarımlar
+  if (data.deliverables && data.deliverables.designs && data.deliverables.designs.length > 0) {
+    csvContent += '=== YAPILAN TASARIMLAR ===\n';
+    data.deliverables.designs.forEach(design => {
+      csvContent += '"' + design + '"\n';
+    });
+    csvContent += '\n';
+  }
+  
+  // Hizmet Bedeli
+  csvContent += '=== HİZMET BEDELİ ===\n';
+  csvContent += 'Tutar,' + (data.service_fee.amount || 0) + ' ' + (data.service_fee.currency || 'TRY') + '\n';
+  
+  // CSV dosyasını indir
+  const blob = new Blob(["\ufeff" + csvContent], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const brandName = (data.brand.name || 'Rapor').replace(/\s+/g, '-');
+  const date = new Date().toISOString().split('T')[0];
+  a.download = brandName + '-Rapor-' + date + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  alert('✅ CSV dosyası indirildi!');
+}
+
+function previewReport() {
+  if (currentJSON) {
+    localStorage.setItem('report_data', currentJSON);
+  }
+  window.open('viewer.html', '_blank');
+}
+
+// Sayfa yüklendiğinde varsayılan itemleri ekle
+window.addEventListener('load', () => {
+  // Varsayılan olarak birkaç item ekle
+  for (let i = 0; i < 3; i++) addGrowthReach();
+  for (let i = 0; i < 3; i++) addGrowthImpressions();
+  for (let i = 0; i < 3; i++) addTopContent();
+  for (let i = 0; i < 2; i++) addCampaign();
+  for (let i = 0; i < 4; i++) addReel();
+  for (let i = 0; i < 3; i++) addDesign();
+});
+</script>
+</body>
+</html>

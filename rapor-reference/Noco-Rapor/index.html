@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NOCO Rapor Sistemi - Ana Sayfa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg-primary: #E9E2D0;
+  --bg-card: #F2EBD8;
+  --text-primary: #3D4D52;
+  --text-secondary: #6B7B80;
+  --accent-blue: #329FF5;
+  --accent-green: #00F5B0;
+  --accent-yellow: #F6D73C;
+  --accent-red: #FF4242;
+  --border: rgba(61, 77, 82, 0.1);
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+body.dark {
+  --bg-primary: #0E1113;
+  --bg-card: #1A1F23;
+  --text-primary: #E9E2D0;
+  --text-secondary: #A8A29E;
+  --border: rgba(233, 226, 208, 0.1);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  padding: 24px;
+  transition: background 0.3s ease;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  z-index: 100;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-blue);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.container {
+  max-width: 1000px;
+  width: 100%;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.logo {
+  margin-bottom: 32px;
+}
+
+.logo svg {
+  height: 80px;
+  width: auto;
+}
+
+h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.version {
+  display: inline-block;
+  padding: 6px 16px;
+  background: var(--accent-green);
+  color: #0E1113;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent-blue);
+}
+
+.card-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.card-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-blue);
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.card-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.card-button {
+  display: block;
+  width: 100%;
+  padding: 14px 24px;
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card-button:hover {
+  background: #2a8de0;
+  transform: scale(1.02);
+}
+
+.features {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 40px;
+  margin-bottom: 32px;
+}
+
+.features-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.feature {
+  text-align: center;
+  padding: 16px;
+}
+
+.feature-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.feature-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.footer-logo {
+  height: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 36px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .logo svg {
+    height: 64px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 28px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features {
+    padding: 24px;
+  }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+
+<div class="container">
+  <div class="hero">
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 364 121.55">
+        <g>
+          <path fill="#F6D73C" d="M82.98,99.24l-41.49-39.81L0,99.24V17.97h41.49c22.92,0,41.49,18.58,41.49,41.5v39.77Z"/>
+          <path fill="#00F5B0" d="M229.27,59.47l33.96,29.34c-16.1,16.09-47.22,16.09-63.32,0-16.1-16.25-16.1-42.43,0-58.68,16.1-16.09,47.22-16.09,63.32,0l-33.96,29.34s0,0,0,0Z"/>
+          <path fill="#329FF5" d="M135.41,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M135.95,64.61c-3.42.43-6.3-2.44-5.86-5.86.29-2.33,2.17-4.21,4.5-4.5,3.42-.43,6.29,2.44,5.86,5.86-.29,2.33-2.17,4.2-4.5,4.5"/>
+          <path fill="#FF4242" d="M311.71,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M311.59,64.65c-2.89,0-5.23-2.34-5.23-5.22s2.34-5.22,5.23-5.22,5.23,2.34,5.23,5.22-2.34,5.22-5.23,5.22"/>
+        </g>
+      </svg>
+    </div>
+    <h1>Rapor Sistemi</h1>
+    <p class="subtitle">
+      Server gerektirmeyen, tamamen tarayıcı tabanlı<br>
+      sosyal medya rapor oluşturma platformu
+    </p>
+    <span class="version">✨ v2.0 - Server-less Edition</span>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card">
+      <span class="card-number">1</span>
+      <h2 class="card-title">Veri Gir</h2>
+      <p class="card-desc">
+        Form üzerinden tüm rapor bilgilerinizi kolayca girin. Otomatik JSON formatına dönüştürülür.
+      </p>
+      <a href="data-editor.html" class="card-button">✏️ Editöre Git</a>
+    </div>
+
+    <div class="card">
+      <span class="card-number">2</span>
+      <h2 class="card-title">Rapor Oluştur</h2>
+      <p class="card-desc">
+        JSON verilerinizi yapıştırın ve anında profesyonel rapor oluşturun. Veriler tarayıcınızda saklanır.
+      </p>
+      <a href="viewer.html" class="card-button">👁️ Rapor Görüntüle</a>
+    </div>
+
+    <div class="card">
+      <span class="card-number">3</span>
+      <h2 class="card-title">Export Et</h2>
+      <p class="card-desc">
+        Oluşturdğunuz raporları PDF olarak indirin veya direkt yazdırın. Müşterilerinizle paylaşın.
+      </p>
+      <a href="template/onepage.html" class="card-button">📊 Son Rapor</a>
+    </div>
+  </div>
+
+  <div class="features">
+    <h3 class="features-title">⚡ Özellikler</h3>
+    <div class="features-grid">
+      <div class="feature">
+        <span class="feature-icon">🚀</span>
+        <div class="feature-text"><strong>Server-sız</strong><br>Localhost gerekmez</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">💾</span>
+        <div class="feature-text"><strong>Kalıcı Veri</strong><br>localStorage ile kayıt</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🎨</span>
+        <div class="feature-text"><strong>Dark/Light</strong><br>Tema desteği</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">📱</span>
+        <div class="feature-text"><strong>Responsive</strong><br>Mobil uyumlu</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">📄</span>
+        <div class="feature-text"><strong>PDF Export</strong><br>Yazdırma desteği</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">📊</span>
+        <div class="feature-text"><strong>CSV Export</strong><br>Excel uyumlu</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">📈</span>
+        <div class="feature-text"><strong>Grafikler</strong><br>Chart.js entegrasyonu</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <svg class="footer-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 364 121.55">
+      <g>
+        <path fill="currentColor" d="M82.98,99.24l-41.49-39.81L0,99.24V17.97h41.49c22.92,0,41.49,18.58,41.49,41.5v39.77Z"/>
+        <path fill="currentColor" d="M229.27,59.47l33.96,29.34c-16.1,16.09-47.22,16.09-63.32,0-16.1-16.25-16.1-42.43,0-58.68,16.1-16.09,47.22-16.09,63.32,0l-33.96,29.34s0,0,0,0Z"/>
+        <path fill="currentColor" d="M135.41,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M135.95,64.61c-3.42.43-6.3-2.44-5.86-5.86.29-2.33,2.17-4.21,4.5-4.5,3.42-.43,6.29,2.44,5.86,5.86-.29,2.33-2.17,4.2-4.5,4.5"/>
+        <path fill="currentColor" d="M311.71,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M311.59,64.65c-2.89,0-5.23-2.34-5.23-5.22s2.34-5.22,5.23-5.22,5.23,2.34,5.23,5.22-2.34,5.22-5.23,5.22"/>
+      </g>
+    </svg>
+    <div><strong>NOCO CREATIVE DIGITAL STUDIOS</strong></div>
+    <div style="margin-top: 8px;">Reklam Ticaret Limited Şirketi</div>
+    <div style="opacity: 0.5; margin-top: 12px;">© 2025 - Rapor Sistemi v2.0</div>
+  </footer>
+</div>
+
+<script>
+// Theme management
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+}
+
+// Load theme on start
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+  document.body.classList.add('dark');
+}
+
+// Check if there's saved report data
+window.addEventListener('load', () => {
+  const savedData = localStorage.getItem('report_data');
+  if (savedData) {
+    // Show indicator that there's saved data
+    console.log('✅ Kaydedilmiş rapor verisi bulundu');
+  }
+});
+</script>
+</body>
+</html>

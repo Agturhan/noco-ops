@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rapor Görüntüleyici - Noco Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg-primary: #E9E2D0;
+  --bg-card: #F2EBD8;
+  --text-primary: #3D4D52;
+  --text-secondary: #6B7B80;
+  --accent-blue: #329FF5;
+  --accent-green: #00F5B0;
+  --accent-yellow: #F6D73C;
+  --border: rgba(61, 77, 82, 0.1);
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+body.dark {
+  --bg-primary: #0E1113;
+  --bg-card: #1A1F23;
+  --text-primary: #E9E2D0;
+  --text-secondary: #A8A29E;
+  --border: rgba(233, 226, 208, 0.1);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  padding: 24px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  z-index: 100;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-blue);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo svg {
+  height: 48px;
+  width: auto;
+}
+
+h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 48px;
+  line-height: 1.6;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 40px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow);
+  transition: background 0.3s ease;
+}
+
+.section-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.steps {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.step {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.step:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--accent-blue);
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  padding-top: 4px;
+}
+
+.step-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.step-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+textarea {
+  width: 100%;
+  min-height: 320px;
+  padding: 20px;
+  background: var(--bg-primary);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  resize: vertical;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  transition: all 0.2s;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  background: var(--bg-card);
+}
+
+textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1;
+  min-width: 200px;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--accent-blue);
+  color: white;
+  box-shadow: 0 4px 12px rgba(50, 159, 245, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(50, 159, 245, 0.4);
+}
+
+.btn-success {
+  background: var(--accent-green);
+  color: #0E1113;
+  box-shadow: 0 4px 12px rgba(0, 245, 176, 0.3);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 245, 176, 0.4);
+}
+
+.btn-secondary {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2px solid var(--border);
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card);
+  transform: translateY(-1px);
+}
+
+.info-box {
+  background: var(--accent-yellow);
+  color: #0E1113;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  align-items: start;
+  gap: 12px;
+}
+
+.info-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.saved-data-info {
+  background: var(--bg-primary);
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.saved-data-info strong {
+  color: var(--text-primary);
+}
+
+.footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.footer-logo {
+  height: 32px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .buttons {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    min-width: auto;
+  }
+
+  textarea {
+    min-height: 240px;
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+
+<div class="container">
+  <div class="logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 364 121.55">
+      <g>
+        <path fill="#F6D73C" d="M82.98,99.24l-41.49-39.81L0,99.24V17.97h41.49c22.92,0,41.49,18.58,41.49,41.5v39.77Z"/>
+        <path fill="#00F5B0" d="M229.27,59.47l33.96,29.34c-16.1,16.09-47.22,16.09-63.32,0-16.1-16.25-16.1-42.43,0-58.68,16.1-16.09,47.22-16.09,63.32,0l-33.96,29.34s0,0,0,0Z"/>
+        <path fill="#329FF5" d="M135.41,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M135.95,64.61c-3.42.43-6.3-2.44-5.86-5.86.29-2.33,2.17-4.21,4.5-4.5,3.42-.43,6.29,2.44,5.86,5.86-.29,2.33-2.17,4.2-4.5,4.5"/>
+        <path fill="#FF4242" d="M311.71,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M311.59,64.65c-2.89,0-5.23-2.34-5.23-5.22s2.34-5.22,5.23-5.22,5.23,2.34,5.23,5.22-2.34,5.22-5.23,5.22"/>
+      </g>
+    </svg>
+  </div>
+
+  <h1>📊 Rapor Görüntüleyici</h1>
+  <p class="subtitle">JSON verilerinizi yapıştırın ve raporunuzu anında görüntüleyin.<br>Sunucu gerektirmez, tamamen tarayıcınızda çalışır.</p>
+
+  <div class="card">
+    <h2 class="section-title">Nasıl Kullanılır?</h2>
+    
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">data-editor.html dosyasını açın</div>
+          <div class="step-desc">Form üzerinden tüm rapor bilgilerinizi girin</div>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">"JSON Oluştur" butonuna tıklayın</div>
+          <div class="step-desc">Formunuz otomatik olarak JSON formatına dönüştürülür</div>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">Oluşan JSON kodunu kopyalayın</div>
+          <div class="step-desc">Tüm JSON kodunu seçip kopyalayın (Ctrl/Cmd + C)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <div class="step-title">Aşağıdaki alana yapıştırın</div>
+          <div class="step-desc">JSON kodunu text alanına yapıştırın ve "Raporu Göster" butonuna tıklayın</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <span class="info-icon">💡</span>
+      <div>
+        <strong>İpucu:</strong> JSON kodunuz tarayıcınıza kaydedilir. Bir sonraki sefere bu sayfayı açtığınızda verileriniz burada hazır olacak.
+      </div>
+    </div>
+
+    <textarea id="jsonInput" placeholder='JSON kodunuzu buraya yapıştırın...
+
+Örnek:
+{
+  "brand": {
+    "name": "Müşteri Adı",
+    "period": "Kasım 2025"
+  },
+  "summary": {
+    "followers": 18834,
+    "reach": 96450,
+    ...
+  }
+}'></textarea>
+
+    <div class="buttons">
+      <button class="btn btn-success" onclick="showReport()">
+        <span>👁️</span>
+        Raporu Göster
+      </button>
+      <button class="btn btn-secondary" onclick="exportCSV()">
+        <span>📊</span>
+        CSV İndir
+      </button>
+      <button class="btn btn-secondary" onclick="pasteJSON()">
+        <span>📋</span>
+        Yapıştır
+      </button>
+      <button class="btn btn-secondary" onclick="clearData()">
+        <span>🗑️</span>
+        Temizle
+      </button>
+      <a href="data-editor.html" class="btn btn-primary">
+        <span>✏️</span>
+        Editöre Git
+      </a>
+    </div>
+
+    <div class="saved-data-info" id="savedInfo" style="display: none;">
+      <strong>✅ Kaydedildi:</strong> Verileriniz tarayıcınızda saklanıyor
+    </div>
+  </div>
+
+  <footer class="footer">
+    <svg class="footer-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 364 121.55">
+      <g>
+        <path fill="currentColor" opacity="0.6" d="M82.98,99.24l-41.49-39.81L0,99.24V17.97h41.49c22.92,0,41.49,18.58,41.49,41.5v39.77Z"/>
+        <path fill="currentColor" opacity="0.6" d="M229.27,59.47l33.96,29.34c-16.1,16.09-47.22,16.09-63.32,0-16.1-16.25-16.1-42.43,0-58.68,16.1-16.09,47.22-16.09,63.32,0l-33.96,29.34s0,0,0,0Z"/>
+        <path fill="currentColor" opacity="0.6" d="M135.41,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M135.95,64.61c-3.42.43-6.3-2.44-5.86-5.86.29-2.33,2.17-4.21,4.5-4.5,3.42-.43,6.29,2.44,5.86,5.86-.29,2.33-2.17,4.2-4.5,4.5"/>
+        <path fill="currentColor" opacity="0.6" d="M311.71,17.99c-22.93,0-41.51,18.57-41.51,41.49s18.59,41.49,41.51,41.49,41.51-18.57,41.51-41.49-18.59-41.49-41.51-41.49M311.59,64.65c-2.89,0-5.23-2.34-5.23-5.22s2.34-5.22,5.23-5.22,5.23,2.34,5.23,5.22-2.34,5.22-5.23,5.22"/>
+      </g>
+    </svg>
+    <div>NOCO CREATIVE DIGITAL STUDIOS</div>
+    <div style="opacity: 0.5; margin-top: 4px;">Rapor Sistemi v2.0 - Server-less Edition</div>
+  </footer>
+</div>
+
+<script>
+// Theme management
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+}
+
+// Load theme on start
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+  document.body.classList.add('dark');
+}
+
+// Show report
+function showReport() {
+  const jsonText = document.getElementById('jsonInput').value.trim();
+  
+  if (!jsonText) {
+    alert('⚠️ Lütfen JSON kodunu yapıştırın!');
+    return;
+  }
+  
+  try {
+    // Validate JSON
+    const data = JSON.parse(jsonText);
+    
+    // Save to localStorage
+    localStorage.setItem('report_data', jsonText);
+    
+    // Show success message
+    const savedInfo = document.getElementById('savedInfo');
+    savedInfo.style.display = 'block';
+    setTimeout(() => {
+      savedInfo.style.display = 'none';
+    }, 3000);
+    
+    // Open report in new tab
+    window.open('template/onepage.html', '_blank');
+    
+  } catch (error) {
+    alert('❌ Geçersiz JSON formatı!\n\n' + error.message + '\n\nLütfen JSON kodunu kontrol edin.\n\nÖrnek: data-editor.html dosyasından "JSON Oluştur" ile doğru format oluşturabilirsiniz.');
+  }
+}
+
+// Paste JSON from clipboard
+function pasteJSON() {
+  navigator.clipboard.readText().then(function(text) {
+    document.getElementById('jsonInput').value = text;
+    alert('✅ Panodaki veri yapıştırıldı!');
+  }).catch(function(err) {
+    alert('❌ Pano erişimi reddedildi. Lütfen manuel olarak yapıştırın (Ctrl/Cmd + V)');
+    console.error('Clipboard error:', err);
+  });
+}
+
+// Clear data
+function clearData() {
+  if (confirm('Tüm veriler silinecek. Emin misiniz?')) {
+    document.getElementById('jsonInput').value = '';
+    localStorage.removeItem('report_data');
+    alert('✅ Veriler temizlendi');
+  }
+}
+
+// CSV Export fonksiyonu
+function exportCSV() {
+  const jsonText = document.getElementById('jsonInput').value.trim();
+  
+  if (!jsonText) {
+    alert('⚠️ Lütfen önce JSON kodunu yapıştırın!');
+    return;
+  }
+  
+  try {
+    const data = JSON.parse(jsonText);
+    let csvContent = '';
+    
+    // Başlık
+    csvContent += '=== SOSYAL MEDYA RAPORU ===\n';
+    csvContent += 'Marka,' + (data.brand.name || '') + '\n';
+    csvContent += 'Dönem,' + (data.brand.period || '') + '\n';
+    csvContent += '\n';
+    
+    // Özet Metrikler
+    csvContent += '=== ÖZET METRİKLER ===\n';
+    csvContent += 'Metrik,Değer,Değişim (%)\n';
+    csvContent += 'Takipçi,' + (data.summary.followers || 0) + ',' + (data.summary.followers_change || 0) + '%\n';
+    csvContent += 'Erişilen Hesap,' + (data.summary.reach || 0) + ',' + (data.summary.reach_change || 0) + '%\n';
+    csvContent += 'Görüntülemeler,' + (data.summary.impressions || 0) + ',' + (data.summary.impressions_change || data.summary.impressions_ads_percent || 0) + '%\n';
+    csvContent += 'Etkileşim Oranı,' + ((data.summary.eng_rate || 0) > 0 ? data.summary.eng_rate : 0) + '%,' + (data.summary.engagement_change || 0) + '%\n';
+    if (data.summary.impressions_ads_percent) {
+      csvContent += '% Reklamdan,' + data.summary.impressions_ads_percent + '%\n';
+    }
+    csvContent += '\n';
+    
+    // Profil Hareketleri
+    if (data.profile_actions) {
+      csvContent += '=== PROFİL HAREKETLERİ ===\n';
+      csvContent += 'Metrik,Değer\n';
+      csvContent += 'Profil Ziyaretleri,' + (data.profile_actions.profile_visits || 0) + '\n';
+      csvContent += 'Harici Bağlantılara Dokunmalar,' + (data.profile_actions.external_link_taps || 0) + '\n';
+      csvContent += 'İş Adresine Dokunmalar,' + (data.profile_actions.address_taps || 0) + '\n';
+      csvContent += '\n';
+    }
+    
+    // İçerik Dağılımı
+    if (data.content_mix && data.content_mix.length > 0) {
+      csvContent += '=== İÇERİK DAĞILIMI ===\n';
+      csvContent += 'İçerik Tipi,Yüzde (%)\n';
+      data.content_mix.forEach(item => {
+        csvContent += item.name + ',' + item.percent + '%\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Büyüme Trendi - Erişim
+    if (data.growth_trend && data.growth_trend.reach && data.growth_trend.reach.length > 0) {
+      csvContent += '=== BÜYÜME TRENDİ - ERİŞİLEN HESAP ===\n';
+      csvContent += 'Dönem,Erişilen Hesap\n';
+      data.growth_trend.reach.forEach(item => {
+        csvContent += item.period + ',' + item.value + '\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Büyüme Trendi - Görüntüleme
+    if (data.growth_trend && data.growth_trend.impressions && data.growth_trend.impressions.length > 0) {
+      csvContent += '=== BÜYÜME TRENDİ - GÖRÜNTÜLEMELER ===\n';
+      csvContent += 'Dönem,Görüntüleme\n';
+      data.growth_trend.impressions.forEach(item => {
+        csvContent += item.period + ',' + item.value + '\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // En İyi İçerikler
+    if (data.top_contents && data.top_contents.length > 0) {
+      csvContent += '=== EN İYİ İÇERİKLER ===\n';
+      csvContent += 'Başlık,Tür,Erişim,Etkileşim,Oran (%)\n';
+      data.top_contents.forEach(content => {
+        csvContent += '"' + content.title + '",' + content.type + ',' + content.reach + ',' + content.eng + ',' + content.rate + '%\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Kampanyalar
+    if (data.campaigns && data.campaigns.length > 0) {
+      csvContent += '=== KAMPANYALAR ===\n';
+      csvContent += 'Kampanya Adı,Amaç,Bütçe (₺),Metrik 1,Metrik 1 Değer,Metrik 2,Metrik 2 Değer\n';
+      data.campaigns.forEach(campaign => {
+        csvContent += '"' + campaign.name + '",' + campaign.objective + ',' + campaign.spend + ',';
+        csvContent += '"' + (campaign.metric1.label || '') + '",' + (campaign.metric1.value || 0) + ',';
+        csvContent += '"' + (campaign.metric2.label || '') + '",' + (campaign.metric2.value || 0) + '\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Stratejiler
+    if (data.strategies && data.strategies.length > 0) {
+      csvContent += '=== STRATEJİLER ===\n';
+      data.strategies.forEach(strategy => {
+        csvContent += '"' + strategy + '"\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Öneriler
+    if (data.recommendations && data.recommendations.length > 0) {
+      csvContent += '=== ÖNERİLER ===\n';
+      data.recommendations.forEach(rec => {
+        csvContent += '"' + rec + '"\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Teslim Edilen İçerikler - Reels
+    if (data.deliverables && data.deliverables.reels && data.deliverables.reels.length > 0) {
+      csvContent += '=== PAYLAŞILAN REELS ===\n';
+      data.deliverables.reels.forEach(reel => {
+        csvContent += '"' + reel + '"\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Teslim Edilen İçerikler - Tasarımlar
+    if (data.deliverables && data.deliverables.designs && data.deliverables.designs.length > 0) {
+      csvContent += '=== YAPILAN TASARIMLAR ===\n';
+      data.deliverables.designs.forEach(design => {
+        csvContent += '"' + design + '"\n';
+      });
+      csvContent += '\n';
+    }
+    
+    // Hizmet Bedeli
+    csvContent += '=== HİZMET BEDELİ ===\n';
+    csvContent += 'Tutar,' + (data.service_fee.amount || 0) + ' ' + (data.service_fee.currency || 'TRY') + '\n';
+    
+    // CSV dosyasını indir
+    const blob = new Blob(["\ufeff" + csvContent], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const brandName = (data.brand.name || 'Rapor').replace(/\s+/g, '-');
+    const date = new Date().toISOString().split('T')[0];
+    a.download = brandName + '-Rapor-' + date + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ CSV dosyası indirildi!');
+    
+  } catch (error) {
+    alert('❌ Geçersiz JSON formatı!\n\n' + error.message);
+  }
+}
+
+// Load saved data on page load
+window.addEventListener('load', () => {
+  const savedData = localStorage.getItem('report_data');
+  if (savedData) {
+    document.getElementById('jsonInput').value = savedData;
+    document.getElementById('savedInfo').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

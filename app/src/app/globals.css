@@ -1,0 +1,338 @@
+/* Google Fonts - Must be first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/components.css";
+
+/* 
+ * NOCO Creative Operations System
+ * Global Styles
+ */
+
+:root {
+  --background: #F8FAFC;
+  --foreground: #111827;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Inter', sans-serif;
+
+  /* React Bits Animations */
+  --animate-blur-in: blur-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  --animate-shine: shine 5s linear infinite;
+  --animate-gradient: gradient 8s linear infinite;
+  --animate-star-movement-bottom: star-movement-bottom linear infinite alternate;
+  --animate-star-movement-top: star-movement-top linear infinite alternate;
+
+  @keyframes blur-in {
+    0% {
+      opacity: 0;
+      filter: blur(20px);
+      transform: translateY(-20px);
+    }
+
+    100% {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shine {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes star-movement-bottom {
+    0% {
+      transform: translate(0%, 0%);
+      opacity: 1;
+    }
+
+    100% {
+      transform: translate(-100%, 0%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes star-movement-top {
+    0% {
+      transform: translate(0%, 0%);
+      opacity: 1;
+    }
+
+    100% {
+      transform: translate(100%, 0%);
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111827;
+    --foreground: #E5E7EB;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-sub-ink);
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(50, 159, 245, 0.2);
+  color: var(--color-ink);
+}
+
+/* ===== RESPONSIVE GRID UTILITIES ===== */
+.dashboard-grid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.dashboard-grid-2-1 {
+  grid-template-columns: 2fr 1fr;
+}
+
+.dashboard-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.dashboard-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Quick actions - horizontal scroll on mobile */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+/* Header row */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .dashboard-grid-2-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+
+  .dashboard-grid-2-1,
+  .dashboard-grid-2,
+  .dashboard-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-1);
+  }
+
+  .quick-actions>* {
+    flex-shrink: 0;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Takvim mobil - hücreler daha kompakt */
+  .calendar-grid>div {
+    min-height: 60px !important;
+    padding: 4px !important;
+  }
+
+  .calendar-grid>div span {
+    font-size: 8px !important;
+  }
+}
+
+/* ===== TAKVIM RESPONSIVE ===== */
+/* Calendar Layout */
+.calendar-layout {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: calc(100vh - 80px);
+}
+
+@media (min-width: 1280px) {
+  .calendar-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 1024px) {
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== FİYAT LİSTESİ RESPONSIVE ===== */
+.price-list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+@media (max-width: 900px) {
+  .price-list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .price-list-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== PRINT STYLES (PDF Export) ===== */
+@media print {
+
+  /* Hide navigation and sidebar */
+  nav,
+  aside,
+  .sidebar,
+  .no-print,
+  header:not(.print-header),
+  .dashboard-header,
+  button:not(.print-visible) {
+    display: none !important;
+  }
+
+  /* Reset page layout */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    margin: 0;
+    padding: 20px;
+  }
+
+  /* Modal takes full page */
+  .modal-overlay {
+    position: relative !important;
+    background: transparent !important;
+  }
+
+  .modal-content {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide modal footer buttons */
+  .modal-footer {
+    display: none !important;
+  }
+
+  /* Table clean styling */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 10pt;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  table th {
+    background: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Links as text */
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Social Media Monthly Report Schema",
+  "type": "object",
+  "required": ["brand", "summary", "content_mix", "top_contents"],
+  "properties": {
+    "brand": {
+      "type": "object",
+      "required": ["name", "period"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Brand or client name"
+        },
+        "period": {
+          "type": "string",
+          "description": "Report period (e.g., 'Kasım 2025')"
+        },
+        "logo": {
+          "type": "string",
+          "description": "Optional base64 logo data URI"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["followers", "reach", "eng_rate", "content_count"],
+      "properties": {
+        "followers": {
+          "type": "number",
+          "description": "Total followers count"
+        },
+        "reach": {
+          "type": "number",
+          "description": "Total reach for the period"
+        },
+        "eng_rate": {
+          "type": "number",
+          "description": "Engagement rate percentage"
+        },
+        "content_count": {
+          "type": "number",
+          "description": "Number of posts in period"
+        },
+        "followers_change": {
+          "type": "number",
+          "description": "Followers growth percentage"
+        },
+        "reach_change": {
+          "type": "number",
+          "description": "Reach change percentage"
+        },
+        "engagement_change": {
+          "type": "number",
+          "description": "Engagement change percentage"
+        },
+        "content_change": {
+          "type": "number",
+          "description": "Content count change"
+        }
+      }
+    },
+    "content_mix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "percent"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Content type name"
+          },
+          "percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percentage of total content"
+          }
+        }
+      }
+    },
+    "growth_trend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["week", "followers"],
+        "properties": {
+          "week": {
+            "type": "string",
+            "description": "Week or period label"
+          },
+          "followers": {
+            "type": "number",
+            "description": "Follower count for that period"
+          }
+        }
+      }
+    },
+    "engagement_dist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "top_contents": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["title", "type", "reach", "eng", "rate"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Content title or description"
+          },
+          "type": {
+            "type": "string",
+            "description": "Content type (Reel, Carousel, etc.)"
+          },
+          "reach": {
+            "type": "number",
+            "description": "Reach count"
+          },
+          "eng": {
+            "type": "number",
+            "description": "Engagement count"
+          },
+          "rate": {
+            "type": "number",
+            "description": "Engagement rate percentage"
+          }
+        }
+      }
+    },
+    "campaigns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "reach", "eng", "rate"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Campaign name"
+          },
+          "reach": {
+            "type": "number",
+            "description": "Campaign reach"
+          },
+          "eng": {
+            "type": "number",
+            "description": "Campaign engagement"
+          },
+          "rate": {
+            "type": "number",
+            "description": "Engagement rate percentage"
+          }
+        }
+      }
+    },
+    "insights": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Key insight or observation"
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Recommended action item"
+      }
+    },
+    "deliverables": {
+      "type": "object",
+      "properties": {
+        "reels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Reel title or description"
+          }
+        },
+        "designs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Design work description"
+          }
+        }
+      }
+    },
+    "service_fee": {
+      "type": "object",
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Service fee amount"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code (e.g., 'TRY')"
+        }
+      }
+    },
+    "bank_info": {
+      "type": "object",
+      "properties": {
+        "account_name": {
+          "type": "string",
+          "description": "Account holder name"
+        },
+        "bank_name": {
+          "type": "string",
+          "description": "Bank name"
+        },
+        "iban": {
+          "type": "string",
+          "description": "IBAN number"
+        }
+      }
+    }
+  }
+}

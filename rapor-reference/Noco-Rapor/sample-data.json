@@ -1,0 +1,157 @@
+{
+  "brand": {
+    "name": "Zoks Stuido",
+    "period": "1 Eylül - 1 Kasım | 2025"
+  },
+  "summary": {
+    "followers": 18834,
+    "followers_change": 2.6,
+    "reach": 96450,
+    "reach_change": -35.2,
+    "impressions": 399764,
+    "impressions_ads_percent": 30.4,
+    "engagement_change": 0
+  },
+  "profile_actions": {
+    "profile_visits": 9919,
+    "external_link_taps": 769,
+    "address_taps": 100
+  },
+  "content_mix": [
+    {
+      "name": "Reels",
+      "percent": 84
+    },
+    {
+      "name": "Hikaye",
+      "percent": 8
+    },
+    {
+      "name": "Tasarım",
+      "percent": 6
+    }
+  ],
+  "growth_trend": {
+    "reach": [
+      {
+        "period": "Eylül - Ekim",
+        "value": 140649
+      },
+      {
+        "period": "Ekim - Kasım ",
+        "value": 96459
+      }
+    ],
+    "impressions": [
+      {
+        "period": "Eylül - Ekim",
+        "value": 389764
+      },
+      {
+        "period": "Ekim - Kasım ",
+        "value": 399764
+      }
+    ]
+  },
+  "top_contents": [
+    {
+      "title": "Ayyüzlüm Tanıtım ",
+      "type": "Tasarım",
+      "reach": 16889,
+      "eng": 49,
+      "rate": 0.3
+    },
+    {
+      "title": "Ayyüzlüm Kaçış",
+      "type": "Reel",
+      "reach": 9113,
+      "eng": 307,
+      "rate": 3.4
+    },
+    {
+      "title": "Fingersnap",
+      "type": "Reel",
+      "reach": 5695,
+      "eng": 182,
+      "rate": 3.2
+    }
+  ],
+  "campaigns": [
+    {
+      "name": "Yeni İş İlanı",
+      "objective": "messages",
+      "spend": 625,
+      "metric1": {
+        "label": "Mesaj",
+        "value": 170
+      },
+      "metric2": {
+        "label": "Mesaj Başı Maliyet (₺)",
+        "value": 11.6
+      }
+    },
+    {
+      "name": "Profil Yönlendirme ",
+      "objective": "traffic",
+      "spend": 3313,
+      "metric1": {
+        "label": "Tıklama",
+        "value": 4453
+      },
+      "metric2": {
+        "label": "CPC (₺)",
+        "value": 0.74
+      }
+    },
+    {
+      "name": "Workshop Mesajlaşma",
+      "objective": "messages",
+      "spend": 3286,
+      "metric1": {
+        "label": "Mesaj",
+        "value": 181
+      },
+      "metric2": {
+        "label": "Mesaj Başı Maliyet (₺)",
+        "value": 18.16
+      }
+    },
+    {
+      "name": "Ürünler | Katalog ",
+      "objective": "messages",
+      "spend": 39,
+      "metric1": {
+        "label": "Mesaj",
+        "value": 0
+      },
+      "metric2": {
+        "label": "Mesaj Başı Maliyet (₺)",
+        "value": 0
+      }
+    }
+  ],
+  "strategies": [
+    "Çekimler Yapılırken, ürünlere ve workshop'a odaklı yapıldı.",
+    "Devam edildiği takdirde, Store'a yönlendirmeli ",
+    "açıklama yazımları ve kurguda görüntü ekleme şeklinde",
+    "satışa dönmesi için planlama yapılacak."
+  ],
+  "recommendations": [
+    "Online Satış Kanallarının açılması.",
+    "Dükkandan ve Özellikle Workshop günleri ",
+    "Studio kısmından bolca story paylaşımı."
+  ],
+  "deliverables": {
+    "reels": [],
+    "designs": []
+  },
+  "service_fee": {
+    "amount": 40000,
+    "currency": "TRY"
+  },
+  "bank_info": {
+    "account_name": "NOCO CREATIVE DIGITAL STUDIOS",
+    "bank_name": "Garanti BBVA",
+    "iban": "TR73 0006 2000 1400 0006 2849 86"
+  }
+}

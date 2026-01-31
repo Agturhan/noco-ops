@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>Test - Harici Script</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body style="font-family: Arial; padding: 40px; background: #f5f5f5;">
+<h1 id="test">Yukleniyor...</h1>
+<div id="info" style="margin-top: 20px; padding: 20px; background: white; border-radius: 8px;"></div>
+
+<script src="onepage-script.js"></script>
+<script>
+// Test sonuclari
+const testEl = document.getElementById('test');
+const infoEl = document.getElementById('info');
+
+if (window.__FALLBACK_DATA__) {
+  testEl.textContent = '✅ JavaScript Calisiyor!';
+  testEl.style.color = 'green';
+  
+  infoEl.innerHTML = '<h3>Test Sonuclari:</h3>' +
+    '<p>✅ Fallback Data: VAR</p>' +
+    '<p>✅ Marka Adi: ' + window.__FALLBACK_DATA__.brand.name + '</p>' +
+    '<p>✅ Takipci: ' + window.__FALLBACK_DATA__.summary.followers + '</p>' +
+    '<p>✅ loadReportData: ' + (typeof loadReportData === 'function' ? 'VAR' : 'YOK') + '</p>' +
+    '<p>✅ renderReport: ' + (typeof renderReport === 'function' ? 'VAR' : 'YOK') + '</p>';
+} else {
+  testEl.textContent = '❌ JavaScript Hatasi!';
+  testEl.style.color = 'red';
+  infoEl.innerHTML = '<p>Fallback data yuklenemedi!</p>';
+}
+</script>
+</body>
+</html>
