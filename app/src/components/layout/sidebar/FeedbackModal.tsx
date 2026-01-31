@@ -14,14 +14,15 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [feedbackUrl, setFeedbackUrl] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [user, setUser] = useState<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [user, setUser] = useState<Record<string, any> | null>(null);
 
     useEffect(() => {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
             try {
                 setUser(JSON.parse(stored));
-            } catch (e) {
+            } catch {
                 console.error('User data error');
             }
         }
@@ -36,7 +37,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             await createFeedback({
                 userId: user.id || 'anonymous',
                 userName: user.name || 'Anonymous',
-                type: feedbackType as any,
+                type: feedbackType as 'BUG' | 'FEATURE' | 'UX' | 'OTHER',
                 message: feedbackMessage,
                 url: feedbackUrl,
             });

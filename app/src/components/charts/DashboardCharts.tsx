@@ -96,6 +96,8 @@ interface ProjectStatusData {
     name: string;
     value: number;
     color?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any;
 }
 
 interface ProjectStatusChartProps {
@@ -108,7 +110,7 @@ export function ProjectStatusChart({ data, height = 250 }: ProjectStatusChartPro
         <ResponsiveContainer width="100%" height={height}>
             <PieChart>
                 <Pie
-                    data={data as any}
+                    data={data}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
@@ -294,7 +296,7 @@ export function Sparkline({ data, color = CHART_COLORS.primary, height = 40 }: S
     );
 }
 
-export default {
+const DashboardCharts = {
     RevenueChart,
     ProjectStatusChart,
     TaskCompletionChart,
@@ -302,3 +304,5 @@ export default {
     StudioOccupancyChart,
     Sparkline,
 };
+
+export default DashboardCharts;

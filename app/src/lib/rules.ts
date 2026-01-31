@@ -1,5 +1,5 @@
 import { Role } from '@prisma/client';
-import { DeliverableContext } from './machines/deliverableMachine';
+
 
 /**
  * Kural Değerlendirme Fonksiyonları
@@ -127,7 +127,7 @@ export function canPerformAction(
     action: string,
     ctx: ActionPermissionContext
 ): boolean {
-    const { userRole, entityState, entityType } = ctx;
+    const { userRole, entityState } = ctx;
 
     // Aksiyon-Rol-Durum matrisi
     const permissions: Record<string, { roles: Role[]; states: string[] }> = {

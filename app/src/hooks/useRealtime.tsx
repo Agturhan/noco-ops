@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient, RealtimeChannel } from '@supabase/supabase-js';
@@ -230,25 +231,25 @@ export function usePresence(roomName: string, userId: string, userName: string) 
 // ===== CONNECTION STATUS INDICATOR =====
 export function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
     return (
-        <div style= {{
-        display: 'inline-flex',
+        <div style={{
+            display: 'inline-flex',
             alignItems: 'center',
-                gap: 6,
-                    fontSize: 'var(--text-caption)',
-                        color: isConnected ? 'var(--color-success)' : 'var(--color-muted)',
+            gap: 6,
+            fontSize: 'var(--text-caption)',
+            color: isConnected ? 'var(--color-success)' : 'var(--color-muted)',
         }
-}>
-    <span style={
-        {
-            width: 8,
-                height: 8,
+        }>
+            <span style={
+                {
+                    width: 8,
+                    height: 8,
                     borderRadius: '50%',
-                        backgroundColor: isConnected ? '#10B981' : '#6B7B80',
-                            animation: isConnected ? 'pulse 2s infinite' : 'none',
-            }
-} />
-{ isConnected ? 'Canlı' : 'Bağlantı kesildi' }
-</div>
+                    backgroundColor: isConnected ? '#10B981' : '#6B7B80',
+                    animation: isConnected ? 'pulse 2s infinite' : 'none',
+                }
+            } />
+            {isConnected ? 'Canlı' : 'Bağlantı kesildi'}
+        </div>
     );
 }
 

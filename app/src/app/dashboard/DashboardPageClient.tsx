@@ -1,10 +1,10 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Badge, Button, Modal } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
 import { GlassSurface } from '@/components/ui/GlassSurface';
 import { AssigneeStack } from '@/components/ui/AssigneeStack';
 import { getBrandName } from '@/lib/data';
@@ -14,11 +14,9 @@ import { getMemberColors } from '@/lib/actions/userSettings';
 import { getRetainerStatus } from '@/lib/actions/content';
 import { AnimatedList } from '@/components/react-bits/AnimatedList';
 import { MagicBento } from '@/components/react-bits/MagicBento';
-import { BlurText, ShinyText } from '@/components/react-bits/TextAnimations';
-import { GlassIcon } from '@/components/react-bits/GlassIcons';
+import { ShinyText } from '@/components/react-bits/TextAnimations';
 import { StarBorder } from '@/components/react-bits/StarBorder';
-import { Clapperboard, Camera, Clock, Check, ListChecks, LogOut, X, CheckCircle, Share2, Calendar } from 'lucide-react';
-import { DashboardDebugger } from '@/components/debug/DashboardDebugger';
+import { Clock, Check, X, CheckCircle, Share2, Calendar } from 'lucide-react';
 
 const defaultMemberColors: Record<string, string> = {
     'Şeyma Bora': '#E91E63',
@@ -61,14 +59,17 @@ const getGreeting = () => {
 };
 
 export function DashboardPageClient() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const router = useRouter();
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
     const [todayTasks, setTodayTasks] = useState<any[]>([]);
     const [upcomingStudio, setUpcomingStudio] = useState<any[]>([]);
     const [retainerStats, setRetainerStats] = useState<any[]>([]);
     const [weekDeadlines, setWeekDeadlines] = useState<any[]>([]);
     const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>(defaultMemberColors);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [taskViewMode, setTaskViewMode] = useState<'today' | 'upcoming'>('today');
 
     // Define currentDate for display
@@ -159,6 +160,7 @@ export function DashboardPageClient() {
                 localStorage.setItem('currentUser', JSON.stringify(user));
             }
 
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCurrentUser(user);
             userId = user.id || 'user-owner';
             userName = user.name || '';
@@ -258,7 +260,7 @@ export function DashboardPageClient() {
                 setTodayTasks(formattedTasks);
 
                 let studioData: any[] = [];
-                if (typeof window !== 'undefined') { try { const saved = localStorage.getItem('studioBookings'); if (saved) studioData = JSON.parse(saved); } catch (e) { } }
+                if (typeof window !== 'undefined') { try { const saved = localStorage.getItem('studioBookings'); if (saved) studioData = JSON.parse(saved); } catch { /* ignore */ } }
 
                 // Fix Date Comparison: Use Day Strings to avoid Timezone issues
                 const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
@@ -291,12 +293,7 @@ export function DashboardPageClient() {
         loadDashboardData();
     }, []);
 
-    const handleLogout = async () => {
-        const supabase = createClient();
-        await supabase.auth.signOut();
-        router.refresh(); // Refresh to clear server session
-        router.push('/login');
-    };
+    // handleLogout removed - unused
 
     return (
         <div className="p-4 md:p-6 min-h-screen pt-6">

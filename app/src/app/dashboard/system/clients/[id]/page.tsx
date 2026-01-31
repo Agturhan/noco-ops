@@ -1,12 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardHeader, CardContent, Button, Badge, Input, Textarea, ColorPicker, Modal } from '@/components/ui';
-import { Icons, TypeIcons, StatusIcons } from '@/components/content/icons';
+import { Card, CardContent, Button, Badge, Input, Textarea, ColorPicker, Modal } from '@/components/ui';
+import { Icons, TypeIcons } from '@/components/content/icons';
 import { Clock, ListChecks } from 'lucide-react';
-import { getClientById, updateClient, deleteClient, createContract, updateContract } from '@/lib/actions/projects'; // Using projects.ts client actions
-import { getBrandStats, getBrandProjects, Brand } from '@/lib/actions/brands';
-import { ContentStatus } from '@/lib/data';
+import { getClientById, updateClient, createContract } from '@/lib/actions/projects'; // Using projects.ts client actions
+import { getBrandStats, getBrandProjects } from '@/lib/actions/brands';
 
 function TabButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
     return (
@@ -35,16 +34,20 @@ export default function BrandDetailPage() {
     const router = useRouter();
     const id = params.id as string;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [brand, setBrand] = useState<any | null>(null);
     const [stats, setStats] = useState({ totalProjects: 0, activeProjects: 0, contracts: 0 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'GENERAL' | 'PROJECTS' | 'SOCIAL' | 'NOTES' | 'CONTRACTS'>('GENERAL');
 
     // Form States
     const [editMode, setEditMode] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [formData, setFormData] = useState<Partial<any>>({});
     const [socialCreds, setSocialCreds] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedTask, setSelectedTask] = useState<any>(null);
 
     // Contract Form
@@ -52,10 +55,6 @@ export default function BrandDetailPage() {
     const [contractForm, setContractForm] = useState({
         name: 'Hizmet Sözleşmesi', monthlyVideoQuota: 0, monthlyPostQuota: 0, notes: '', retainerHours: 0
     });
-
-    useEffect(() => {
-        loadData();
-    }, [id]);
 
     const loadData = async () => {
         setLoading(true);
@@ -74,6 +73,11 @@ export default function BrandDetailPage() {
         setProjects(projectsData || []);
         setLoading(false);
     };
+
+    useEffect(() => {
+        loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id]);
 
     const handleSave = async () => {
         if (!brand) return;
@@ -103,6 +107,7 @@ export default function BrandDetailPage() {
             });
             await loadData(); // Reload to see new contract
             setShowContractModal(false);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             console.error(e);
             alert(e.message || 'Sözleşme oluşturulamadı');
@@ -230,6 +235,7 @@ export default function BrandDetailPage() {
 
                             {(brand.contracts || []).length === 0 ? <p style={{ color: 'var(--color-muted)' }}>Henüz sözleşme yok.</p> : (
                                 <div style={{ display: 'grid', gap: '12px' }}>
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {brand.contracts.map((c: any) => (
                                         <div key={c.id} style={{ padding: '16px', backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>

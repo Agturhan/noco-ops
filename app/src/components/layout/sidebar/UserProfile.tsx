@@ -11,20 +11,12 @@ interface UserProfileProps {
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({ userRole, onOpenFeedback }) => {
-    const [user, setUser] = useState<any>(null);
-    const { theme, setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const { setTheme, resolvedTheme } = useTheme();
 
     useEffect(() => {
+        // eslint-disable-next-line
         setMounted(true);
-        const stored = localStorage.getItem('currentUser');
-        if (stored) {
-            try {
-                setUser(JSON.parse(stored));
-            } catch (e) {
-                console.error('Kullanıcı verisi okunamadı');
-            }
-        }
     }, []);
 
     // Prevent hydration mismatch

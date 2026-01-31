@@ -4,11 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Card, Button, Input, Modal, Badge } from '@/components/ui';
-import { getBrands, createBrand, deleteBrand, Brand } from '@/lib/actions/brands';
+import { getBrands, createBrand, Brand } from '@/lib/actions/brands';
 import {
     Plus,
     Search,
-    Trash2,
     MoreHorizontal,
     Briefcase,
     Calendar,
@@ -26,16 +25,17 @@ export function SystemClientsPageClient() {
     const [newBrandName, setNewBrandName] = useState('');
     const [creating, setCreating] = useState(false);
 
-    useEffect(() => {
-        loadBrands();
-    }, []);
-
     const loadBrands = async () => {
         setLoading(true);
         const data = await getBrands();
         setBrands(data || []);
         setLoading(false);
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line
+        loadBrands();
+    }, []);
 
     const handleCreate = async () => {
         if (!newBrandName.trim()) return;

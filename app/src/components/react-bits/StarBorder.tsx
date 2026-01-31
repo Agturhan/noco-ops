@@ -7,6 +7,7 @@ type StarBorderProps = {
     speed?: string;
     children?: React.ReactNode;
     style?: CSSProperties;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 };
 

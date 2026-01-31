@@ -1,7 +1,4 @@
 import React from 'react';
-import { GlassSurface } from '@/components/ui/GlassSurface';
-import { Badge } from '@/components/ui/Badge';
-import { Icons, TypeIcons } from '@/components/content/icons';
 import { ContentItem } from '@/app/dashboard/content-production/ContentProductionPageClient';
 import { contentStatuses, getBrandColor, getBrandName } from '@/lib/data';
 import { AssigneeStack } from '@/components/ui/AssigneeStack';
@@ -11,6 +8,7 @@ interface ContentQueuePanelProps {
     contents: ContentItem[];
     selectedId: string | null;
     onSelect: (content: ContentItem) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     activeTeam: any[];
     teamMemberColors: Record<string, string>;
 }
@@ -20,7 +18,8 @@ export function ContentQueuePanel({ contents, selectedId, onSelect, activeTeam, 
     const stats = {
         total: contents.length,
         shot: contents.filter(c => c.status === 'CEKILDI').length,
-        editing: contents.filter(c => c.status === 'KURGULANDI' || (c.status as any) === 'REVİZE').length,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        editing: contents.filter(c => c.status === 'KURGULANIYOR' || (c.status as any) === 'REVİZE').length,
         shared: contents.filter(c => c.status === 'PAYLASILD').length,
         planning: contents.filter(c => c.status === 'PLANLANDI').length,
     };

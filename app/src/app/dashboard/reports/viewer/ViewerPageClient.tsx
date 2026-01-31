@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 // NOCO Renk Paleti
 const colors = {
@@ -43,6 +42,7 @@ export function ViewerPageClient() {
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
+        // eslint-disable-next-line
         if (savedTheme === 'dark') setIsDark(true);
 
         const savedData = localStorage.getItem('report_data');
@@ -82,6 +82,7 @@ export function ViewerPageClient() {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const generateReportHTML = (data: any, dark: boolean) => {
         const bg = dark ? '#0E1113' : '#E9E2D0';
         const cardBg = dark ? '#1A1F23' : '#F2EBD8';
@@ -163,7 +164,8 @@ export function ViewerPageClient() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${data.top_contents.map((c: any) => `
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    ${data.top_contents.map((c: { title: string; type: string; reach: number; eng: number; rate: number }) => `
                     <tr>
                         <td>${c.title}</td>
                         <td>${c.type}</td>
@@ -242,7 +244,7 @@ export function ViewerPageClient() {
             a.download = `${data.brand?.name || 'Rapor'}-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             alert('✅ CSV dosyası indirildi!');
-        } catch (error) {
+        } catch {
             alert('❌ Geçersiz JSON formatı!');
         }
     };

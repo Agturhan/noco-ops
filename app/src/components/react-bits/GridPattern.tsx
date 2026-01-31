@@ -8,6 +8,7 @@ interface GridPatternProps {
     squares?: Array<[x: number, y: number]>;
     strokeDasharray?: string;
     className?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 

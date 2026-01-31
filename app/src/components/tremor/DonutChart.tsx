@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils/className";
 
 interface DonutChartProps {
-    data: any[];
+    data: Record<string, unknown>[];
     category: string;
     index: string;
     colors?: string[];
@@ -49,7 +49,7 @@ export function DonutChart({
                     <Tooltip
                         content={({ active, payload }) => {
                             if (active && payload && payload.length) {
-                                const data = payload[0].payload;
+                                const item = payload[0].payload as Record<string, unknown>;
                                 return (
                                     <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
                                         <div className="flex items-center gap-2 text-sm">
@@ -57,9 +57,9 @@ export function DonutChart({
                                                 className="h-2 w-2 rounded-full"
                                                 style={{ backgroundColor: payload[0].color }}
                                             />
-                                            <span className="text-slate-500">{data[index]}:</span>
+                                            <span className="text-slate-500">{item[index] as string}:</span>
                                             <span className="font-medium text-slate-900">
-                                                {valueFormatter(data[category])}
+                                                {valueFormatter(item[category] as number)}
                                             </span>
                                         </div>
                                     </div>
@@ -75,7 +75,7 @@ export function DonutChart({
                     {data.map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: colors[idx % colors.length] }} />
-                            <span className="text-xs text-slate-500">{item[index]}</span>
+                            <span className="text-xs text-slate-500">{(item as Record<string, unknown>)[index] as string}</span>
                         </div>
                     ))}
                 </div>

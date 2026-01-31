@@ -23,7 +23,9 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
     const [categoryId, setCategoryId] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [accounts, setAccounts] = useState<any[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -77,7 +79,7 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
             } else {
                 error('Hata', result.error || 'Bir hata oluştu.');
             }
-        } catch (e) {
+        } catch {
             error('Hata', 'Beklenmeyen bir hata oluştu.');
         } finally {
             setSubmitting(false);

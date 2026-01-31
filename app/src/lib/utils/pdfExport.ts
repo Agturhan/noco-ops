@@ -13,7 +13,8 @@ export interface PDFExportOptions {
  * Uses a new window with formatted content
  */
 export function exportToPDF(content: string, options: PDFExportOptions): void {
-    const { title, filename = 'document' } = options;
+    const { title, filename } = options;
+
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -26,7 +27,7 @@ export function exportToPDF(content: string, options: PDFExportOptions): void {
         <html lang="tr">
         <head>
             <meta charset="UTF-8">
-            <title>${title}</title>
+            <title>${filename || title}</title>
             <style>
                 * {
                     margin: 0;
@@ -228,7 +229,13 @@ export function generateReportHTML(report: {
     title: string;
     client: string;
     period: string;
-    data: any;
+    data: {
+        totalContent?: number;
+        totalEngagement?: number;
+        growthRate?: string;
+        reach?: number;
+        notes?: string;
+    };
 }): string {
     return `
         <div class="header">

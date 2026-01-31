@@ -2,88 +2,85 @@ import React, { useEffect, useRef } from 'react';
 import { Renderer, Triangle, Program, Mesh } from 'ogl';
 
 type PrismProps = {
-    height?: number;
-    baseWidth?: number;
-    animationType?: 'rotate' | 'hover' | '3drotate';
-    glow?: number;
-    offset?: { x?: number; y?: number };
-    noise?: number;
-    transparent?: boolean;
-    scale?: number;
-    hueShift?: number;
-    colorFrequency?: number;
-    hoverStrength?: number;
-    inertia?: number;
-    bloom?: number;
-    suspendWhenOffscreen?: boolean;
-    timeScale?: number;
+  height?: number;
+  baseWidth?: number;
+  animationType?: 'rotate' | 'hover' | '3drotate';
+  glow?: number;
+  offset?: { x?: number; y?: number };
+  noise?: number;
+  transparent?: boolean;
+  scale?: number;
+  hueShift?: number;
+  colorFrequency?: number;
+  hoverStrength?: number;
+  inertia?: number;
+  bloom?: number;
+  suspendWhenOffscreen?: boolean;
+  timeScale?: number;
 };
 
 const Prism: React.FC<PrismProps> = ({
-    height = 3.5,
-    baseWidth = 5.5,
-    animationType = 'rotate',
-    glow = 1,
-    offset = { x: 0, y: 0 },
-    noise = 0.5,
-    transparent = true,
-    scale = 3.6,
-    hueShift = 0,
-    colorFrequency = 1,
-    hoverStrength = 2,
-    inertia = 0.05,
-    bloom = 1,
-    suspendWhenOffscreen = false,
-    timeScale = 0.5
+  height = 3.5,
+  baseWidth = 5.5,
+  animationType = 'rotate',
+  glow = 1,
+  offset = { x: 0, y: 0 },
+  noise = 0.5,
+  transparent = true,
+  scale = 3.6,
+  hueShift = 0,
+  colorFrequency = 1,
+  bloom = 1,
+  timeScale = 0.5
 }) => {
-    const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-        const H = Math.max(0.001, height);
-        const BW = Math.max(0.001, baseWidth);
-        const BASE_HALF = BW * 0.5;
-        const GLOW = Math.max(0.0, glow);
-        const NOISE = Math.max(0.0, noise);
-        const offX = offset?.x ?? 0;
-        const offY = offset?.y ?? 0;
-        const SAT = transparent ? 1.5 : 1;
-        const SCALE = Math.max(0.001, scale);
-        const HUE = hueShift || 0;
-        const CFREQ = Math.max(0.0, colorFrequency || 1);
-        const BLOOM = Math.max(0.0, bloom || 1);
-        const TS = Math.max(0, timeScale || 1);
+    const H = Math.max(0.001, height);
+    const BW = Math.max(0.001, baseWidth);
+    const BASE_HALF = BW * 0.5;
+    const GLOW = Math.max(0.0, glow);
+    const NOISE = Math.max(0.0, noise);
+    const offX = offset?.x ?? 0;
+    const offY = offset?.y ?? 0;
+    const SAT = transparent ? 1.5 : 1;
+    const SCALE = Math.max(0.001, scale);
+    const HUE = hueShift || 0;
+    const CFREQ = Math.max(0.0, colorFrequency || 1);
+    const BLOOM = Math.max(0.0, bloom || 1);
+    const TS = Math.max(0, timeScale || 1);
 
-        const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const renderer = new Renderer({
-            dpr,
-            alpha: transparent,
-            antialias: false
-        });
-        const gl = renderer.gl;
-        gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
-        gl.disable(gl.BLEND);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const renderer = new Renderer({
+      dpr,
+      alpha: transparent,
+      antialias: false
+    });
+    const gl = renderer.gl;
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.disable(gl.BLEND);
 
-        Object.assign(gl.canvas.style, {
-            position: 'absolute',
-            inset: '0',
-            width: '100%',
-            height: '100%',
-            display: 'block'
-        } as Partial<CSSStyleDeclaration>);
-        container.appendChild(gl.canvas);
+    Object.assign(gl.canvas.style, {
+      position: 'absolute',
+      inset: '0',
+      width: '100%',
+      height: '100%',
+      display: 'block'
+    } as Partial<CSSStyleDeclaration>);
+    container.appendChild(gl.canvas);
 
-        const vertex = /* glsl */ `
+    const vertex = /* glsl */ `
       attribute vec2 position;
       void main() {
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `;
 
-        const fragment = /* glsl */ `
+    const fragment = /* glsl */ `
       precision highp float;
       uniform vec2  iResolution;
       uniform float iTime;
@@ -176,92 +173,92 @@ const Prism: React.FC<PrismProps> = ({
       }
     `;
 
-        const geometry = new Triangle(gl);
-        const iResBuf = new Float32Array(2);
-        const offsetPxBuf = new Float32Array(2);
+    const geometry = new Triangle(gl);
+    const iResBuf = new Float32Array(2);
+    const offsetPxBuf = new Float32Array(2);
 
-        const program = new Program(gl, {
-            vertex,
-            fragment,
-            uniforms: {
-                iResolution: { value: iResBuf },
-                iTime: { value: 0 },
-                uHeight: { value: H },
-                uBaseHalf: { value: BASE_HALF },
-                uUseBaseWobble: { value: 1 },
-                uRot: { value: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]) },
-                uGlow: { value: GLOW },
-                uOffsetPx: { value: offsetPxBuf },
-                uNoise: { value: NOISE },
-                uSaturation: { value: SAT },
-                uScale: { value: SCALE },
-                uHueShift: { value: HUE },
-                uColorFreq: { value: CFREQ },
-                uBloom: { value: BLOOM },
-                uCenterShift: { value: H * 0.25 },
-                uInvBaseHalf: { value: 1 / BASE_HALF },
-                uInvHeight: { value: 1 / H },
-                uMinAxis: { value: Math.min(BASE_HALF, H) },
-                uPxScale: { value: 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE) },
-                uTimeScale: { value: TS }
-            }
-        });
+    const program = new Program(gl, {
+      vertex,
+      fragment,
+      uniforms: {
+        iResolution: { value: iResBuf },
+        iTime: { value: 0 },
+        uHeight: { value: H },
+        uBaseHalf: { value: BASE_HALF },
+        uUseBaseWobble: { value: 1 },
+        uRot: { value: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]) },
+        uGlow: { value: GLOW },
+        uOffsetPx: { value: offsetPxBuf },
+        uNoise: { value: NOISE },
+        uSaturation: { value: SAT },
+        uScale: { value: SCALE },
+        uHueShift: { value: HUE },
+        uColorFreq: { value: CFREQ },
+        uBloom: { value: BLOOM },
+        uCenterShift: { value: H * 0.25 },
+        uInvBaseHalf: { value: 1 / BASE_HALF },
+        uInvHeight: { value: 1 / H },
+        uMinAxis: { value: Math.min(BASE_HALF, H) },
+        uPxScale: { value: 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE) },
+        uTimeScale: { value: TS }
+      }
+    });
 
-        const mesh = new Mesh(gl, { geometry, program });
+    const mesh = new Mesh(gl, { geometry, program });
 
-        const resize = () => {
-            const w = container.clientWidth || 1;
-            const h = container.clientHeight || 1;
-            renderer.setSize(w, h);
-            iResBuf[0] = gl.drawingBufferWidth;
-            iResBuf[1] = gl.drawingBufferHeight;
-            offsetPxBuf[0] = offX * dpr;
-            offsetPxBuf[1] = offY * dpr;
-            program.uniforms.uPxScale.value = 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE);
-        };
+    const resize = () => {
+      const w = container.clientWidth || 1;
+      const h = container.clientHeight || 1;
+      renderer.setSize(w, h);
+      iResBuf[0] = gl.drawingBufferWidth;
+      iResBuf[1] = gl.drawingBufferHeight;
+      offsetPxBuf[0] = offX * dpr;
+      offsetPxBuf[1] = offY * dpr;
+      program.uniforms.uPxScale.value = 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE);
+    };
 
-        const ro = new ResizeObserver(resize);
-        ro.observe(container);
-        resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
+    resize();
 
-        const rotBuf = new Float32Array(9);
-        const setMat3FromEuler = (yawY: number, pitchX: number, rollZ: number, out: Float32Array) => {
-            const cy = Math.cos(yawY), sy = Math.sin(yawY);
-            const cx = Math.cos(pitchX), sx = Math.sin(pitchX);
-            const cz = Math.cos(rollZ), sz = Math.sin(rollZ);
-            out[0] = cy * cz + sy * sx * sz; out[1] = cx * sz; out[2] = -sy * cz + cy * sx * sz;
-            out[3] = -cy * sz + sy * sx * cz; out[4] = cx * cz; out[5] = sy * sz + cy * sx * cz;
-            out[6] = sy * cx; out[7] = -sx; out[8] = cy * cx;
-            return out;
-        };
+    const rotBuf = new Float32Array(9);
+    const setMat3FromEuler = (yawY: number, pitchX: number, rollZ: number, out: Float32Array) => {
+      const cy = Math.cos(yawY), sy = Math.sin(yawY);
+      const cx = Math.cos(pitchX), sx = Math.sin(pitchX);
+      const cz = Math.cos(rollZ), sz = Math.sin(rollZ);
+      out[0] = cy * cz + sy * sx * sz; out[1] = cx * sz; out[2] = -sy * cz + cy * sx * sz;
+      out[3] = -cy * sz + sy * sx * cz; out[4] = cx * cz; out[5] = sy * sz + cy * sx * cz;
+      out[6] = sy * cx; out[7] = -sx; out[8] = cy * cx;
+      return out;
+    };
 
-        let raf = 0;
-        const t0 = performance.now();
-        const render = (t: number) => {
-            const time = (t - t0) * 0.001;
-            program.uniforms.iTime.value = time;
+    let raf = 0;
+    const t0 = performance.now();
+    const render = (t: number) => {
+      const time = (t - t0) * 0.001;
+      program.uniforms.iTime.value = time;
 
-            if (animationType === '3drotate') {
-                const tScaled = time * TS;
-                program.uniforms.uRot.value = setMat3FromEuler(tScaled, Math.sin(tScaled) * 0.6, Math.cos(tScaled) * 0.5, rotBuf);
-            } else {
-                program.uniforms.uRot.value = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
-            }
+      if (animationType === '3drotate') {
+        const tScaled = time * TS;
+        program.uniforms.uRot.value = setMat3FromEuler(tScaled, Math.sin(tScaled) * 0.6, Math.cos(tScaled) * 0.5, rotBuf);
+      } else {
+        program.uniforms.uRot.value = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+      }
 
-            renderer.render({ scene: mesh });
-            raf = requestAnimationFrame(render);
-        };
+      renderer.render({ scene: mesh });
+      raf = requestAnimationFrame(render);
+    };
 
-        raf = requestAnimationFrame(render);
+    raf = requestAnimationFrame(render);
 
-        return () => {
-            cancelAnimationFrame(raf);
-            ro.disconnect();
-            if (gl.canvas.parentElement === container) container.removeChild(gl.canvas);
-        };
-    }, [height, baseWidth, animationType, glow, noise, offset?.x, offset?.y, scale, transparent, hueShift, colorFrequency, timeScale, bloom]);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      if (gl.canvas.parentElement === container) container.removeChild(gl.canvas);
+    };
+  }, [height, baseWidth, animationType, glow, noise, offset?.x, offset?.y, scale, transparent, hueShift, colorFrequency, timeScale, bloom]);
 
-    return <div className="w-full h-full relative" ref={containerRef} />;
+  return <div className="w-full h-full relative" ref={containerRef} />;
 };
 
 export default Prism;

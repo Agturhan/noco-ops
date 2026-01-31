@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal } from '@/components/ui';
+import { Card, Button, Badge } from '@/components/ui';
 import {
     getNotifications,
     markAsRead,
@@ -48,34 +48,34 @@ export function NotificationsPageClient() {
 
     // Bildirimleri yükle
     useEffect(() => {
+        const loadNotifications = async () => {
+            try {
+                setLoading(true);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const filters: any = {};
+
+                if (showOnlyUnread) {
+                    filters.unreadOnly = true;
+                }
+
+                if (filterType !== 'ALL') {
+                    filters.type = filterType;
+                }
+
+                const data = await getNotifications(DEMO_USER_ID, filters);
+                setNotifications(data as Notification[]);
+
+                // Okunmamış sayısını güncelle
+                const count = await getUnreadCount(DEMO_USER_ID);
+                setUnreadCount(count);
+            } catch (error) {
+                console.error('Bildirimler yüklenemedi:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
         loadNotifications();
     }, [showOnlyUnread, filterType]);
-
-    const loadNotifications = async () => {
-        try {
-            setLoading(true);
-            const filters: any = {};
-
-            if (showOnlyUnread) {
-                filters.unreadOnly = true;
-            }
-
-            if (filterType !== 'ALL') {
-                filters.type = filterType;
-            }
-
-            const data = await getNotifications(DEMO_USER_ID, filters);
-            setNotifications(data as Notification[]);
-
-            // Okunmamış sayısını güncelle
-            const count = await getUnreadCount(DEMO_USER_ID);
-            setUnreadCount(count);
-        } catch (error) {
-            console.error('Bildirimler yüklenemedi:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleMarkAsRead = async (id: string) => {
         try {

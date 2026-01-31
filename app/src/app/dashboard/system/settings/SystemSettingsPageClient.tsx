@@ -1,7 +1,6 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardContent, Badge } from '@/components/ui';
-import { Icons } from '@/components/content/icons';
+import React from 'react';
+import { Card, CardHeader, CardContent } from '@/components/ui';
 
 export function SystemSettingsPageClient() {
     return (

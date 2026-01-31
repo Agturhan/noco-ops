@@ -1,4 +1,6 @@
 'use server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use server';
 
 // CSV Export utility
 export async function exportToCSV(

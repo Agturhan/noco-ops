@@ -6,32 +6,36 @@ import { GlassSurface } from '@/components/ui/GlassSurface';
 
 interface FinanceChartsProps {
     data: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cashFlow: any[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expenseBreakdown: any[];
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-[#1C1C1E] border border-white/10 p-3 rounded-lg shadow-xl">
+                <p className="text-white font-medium mb-2">{label}</p>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {payload.map((p: any) => (
+                    <div key={p.name} className="flex items-center gap-2 text-xs">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                        <span className="text-white/70">{p.name === 'income' ? 'Gelir' : 'Gider'}:</span>
+                        <span className="text-white font-mono">
+                            ₺{Number(p.value).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return null;
+};
+
 export function FinanceCharts({ data }: FinanceChartsProps) {
-    // Custom Tooltip for Area Chart
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-[#1C1C1E] border border-white/10 p-3 rounded-lg shadow-xl">
-                    <p className="text-white font-medium mb-2">{label}</p>
-                    {payload.map((p: any) => (
-                        <div key={p.name} className="flex items-center gap-2 text-xs">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                            <span className="text-white/70">{p.name === 'income' ? 'Gelir' : 'Gider'}:</span>
-                            <span className="text-white font-mono">
-                                ₺{Number(p.value).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-        return null;
-    };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -121,7 +125,7 @@ export function FinanceCharts({ data }: FinanceChartsProps) {
                                         verticalAlign="bottom"
                                         height={36}
                                         iconType="circle"
-                                        formatter={(value, entry: any) => <span className="text-white/60 text-xs ml-1">{value}</span>}
+                                        formatter={(value) => <span className="text-white/60 text-xs ml-1">{value}</span>}
                                     />
                                 </PieChart>
                             </ResponsiveContainer>

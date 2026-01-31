@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Header } from '@/components/layout';
-import { Button, Badge } from '@/components/ui';
-import { SM_PACKAGES as smPackages, STUDIO_REELS_PACKAGES as studioReelsPackages, SERVICES, getServicesByCategory } from '@/lib/constants/pricing';
+import { SM_PACKAGES as smPackages, STUDIO_REELS_PACKAGES as studioReelsPackages, SERVICES } from '@/lib/constants/pricing';
 import { MagicBento } from '@/components/react-bits/MagicBento';
 import { GlassSurface } from '@/components/ui/GlassSurface';
 import { StarBorder } from '@/components/react-bits/StarBorder';
@@ -45,6 +43,7 @@ export function PriceListPageClient() {
                 ].map(tab => (
                     <button
                         key={tab.id}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         onClick={() => setActiveTab(tab.id as any)}
                         className={`
                             whitespace-nowrap px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 border
@@ -63,7 +62,7 @@ export function PriceListPageClient() {
                 {/* SOSYAL MEDYA PAKETLERİ */}
                 {activeTab === 'packages' && (
                     <>
-                        {smPackages.map((pkg, index) => (
+                        {smPackages.map((pkg) => (
                             <div key={pkg.id} className={`col-span-12 md:col-span-6 lg:col-span-3 ${pkg.popular ? 'lg:col-span-4' : ''}`}>
                                 <div className={`relative h-full group ${pkg.popular ? 'transform md:-translate-y-4' : ''}`}>
                                     {pkg.popular && <StarBorder color={pkg.color} speed="3s" />}
@@ -179,6 +178,7 @@ export function PriceListPageClient() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                             {group.data.map((item: any) => (
                                                 <tr key={item.id} className="group hover:bg-white/[0.02] transition-colors">
                                                     <td className="p-4 text-sm font-medium text-white/90">{item.name}</td>

@@ -5,7 +5,7 @@ import { Area, AreaChart as RechartsAreaChart, CartesianGrid, ResponsiveContaine
 import { cn } from "@/lib/utils/className";
 
 interface AreaChartProps {
-    data: any[];
+    data: Record<string, unknown>[];
     categories: string[];
     index: string;
     colors?: string[];
@@ -65,7 +65,7 @@ export function AreaChart({
                                     return (
                                         <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
                                             <p className="mb-2 font-medium text-slate-900">{label}</p>
-                                            {payload.map((category: any, idx: number) => (
+                                            {payload.map((category: { color: string; name: string; value: number }, idx: number) => (
                                                 <div key={idx} className="flex items-center gap-2 text-sm">
                                                     <div
                                                         className="h-2 w-2 rounded-full"

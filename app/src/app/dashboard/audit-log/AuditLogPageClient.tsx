@@ -33,9 +33,6 @@ export function AuditLogPageClient() {
 
     const formatLogMessage = (log: AuditLogEntry) => {
         const user = log.user?.name || 'Sistem / Bilinmeyen';
-        // Date formatting: "25 Ocak, 14:30"
-        const date = new Date(log.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
-        const time = new Date(log.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
         const entityName = log.entityName || log.entityId;
 

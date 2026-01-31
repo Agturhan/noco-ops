@@ -40,6 +40,60 @@ interface GrowthItem {
     value: number;
 }
 
+// Form Section Component
+const FormSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div style={{
+        background: colors.bgCard,
+        borderRadius: 16,
+        padding: 32,
+        marginBottom: 24
+    }}>
+        <h2 style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 20,
+            marginBottom: 24,
+            color: colors.textPrimary
+        }}>{title}</h2>
+        {children}
+    </div>
+);
+
+// Form Input Component
+const FormInput = ({ label, type = 'text', value, onChange, placeholder }: {
+    label: string;
+    type?: string;
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+}) => (
+    <div style={{ marginBottom: 16 }}>
+        <label style={{
+            display: 'block',
+            fontWeight: 500,
+            marginBottom: 8,
+            fontSize: 13,
+            color: colors.textSecondary,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5
+        }}>{label}</label>
+        <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            style={{
+                width: '100%',
+                padding: '12px 16px',
+                background: colors.bgPrimary,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 8,
+                fontSize: 14,
+                color: colors.textPrimary
+            }}
+        />
+    </div>
+);
+
 export default function ReportEditor() {
     const router = useRouter();
     const [showSuccess, setShowSuccess] = useState(false);
@@ -78,59 +132,7 @@ export default function ReportEditor() {
     const [nextId, setNextId] = useState(1);
     const getId = () => { const id = nextId; setNextId(nextId + 1); return id; };
 
-    // Form Section Component
-    const FormSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-        <div style={{
-            background: colors.bgCard,
-            borderRadius: 16,
-            padding: 32,
-            marginBottom: 24
-        }}>
-            <h2 style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 20,
-                marginBottom: 24,
-                color: colors.textPrimary
-            }}>{title}</h2>
-            {children}
-        </div>
-    );
 
-    // Form Input Component
-    const FormInput = ({ label, type = 'text', value, onChange, placeholder }: {
-        label: string;
-        type?: string;
-        value: string;
-        onChange: (v: string) => void;
-        placeholder?: string;
-    }) => (
-        <div style={{ marginBottom: 16 }}>
-            <label style={{
-                display: 'block',
-                fontWeight: 500,
-                marginBottom: 8,
-                fontSize: 13,
-                color: colors.textSecondary,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5
-            }}>{label}</label>
-            <input
-                type={type}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: colors.bgPrimary,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: 8,
-                    fontSize: 14,
-                    color: colors.textPrimary
-                }}
-            />
-        </div>
-    );
 
     // Generate JSON
     const generateJSON = () => {

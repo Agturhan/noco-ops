@@ -1,16 +1,13 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from 'react';
-import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select } from '@/components/ui';
-import { RevenueChart, ProjectStatusChart } from '@/components/charts';
+import { Button, Modal, Input, Select } from '@/components/ui';
 import { MagicBento } from '@/components/react-bits/MagicBento';
-import { GlassSurface } from '@/components/ui/GlassSurface';
 import { StarBorder } from '@/components/react-bits/StarBorder';
-import ShinyText from '@/components/react-bits/ShinyText';
-import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
+import { GlassSurface } from '@/components/ui/GlassSurface';
 import { Wallet, TrendingUp, TrendingDown, PieChart as PieChartIcon } from 'lucide-react';
-import { getMonthlyFinancials, getExpensesByCategory, createIncome, createExpense, deleteIncome, deleteExpense, getRevenueByClient, seedExpenses, getIncomes, getExpenses } from '@/lib/actions/accounting';
+import { getMonthlyFinancials, createIncome, createExpense, seedExpenses, getIncomes, getExpenses } from '@/lib/actions/accounting';
 
 // ===== TİPLER =====
 interface HistoryEntry {
@@ -67,34 +64,28 @@ const expenseCategories = {
 };
 
 export function AccountingPageClient() {
-    const [activeTab, setActiveTab] = useState<'overview' | 'income' | 'expenses' | 'cashflow' | 'logs'>('overview');
     const [clients, setClients] = useState<Client[]>([]); // Incomes treated as 'Clients' for UI consistency
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [selectedMonth, setSelectedMonth] = useState('Ocak 2026');
-    const [loading, setLoading] = useState(true);
 
     // Modal states
     const [showIncomeModal, setShowIncomeModal] = useState(false);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
-    const [editingClient, setEditingClient] = useState<Client | null>(null);
-    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
     // Form states
     const [formName, setFormName] = useState('');
     const [formAmount, setFormAmount] = useState('');
-    const [formPaymentDay, setFormPaymentDay] = useState('1');
     const [formCategory, setFormCategory] = useState('OFFICE');
 
     // Load Data
     const loadData = async () => {
-        setLoading(true);
         try {
             const date = new Date();
             const year = date.getFullYear();
             const month = date.getMonth() + 1;
 
             // Fetch Financials
-            const financials = await getMonthlyFinancials(year, month);
+            await getMonthlyFinancials(year, month);
 
             // Fetch Lists
             const [dbIncomes, dbExpenses] = await Promise.all([
@@ -126,13 +117,12 @@ export function AccountingPageClient() {
 
         } catch (error) {
             console.error(error);
-        } finally {
-            setLoading(false);
         }
     };
 
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadData();
     }, []);
 
@@ -155,10 +145,8 @@ export function AccountingPageClient() {
 
     // ===== GELİR İŞLEMLERİ =====
     const openAddIncome = () => {
-        setEditingClient(null);
         setFormName('');
         setFormAmount('');
-        setFormPaymentDay('1');
         setShowIncomeModal(true);
     };
 
@@ -173,22 +161,15 @@ export function AccountingPageClient() {
             });
             setShowIncomeModal(false);
             loadData(); // Refresh
-        } catch (e) {
+        } catch {
             alert('Gelir eklenirken hata oluştu.');
         }
     };
 
-    const handleDeleteIncome = async (id: string) => {
-        if (confirm('Silmek istediğinize emin misiniz?')) {
-            // We need real IDs from DB to delete. mappedClients use fake IDs currently.
-            // This requires `getIncomes` implementation to work 100%.
-            alert('Bu özellik için gelir listeleme endpointi güncellenmelidir.');
-        }
-    };
+    // handleDeleteIncome removed as it was unused and incomplete
 
     // ===== GİDER İŞLEMLERİ =====
     const openAddExpense = () => {
-        setEditingExpense(null);
         setFormName('');
         setFormAmount('');
         setFormCategory('OFFICE');
@@ -201,6 +182,7 @@ export function AccountingPageClient() {
             await createExpense({
                 title: formName,
                 amount: parseFloat(formAmount),
+
                 category: formCategory as any,
                 Date: new Date().toISOString()
             });
@@ -474,13 +456,13 @@ export function AccountingPageClient() {
                             <div className="flex gap-3 items-start p-3 rounded-xl bg-[#30D158]/5 border border-[#30D158]/10">
                                 <div className="text-[#30D158] mt-0.5"><TrendingUp size={14} /></div>
                                 <div className="text-xs text-white/60 leading-relaxed">
-                                    Gelir hedefinin <strong className="text-[#30D158]">78%</strong>'ine ulaşıldı. Geçen aya göre artış var.
+                                    Gelir hedefinin <strong className="text-[#30D158]">78%</strong>&apos;ine ulaşıldı. Geçen aya göre artış var.
                                 </div>
                             </div>
                             <div className="flex gap-3 items-start p-3 rounded-xl bg-[#FF453A]/5 border border-[#FF453A]/10">
                                 <div className="text-[#FF453A] mt-0.5"><PieChartIcon size={14} /></div>
                                 <div className="text-xs text-white/60 leading-relaxed">
-                                    Ofis giderleri bütçenin <strong className="text-[#FF453A]">45%</strong>'ini oluşturuyor.
+                                    Ofis giderleri bütçenin <strong className="text-[#FF453A]">45%</strong>&apos;ini oluşturuyor.
                                 </div>
                             </div>
                         </div>

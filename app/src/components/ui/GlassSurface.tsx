@@ -25,12 +25,7 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
         heavy: 'var(--glass-blur, 20px)'
     };
 
-    // Background opacity based on intensity (variables take precedence if defined)
-    const bgOpacity = {
-        light: 'var(--glass-bg, rgba(255, 255, 255, 0.03))',
-        medium: 'var(--glass-bg, rgba(20, 20, 20, 0.4))',
-        heavy: 'var(--glass-bg, rgba(10, 10, 10, 0.6))'
-    };
+
 
     const getGlowShadow = () => {
         if (isActive) return `var(--shadow-neon-${glowColor}-active)`;

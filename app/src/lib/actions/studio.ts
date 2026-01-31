@@ -11,7 +11,7 @@ type CheckInStatus = 'CHECKED_IN' | 'CHECKED_OUT';
 
 // ===== EQUIPMENT CRUD =====
 
-interface Equipment {
+export interface Equipment {
     id: string;
     name: string;
     category: string;
@@ -72,7 +72,7 @@ export async function createEquipment(data: {
 }
 
 export async function updateEquipmentStatus(id: string, status: EquipmentStatus, notes?: string) {
-    const updateData: Record<string, any> = {
+    const updateData: Partial<Equipment> = {
         status,
         lastChecked: new Date().toISOString(),
     };
@@ -96,7 +96,7 @@ export async function updateEquipmentStatus(id: string, status: EquipmentStatus,
 
 // ===== STUDIO CHECK-IN CRUD =====
 
-interface StudioCheckIn {
+export interface StudioCheckIn {
     id: string;
     bookingId?: string;
     clientName: string;

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getUserTodayTasks } from '@/lib/actions/userDashboard';
 
 export function DashboardDebugger() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [debugData, setDebugData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [userId, setUserId] = useState<string>('');
@@ -12,6 +13,7 @@ export function DashboardDebugger() {
         const userStr = localStorage.getItem('currentUser');
         if (userStr) {
             const user = JSON.parse(userStr);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setUserId(user.id);
             getUserTodayTasks(user.id)
                 .then(data => setDebugData(data))

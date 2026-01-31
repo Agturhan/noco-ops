@@ -1,8 +1,8 @@
 import React from 'react';
 import {
     Calendar, PenTool, Camera, Palette, Brush, Image as ImageIcon,
-    Scissors, Film, Clock, Share2, Package, CheckCircle2,
-    Video, Mic, Globe, BarChart, FileText, Megaphone, Layout,
+    Scissors, Film, Clock, Share2, Package,
+    Video, Mic, Globe, BarChart, FileText, Megaphone,
     Users, User, Tag, Trash2, Edit2, ChevronDown, Activity,
     History, AlertCircle, Check, Plus, Eye, Search
 } from 'lucide-react';

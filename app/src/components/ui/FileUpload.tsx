@@ -32,23 +32,23 @@ export function FileUpload({
     const [isUploading, setIsUploading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const handleDragOver = useCallback((e: React.DragEvent) => {
+    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(true);
     }, []);
 
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
+    const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
     }, []);
 
-    const validateFile = (file: File): string | undefined => {
+    const validateFile = useCallback((file: File): string | undefined => {
         // Boyut kontrolü
         if (file.size > maxSize * 1024 * 1024) {
             return `Dosya çok büyük (max ${maxSize}MB)`;
         }
         return undefined;
-    };
+    }, [maxSize]);
 
     const handleFiles = useCallback((fileList: FileList) => {
         const newFiles: UploadedFile[] = [];
@@ -64,7 +64,7 @@ export function FileUpload({
         });
 
         setFiles(prev => [...prev, ...newFiles]);
-    }, [maxSize]);
+    }, [validateFile]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -100,10 +100,10 @@ export function FileUpload({
             setFiles(prev => prev.map(f =>
                 f.status === 'uploading' ? { ...f, status: 'success' as const, progress: 100 } : f
             ));
-        } catch (error: any) {
+        } catch (error) {
             // Hata
             setFiles(prev => prev.map(f =>
-                f.status === 'uploading' ? { ...f, status: 'error' as const, error: error.message } : f
+                f.status === 'uploading' ? { ...f, status: 'error' as const, error: error instanceof Error ? error.message : 'Upload hatası' } : f
             ));
         } finally {
             setIsUploading(false);

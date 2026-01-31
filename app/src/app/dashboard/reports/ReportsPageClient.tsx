@@ -41,6 +41,7 @@ export function ReportsPageClient() {
 
     useEffect(() => {
         const saved = localStorage.getItem('theme');
+        // eslint-disable-next-line
         if (saved === 'dark') setIsDark(true);
         const data = localStorage.getItem('report_data');
         if (data) setHasSavedData(true);

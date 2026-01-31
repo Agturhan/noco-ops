@@ -61,8 +61,10 @@ export async function calculateProjectDistribution(projectId: string, customShar
     if (!project) return null;
 
     // Calculate total paid revenue
-    const paidInvoices = ((project as any).invoices || []).filter((i: any) => i.status === 'PAID');
-    const totalRevenue = paidInvoices.reduce((sum: number, i: any) => sum + (i.amount || 0), 0);
+    // Calculate total paid revenue
+    const paidInvoices = ((project as unknown as { invoices: { status: string; amount: number }[] }).invoices || [])
+        .filter((i) => i.status === 'PAID');
+    const totalRevenue = paidInvoices.reduce((sum: number, i) => sum + (i.amount || 0), 0);
 
     // Calculate vault amount
     const vaultAmount = Math.round(totalRevenue * (VAULT_PERCENTAGE / 100));
@@ -71,7 +73,7 @@ export async function calculateProjectDistribution(projectId: string, customShar
     // Calculate distributions
     const distributions = PARTNERS.map(partner => {
         const percentage = customShares?.[partner.id] ?? partner.baseShare;
-        const actualPercentage = (percentage / (100 - VAULT_PERCENTAGE)) * 100; // Adjust for vault
+        // actualPercentage removed as it was unused
         const amount = Math.round(distributableAmount * (percentage / 100) * (100 / (100 - VAULT_PERCENTAGE)));
 
         return {
@@ -140,14 +142,15 @@ export async function getMonthlyDistributionSummary(month?: string): Promise<{
     // Group by project
     const projectMap = new Map<string, { id: string; name: string; revenue: number }>();
     invoices.forEach(inv => {
-        const projectId = (inv as any).project?.id;
-        const projectName = (inv as any).project?.name || 'Bilinmeyen';
+        const invoice = inv as unknown as { amount: number; project: { id: string; name: string } | null };
+        const projectId = invoice.project?.id;
+        const projectName = invoice.project?.name || 'Bilinmeyen';
         if (projectId) {
             const existing = projectMap.get(projectId);
             if (existing) {
-                existing.revenue += inv.amount || 0;
+                existing.revenue += invoice.amount || 0;
             } else {
-                projectMap.set(projectId, { id: projectId, name: projectName, revenue: inv.amount || 0 });
+                projectMap.set(projectId, { id: projectId, name: projectName, revenue: invoice.amount || 0 });
             }
         }
     });
@@ -187,7 +190,7 @@ interface PartnerScore {
     rank: number;
 }
 
-export async function getPartnerScores(month?: string): Promise<PartnerScore[]> {
+export async function getPartnerScores(_month?: string): Promise<PartnerScore[]> {
     // This would calculate scores based on completed projects, tasks, etc.
     // For now, return mock data based on partner performance
     const scores: PartnerScore[] = [

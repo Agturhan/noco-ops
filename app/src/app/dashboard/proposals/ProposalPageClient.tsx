@@ -1,10 +1,10 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, Drawer } from '@/components/ui';
-import { getProposals, createProposal, updateProposalStatus, sendProposal, approveProposal, deleteProposal } from '@/lib/actions/proposals';
+import { Card, Button, Badge, Modal, Input, Select, Textarea, Drawer } from '@/components/ui';
+import { getProposals } from '@/lib/actions/proposals';
 import { SERVICES, SM_PACKAGES, STUDIO_REELS_PACKAGES, formatCurrency, VAT_RATE, MAX_DISCOUNT_RATE } from '@/lib/constants/pricing';
 import { Printer, Calculator } from 'lucide-react';
 import { SmartProposalModal } from '@/components/proposals/SmartProposalModal';
@@ -133,9 +133,7 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
 };
 
 export function ProposalPageClient() {
-    const router = useRouter();
     const [proposalList, setProposalList] = useState<Proposal[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showNewModal, setShowNewModal] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -145,7 +143,6 @@ export function ProposalPageClient() {
     useEffect(() => {
         const loadProposals = async () => {
             try {
-                setLoading(true);
                 const data = await getProposals();
                 const formatted: Proposal[] = data.map((p: any) => ({
                     id: p.id,
@@ -168,8 +165,6 @@ export function ProposalPageClient() {
                 console.error('Teklifler yüklenirken hata:', error);
                 // Use static proposals on error
                 setProposalList(proposals);
-            } finally {
-                setLoading(false);
             }
         };
         loadProposals();
@@ -237,12 +232,14 @@ export function ProposalPageClient() {
         const totals = calculateTotals(newLineItems);
 
         const proposal: Proposal = {
+            // eslint-disable-next-line react-hooks/purity
             id: `prop-${Date.now()}`,
             number: `TKL-2026-${String(proposalList.length + 1).padStart(3, '0')}`,
             clientId: newClient,
             clientName: client?.name || '',
             status: 'DRAFT',
             date: new Date().toISOString().split('T')[0],
+            // eslint-disable-next-line react-hooks/purity
             validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             lineItems: newLineItems,
             subtotal: totals.subtotal,

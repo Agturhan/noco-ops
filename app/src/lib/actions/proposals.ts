@@ -135,10 +135,18 @@ export async function updateProposal(id: string, data: {
     paymentTerms?: string;
     validUntil?: string;
 }) {
-    const updateData: Record<string, any> = {};
+    const updateData: {
+        lineItems?: ProposalLineItem[];
+        subtotal?: number;
+        kdv?: number;
+        total?: number;
+        notes?: string;
+        paymentTerms?: string;
+        validUntil?: string;
+    } = {};
 
     if (data.lineItems) {
-        const subtotal = data.lineItems.reduce((sum, item) => sum + item.total, 0);
+        const subtotal = data.lineItems.reduce((sum: number, item: ProposalLineItem) => sum + item.total, 0);
         const kdv = subtotal * 0.20;
         updateData.lineItems = data.lineItems;
         updateData.subtotal = subtotal;

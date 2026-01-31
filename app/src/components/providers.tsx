@@ -75,7 +75,7 @@ export const queryKeys = {
     // Projects
     projects: {
         all: ['projects'] as const,
-        list: (filters?: any) => ['projects', 'list', filters] as const,
+        list: (filters?: Record<string, unknown>) => ['projects', 'list', filters] as const,
         detail: (id: string) => ['projects', 'detail', id] as const,
     },
 
@@ -89,14 +89,14 @@ export const queryKeys = {
     // Invoices
     invoices: {
         all: ['invoices'] as const,
-        list: (filters?: any) => ['invoices', 'list', filters] as const,
+        list: (filters?: Record<string, unknown>) => ['invoices', 'list', filters] as const,
         detail: (id: string) => ['invoices', 'detail', id] as const,
     },
 
     // Tasks
     tasks: {
         all: ['tasks'] as const,
-        list: (filters?: any) => ['tasks', 'list', filters] as const,
+        list: (filters?: Record<string, unknown>) => ['tasks', 'list', filters] as const,
         detail: (id: string) => ['tasks', 'detail', id] as const,
     },
 
@@ -116,7 +116,7 @@ export const queryKeys = {
     // Audit Logs
     auditLogs: {
         all: ['auditLogs'] as const,
-        list: (filters?: any) => ['auditLogs', 'list', filters] as const,
+        list: (filters?: Record<string, unknown>) => ['auditLogs', 'list', filters] as const,
         stats: () => ['auditLogs', 'stats'] as const,
     },
 

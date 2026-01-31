@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import {
-    Card,
-    Badge, Button,
-    InvoiceStatusBadge,
+    Button,
     Modal
 } from '@/components/ui';
 import { exportToPDF, generateInvoiceHTML } from '@/lib/utils/pdfExport';
@@ -17,9 +15,7 @@ import {
     CheckCircle,
     Clock,
     XCircle,
-    Download,
-    MoreHorizontal,
-    ArrowRight
+    Download
 } from 'lucide-react';
 
 // Invoice interface
@@ -64,6 +60,7 @@ export function InvoicesPageClient() {
             try {
                 setLoading(true);
                 const data = await getInvoices();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const formatted: Invoice[] = data.map((inv: any) => ({
                     id: inv.id,
                     project: inv.project?.name || 'Bilinmeyen Proje',

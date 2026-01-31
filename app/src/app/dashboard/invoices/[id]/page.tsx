@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Modal, Input, Textarea } from '@/components/ui';
 
 // Mock fatura verisi
 const invoiceData = {
@@ -48,7 +48,6 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
 };
 
 export default function InvoiceDetailPage() {
-    const params = useParams();
     const router = useRouter();
     const [invoice, setInvoice] = useState(invoiceData);
     const [showPaymentModal, setShowPaymentModal] = useState(false);

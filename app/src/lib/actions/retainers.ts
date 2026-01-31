@@ -117,7 +117,7 @@ export async function createRetainer(data: RetainerCreate) {
 // ===== UPDATE RETAINER =====
 
 export async function updateRetainer(id: string, data: Partial<RetainerCreate>) {
-    const updateData: Record<string, any> = {};
+    const updateData: Partial<RetainerCreate> = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.monthlyHours !== undefined) updateData.monthlyHours = data.monthlyHours;
@@ -185,8 +185,8 @@ export async function logRetainerHours(data: HourLogCreate) {
     // Calculate current month's used hours
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
     const usedHours = (retainer.hourLogs || [])
-        .filter((log: any) => log.date?.startsWith(currentMonth))
-        .reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
+        .filter((log: { date?: string; hours?: number }) => log.date?.startsWith(currentMonth))
+        .reduce((sum: number, log: { hours?: number }) => sum + (log.hours || 0), 0);
 
     const remainingHours = retainer.monthlyHours - usedHours;
 
@@ -259,9 +259,9 @@ export async function getRetainerMonthlySummary(retainerId: string, month?: stri
     }
 
     const monthlyLogs = (retainer.hourLogs || [])
-        .filter((log: any) => log.date?.startsWith(targetMonth));
+        .filter((log: { date?: string }) => log.date?.startsWith(targetMonth));
 
-    const usedHours = monthlyLogs.reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
+    const usedHours = monthlyLogs.reduce((sum: number, log: { hours?: number }) => sum + (log.hours || 0), 0);
     const remainingHours = retainer.monthlyHours - usedHours;
     const usagePercentage = Math.round((usedHours / retainer.monthlyHours) * 100);
 
@@ -283,11 +283,12 @@ export async function getAllRetainerSummaries(month?: string) {
     const retainers = await getRetainers();
     const targetMonth = month || new Date().toISOString().slice(0, 7);
 
-    return retainers.map((retainer: any) => {
-        const monthlyLogs = (retainer.hourLogs || [])
-            .filter((log: any) => log.date?.startsWith(targetMonth));
+    return retainers.map((retainer) => {
+        const hourLogs = (retainer.hourLogs || []) as { date?: string, hours?: number }[];
+        const monthlyLogs = hourLogs
+            .filter(log => log.date?.startsWith(targetMonth));
 
-        const usedHours = monthlyLogs.reduce((sum: number, log: any) => sum + (log.hours || 0), 0);
+        const usedHours = monthlyLogs.reduce((sum, log) => sum + (log.hours || 0), 0);
         const remainingHours = retainer.monthlyHours - usedHours;
 
         return {

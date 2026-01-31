@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Input } from '@/components/ui';
-import { Play, Square, Plus, Clock, History } from 'lucide-react';
+import { Play, Square, Plus, Clock } from 'lucide-react';
 import { startTimeLog, stopActiveTimer, logManualTime, getTaskLogs, getActiveTimer, TimeLog } from '@/lib/actions/timelogs';
 import { useToast } from '@/components/ui/Toast';
 
@@ -22,15 +22,32 @@ export function TimeTracker({ taskId, userId }: TimeTrackerProps) {
     const [manualDesc, setManualDesc] = useState('');
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+    const loadLogs = useCallback(async () => {
+        const res = await getTaskLogs(taskId);
+        if (res?.success) setLogs(res.data);
+    }, [taskId]);
+
+    const checkActiveTimer = useCallback(async () => {
+        const res = await getActiveTimer(userId);
+        if (res?.success && res.data) {
+            // Only if the active timer belongs to THIS task
+            if (res.data.taskId === taskId) {
+                // We use the same 'Z' fix here for consistency if needed, but the effect uses activeTimer state
+                setActiveTimer(res.data);
+            }
+        }
+    }, [userId, taskId]);
+
     // Initial load
     useEffect(() => {
+        // eslint-disable-next-line
         loadLogs();
         checkActiveTimer();
 
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [taskId]);
+    }, [loadLogs, checkActiveTimer]);
 
     // Timer tick
     useEffect(() => {
@@ -49,28 +66,13 @@ export function TimeTracker({ taskId, userId }: TimeTrackerProps) {
 
             // Initial set
             const now = new Date().getTime();
+            // eslint-disable-next-line
             setElapsedSeconds(Math.max(0, Math.floor((now - start) / 1000)));
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
             setElapsedSeconds(0);
         }
     }, [activeTimer]);
-
-    const loadLogs = async () => {
-        const res = await getTaskLogs(taskId);
-        if (res?.success) setLogs(res.data);
-    };
-
-    const checkActiveTimer = async () => {
-        const res = await getActiveTimer(userId);
-        if (res?.success && res.data) {
-            // Only if the active timer belongs to THIS task
-            if (res.data.taskId === taskId) {
-                // We use the same 'Z' fix here for consistency if needed, but the effect uses activeTimer state
-                setActiveTimer(res.data);
-            }
-        }
-    };
 
     const handleStart = async () => {
         setLoading(true);

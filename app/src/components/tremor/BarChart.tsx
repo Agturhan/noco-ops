@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { Bar, BarChart as RechartsBarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
+import { Bar, BarChart as RechartsBarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils/className";
 
 interface BarChartProps {
-    data: any[];
+    data: Record<string, unknown>[];
     categories: string[];
     index: string;
     colors?: string[];
@@ -72,7 +72,7 @@ export function BarChart({
                                     return (
                                         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-sm">
                                             <p className="mb-2 font-medium text-[var(--color-ink)]">{label}</p>
-                                            {payload.map((category: any, idx: number) => (
+                                            {payload.map((category: { color: string; name: string; value: number }, idx: number) => (
                                                 <div key={idx} className="flex items-center gap-2 text-sm">
                                                     <div
                                                         className="h-2 w-2 rounded-full"

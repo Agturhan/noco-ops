@@ -1,14 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Header } from '@/components/layout';
-import { Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Button, Badge, Modal, Input, Textarea } from '@/components/ui';
 import { GlassSurface } from '@/components/ui/GlassSurface';
-import { MagicBento } from '@/components/react-bits/MagicBento';
 import { ShinyText } from '@/components/react-bits/TextAnimations';
-import { brands, getBrandName, getBrandColor } from '@/lib/data';
-import { getEquipment, getStudioCheckIns, createStudioCheckIn, completeStudioCheckOut, getTodayStudioStatus, calculatePaintCharge } from '@/lib/actions/studio';
-import { Calendar, Clock, MapPin, Camera, Video, Mic, ChevronLeft, ChevronRight, Plus, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, Camera, Video, Mic, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 // ===== STÜDYO BOOKING SİSTEMİ =====
 
@@ -53,20 +49,18 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
 const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
 // Tab types
-type StudioTab = 'calendar' | 'checkin' | 'equipment';
+
 
 import { ContentFilterBar } from '@/components/content/ContentFilterBar';
 import { getActiveTeamMembers } from '@/lib/actions/users';
-import { createContent } from '@/lib/actions/content';
 
 export function StudioBookingPageClient() {
-    const [activeTab, setActiveTab] = useState<StudioTab>('calendar');
-
     // Filter Bar State
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterAssignee, setFilterAssignee] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [activeTeam, setActiveTeam] = useState<any[]>([]);
 
     useEffect(() => {
@@ -92,14 +86,6 @@ export function StudioBookingPageClient() {
     // Bookings State (DnD için)
     const [bookingList, setBookingList] = useState<Booking[]>(initialBookings);
     const [draggedBooking, setDraggedBooking] = useState<Booking | null>(null);
-
-    // Check-in states
-    const [equipmentList, setEquipmentList] = useState<any[]>([]);
-    const [checkInList, setCheckInList] = useState<any[]>([]);
-    const [showCheckInModal, setShowCheckInModal] = useState(false);
-    const [showCheckOutModal, setShowCheckOutModal] = useState(false);
-    const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
-    const [studioStatus, setStudioStatus] = useState<any>(null);
 
     // Helper for correct local date string "YYYY-MM-DD"
     const formatLocalDate = (date: Date) => {
@@ -127,15 +113,6 @@ export function StudioBookingPageClient() {
                         }
                     }
                 }
-
-                const [equipment, checkIns, status] = await Promise.all([
-                    getEquipment(),
-                    getStudioCheckIns(),
-                    getTodayStudioStatus(),
-                ]);
-                setEquipmentList(equipment);
-                setCheckInList(checkIns);
-                setStudioStatus(status);
             } catch (error) {
                 console.error('Studio data loading error:', error);
             }
@@ -257,40 +234,7 @@ export function StudioBookingPageClient() {
         setCurrentWeekStart(newDate);
     };
 
-    const pendingCount = bookingList.filter(b => b.status === 'PENDING').length;
-    const todayBookings = bookingList.filter(b => b.date === formatLocalDate(new Date()));
 
-    // Stats for Bento Grid
-    const statsItems = [
-        {
-            title: "Bu Hafta",
-            value: bookingList.filter(b => weekDays.some(d => d.date === b.date)).length.toString(),
-            subtitle: "Rezervasyon",
-            icon: <Calendar size={24} className="text-[#329FF5]" />,
-            type: "stat"
-        },
-        {
-            title: "Bugün",
-            value: todayBookings.length.toString(),
-            subtitle: "Çekim",
-            icon: <Camera size={24} className="text-[#00F5B0]" />,
-            type: "stat"
-        },
-        {
-            title: "Popüler",
-            value: "Fotoğraf",
-            subtitle: "En çok tercih edilen",
-            icon: <Clock size={24} className="text-[#9C27B0]" />,
-            type: "stat"
-        },
-        {
-            title: "Doluluk",
-            value: "%65",
-            subtitle: "Bu hafta",
-            icon: <CheckCircle size={24} className="text-[#F6D73C]" />,
-            type: "stat"
-        }
-    ];
 
     return (
         <div className="h-full flex flex-col">
@@ -487,6 +431,7 @@ export function StudioBookingPageClient() {
                                 {Object.entries(typeConfig).map(([key, config]) => (
                                     <button
                                         key={key}
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         onClick={() => setFormType(key as any)}
                                         className={`
                                         p-2 rounded-lg border text-xs font-medium flex flex-col items-center gap-1 transition-all

@@ -71,7 +71,7 @@ export function SettingsPageClient() {
             await updateSettings(settings);
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
-        } catch (error) {
+        } catch {
             alert('Ayarlar kaydedilemedi');
         } finally {
             setSaving(false);
@@ -98,6 +98,7 @@ export function SettingsPageClient() {
             }
             await loadData();
             setShowUserModal(false);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             alert(error.message || 'İşlem başarısız');
         }
@@ -109,7 +110,7 @@ export function SettingsPageClient() {
         try {
             await deleteUser(userId);
             await loadData();
-        } catch (error) {
+        } catch {
             alert('Kullanıcı silinemedi');
         }
     };
@@ -454,6 +455,7 @@ export function SettingsPageClient() {
                     <Select
                         label="Rol *"
                         value={userForm.role}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
                         options={[
                             { value: 'OWNER', label: '👑 Owner (Tam Yetki)' },

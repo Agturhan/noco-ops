@@ -2,16 +2,18 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Modal, Input, Select, Textarea, MiniCalendar, MultiSelect } from '@/components/ui';
-import { brands, contentStatuses, contentTypes, ContentStatus, ContentType, getStagesForType } from '@/lib/data';
+import { contentStatuses, contentTypes, ContentStatus, ContentType, getStagesForType } from '@/lib/data';
 import { getActiveTeamMembers, User as DBUser } from '@/lib/actions/users';
-import { getBrandSuggestions, createContentWithBrand, updateContent as updateContentDB, ContentItem as DBContentItem } from '@/lib/actions/content';
+import { getBrandSuggestions, createContentWithBrand, updateContent as updateContentDB } from '@/lib/actions/content';
 import { getMemberColors } from '@/lib/actions/userSettings';
 
 interface NewContentModalProps {
     isOpen: boolean;
     onClose: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSuccess?: (content: any) => void;
     initialDate?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     initialContent?: any; // For editing mode
 }
 
@@ -207,7 +209,7 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
                         )}
                         {formBrand && brandSuggestions.length === 0 && formBrand.length >= 2 && (
                             <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>
-                                💡 "{formBrand}" yeni marka olarak oluşturulacak
+                                💡 &quot;{formBrand}&quot; yeni marka olarak oluşturulacak
                             </p>
                         )}
                     </div>
@@ -257,6 +259,6 @@ export function NewContentModal({ isOpen, onClose, onSuccess, initialDate, initi
                     />
                 </div>
             </div>
-        </Modal>
+        </Modal >
     );
 }

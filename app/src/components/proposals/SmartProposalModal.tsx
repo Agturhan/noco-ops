@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Modal, Button, Input, Select, Card, Badge, Textarea } from '@/components/ui';
-import { SERVICES, SM_PACKAGES, STUDIO_REELS_PACKAGES, formatCurrency, VAT_RATE } from '@/lib/constants/pricing';
-import { Sparkles, Calculator, Camera, Film, Radio, Share2, Loader2, Check, ArrowRight, ArrowLeft, Lightbulb, FileText, Percent } from 'lucide-react';
+import { Modal, Button, Input, Badge, Textarea } from '@/components/ui';
+import { formatCurrency, VAT_RATE } from '@/lib/constants/pricing';
+import { Sparkles, Calculator, Camera, Film, Radio, Share2, Loader2, Check, ArrowRight, ArrowLeft, FileText, Percent } from 'lucide-react';
 
 interface ProposalItem {
     serviceId: string;
@@ -109,7 +109,7 @@ export function SmartProposalModal({ isOpen, onClose, onGenerate }: SmartProposa
             } else {
                 setError(data.error || 'Hesaplama başarısız');
             }
-        } catch (err) {
+        } catch {
             setError('Bağlantı hatası');
         } finally {
             setLoading(false);
@@ -142,7 +142,7 @@ export function SmartProposalModal({ isOpen, onClose, onGenerate }: SmartProposa
             } else {
                 setError(data.error || 'AI önerisi oluşturulamadı');
             }
-        } catch (err) {
+        } catch {
             setError('Bağlantı hatası');
         } finally {
             setLoading(false);

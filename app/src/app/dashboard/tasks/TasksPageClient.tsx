@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Header } from '@/components/layout';
-import { Button, Badge, Modal, Input, Select, Textarea, MultiSelect, ColorPicker, Drawer } from '@/components/ui';
-import { getTasks, createTask, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
-import type { TaskStatus as TaskStatusType, TaskPriority as TaskPriorityType } from '@/lib/actions/tasks';
+import { Button, Modal, ColorPicker, Drawer } from '@/components/ui';
+import { getTasks, updateTask, deleteTask as deleteTaskAction, updateTaskStatus } from '@/lib/actions/tasks';
+import type { TaskStatus as TaskStatusType } from '@/lib/actions/tasks';
 import { getMemberColors, saveMemberColors } from '@/lib/actions/userSettings';
-import { CheckCircle2, Circle, Trash2, Edit, Calendar, User as UserIcon, FolderOpen, Check, Clock, AlertCircle, Plus, Filter, MoreHorizontal, ArrowRight } from 'lucide-react';
+import { FolderOpen, Clock, Plus, User as UserIcon } from 'lucide-react';
 import { ContentDetailPanel } from '@/components/content/ContentDetailPanel';
 import { NewContentModal } from '@/components/content/NewContentModal';
 import { ContentFilterBar } from '@/components/content/ContentFilterBar'; // Import Filter Bar
@@ -47,6 +47,7 @@ const priorityConfig = {
 
 export function TasksPageClient() {
     const [tasks, setTasks] = useState<Task[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [loading, setLoading] = useState(true);
     const [showNewContentModal, setShowNewContentModal] = useState(false);
     const [showColorSettings, setShowColorSettings] = useState(false);
@@ -75,6 +76,7 @@ export function TasksPageClient() {
                 const userStr = localStorage.getItem('currentUser');
                 if (userStr) setCurrentUser(JSON.parse(userStr));
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const formattedTasks: Task[] = dbTasks.map((t: any) => ({
                     id: t.id,
                     title: t.title,
@@ -389,6 +391,7 @@ export function TasksPageClient() {
                             title: selectedTask.title,
                             brandId: selectedTask.brandId || '',
                             status: selectedTask.status === 'DONE' ? 'PAYLASILD' : 'PLANLANDI',
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             type: (selectedTask.contentType as any) || 'OTHER',
                             notes: selectedTask.notes || selectedTask.description || '',
                             deliveryDate: selectedTask.dueDate,
@@ -410,7 +413,7 @@ export function TasksPageClient() {
                         }}
                         onUpdateNotes={async (id, note) => {
                             setTasks(prev => prev.map(t => t.id === id ? { ...t, notes: note, description: note } : t));
-                            try { await updateTask(id, { notes: note, description: note }); } catch (e) { }
+                            try { await updateTask(id, { notes: note, description: note }); } catch { }
                         }}
                         onDelete={async (id) => {
                             const task = tasks.find(t => t.id === id);
@@ -428,6 +431,7 @@ export function TasksPageClient() {
             <NewContentModal
                 isOpen={showNewContentModal}
                 onClose={() => setShowNewContentModal(false)}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onSuccess={(newItem: any) => {
                     const newTask: Task = {
                         id: newItem.id,

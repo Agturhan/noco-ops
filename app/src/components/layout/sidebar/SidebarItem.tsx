@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, type LucideIcon } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { NavItem } from '@/config/navigation';
 
 interface SidebarItemProps {

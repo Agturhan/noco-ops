@@ -53,7 +53,7 @@ export default function TeamCostList({ data }: TeamCostListProps) {
             const result = await updateUserCost(
                 userId,
                 parseFloat(editForm.hourlyCost) || 0,
-                editForm.currency as any
+                editForm.currency as 'TRY' | 'USD' | 'EUR' | 'GBP'
             );
 
             if (result.success) {

@@ -197,8 +197,8 @@ export async function addTransaction(formData: {
         }
 
         // 2. Adjust amount sign
-        let finalAmount = Math.abs(formData.amount);
-        let paramAmount = formData.type === 'EXPENSE' ? -finalAmount : finalAmount;
+        const finalAmount = Math.abs(formData.amount);
+        const paramAmount = formData.type === 'EXPENSE' ? -finalAmount : finalAmount;
 
         // 3. Transaction & Account Update (Transaction)
         const result = await prisma.$transaction(async (tx) => {

@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Textarea } from '@/components/ui';
 
 // Mock proje verileri - ID bazlı
-const projectsData: Record<string, typeof projectTemplate> = {
+const projectsData: Record<string, ProjectDetail> = {
     '1': {
         id: '1',
         name: 'Zeytindalı Rebrand 2026',
@@ -130,25 +130,25 @@ const projectsData: Record<string, typeof projectTemplate> = {
 };
 
 // Template type tanımı
-const projectTemplate = {
-    id: '',
-    name: '',
-    client: '',
-    status: '' as 'ACTIVE' | 'PENDING' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED',
-    priority: '' as 'HIGH' | 'MEDIUM' | 'LOW',
-    startDate: '',
-    dueDate: '',
-    budget: 0,
-    description: '',
-    manager: '',
-    team: [] as string[],
-    tags: [] as string[],
-    contract: { signedDate: '', maxRevisions: 0, paymentTerms: '', retainerHours: 0 },
-    deliverables: [] as { id: string; title: string; status: string; dueDate: string; assignee: string; progress: number }[],
-    invoices: [] as { id: string; number: string; amount: number; status: string; dueDate: string; paidDate?: string; description: string }[],
-    activities: [] as { id: string; date: string; user: string; action: string; type: string }[],
-    notes: [] as { id: string; date: string; user: string; content: string }[],
-};
+interface ProjectDetail {
+    id: string;
+    name: string;
+    client: string;
+    status: 'ACTIVE' | 'PENDING' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED' | string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW' | string;
+    startDate: string;
+    dueDate: string;
+    budget: number;
+    description: string;
+    manager: string;
+    team: string[];
+    tags: string[];
+    contract: { signedDate: string; maxRevisions: number; paymentTerms: string; retainerHours: number };
+    deliverables: { id: string; title: string; status: string; dueDate: string; assignee: string; progress: number }[];
+    invoices: { id: string; number: string; amount: number; status: string; dueDate: string; paidDate?: string; description: string }[];
+    activities: { id: string; date: string; user: string; action: string; type: string }[];
+    notes: { id: string; date: string; user: string; content: string }[];
+}
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     DRAFT: { label: 'Taslak', color: '#6B7B80', bgColor: '#F5F5F5' },
@@ -294,6 +294,7 @@ export default function ProjectDetailPage() {
                                 key={tab.id}
                                 variant={activeTab === tab.id ? 'primary' : 'ghost'}
                                 size="sm"
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 onClick={() => setActiveTab(tab.id as any)}
                             >
                                 {tab.label}

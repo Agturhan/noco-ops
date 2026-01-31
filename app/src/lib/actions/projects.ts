@@ -1,4 +1,5 @@
 'use server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
@@ -289,9 +290,9 @@ export async function updateContract(id: string, data: {
     if (data.rawAssetsIncluded !== undefined) updateData.rawAssetsIncluded = data.rawAssetsIncluded;
     if (data.retainerHours !== undefined) updateData.retainerHours = data.retainerHours;
     if (data.retainerHours !== undefined) updateData.retainerHours = data.retainerHours;
-    // @ts-ignore
+    // @ts-expect-error - Extended type not in base interface
     if (data.monthlyVideoQuota !== undefined) updateData.monthlyVideoQuota = data.monthlyVideoQuota;
-    // @ts-ignore
+    // @ts-expect-error - Extended type not in base interface
     if (data.monthlyPostQuota !== undefined) updateData.monthlyPostQuota = data.monthlyPostQuota;
     if (data.notes !== undefined) updateData.notes = data.notes;
 

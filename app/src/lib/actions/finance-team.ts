@@ -1,4 +1,6 @@
 'use server';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';

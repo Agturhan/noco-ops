@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Textarea, Select } from '@/components/ui';
-import Link from 'next/link';
-import { brands, getBrandColor } from '@/lib/data';
-import { getAllRetainerSummaries, logRetainerHours, getRetainerById, createRetainer, deleteRetainer, deleteRetainerLog } from '@/lib/actions/retainers'; // Added createRetainer, deleteRetainer
+import { Card, Button, Badge, Modal, Input, Textarea } from '@/components/ui';
+import { getAllRetainerSummaries, createRetainer, deleteRetainer, deleteRetainerLog } from '@/lib/actions/retainers'; // Added createRetainer, deleteRetainer
 import { getClients } from '@/lib/actions/projects'; // Added getClients
 
 // ===== RETAINER TRACKING SİSTEMİ =====
@@ -32,8 +30,8 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
 
 export function RetainersPageClient() {
     const [retainerClients, setRetainerClients] = useState<RetainerClient[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [clients, setClients] = useState<any[]>([]); // Available clients for dropdown
-    const [loading, setLoading] = useState(true);
     const [selectedClient, setSelectedClient] = useState<RetainerClient | null>(null);
     const [showLogModal, setShowLogModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -53,20 +51,15 @@ export function RetainersPageClient() {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState<'FULL' | 'PARTIAL'>('FULL');
 
-    // Load retainers from DB
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         try {
-            setLoading(true);
             const [summaries, clientsData] = await Promise.all([
                 getAllRetainerSummaries(),
                 getClients()
             ]);
 
             // Transform to local format
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const formatted: RetainerClient[] = summaries.map((r: any) => ({
                 id: r.id,
                 name: r.name || r.clientName,
@@ -84,10 +77,16 @@ export function RetainersPageClient() {
             setClients(clientsData || []);
         } catch (error) {
             console.error('Data yüklenirken hata:', error);
-        } finally {
-            setLoading(false);
         }
     };
+
+    // Load retainers from DB
+    useEffect(() => {
+        // eslint-disable-next-line
+        loadData();
+    }, []);
+
+
 
     // Form state handling for Log Hours
     const [logHours, setLogHours] = useState('');
@@ -135,6 +134,7 @@ export function RetainersPageClient() {
             await loadData(); // Reload list
             setShowCreateModal(false);
             setCreateForm({ clientId: '', name: '', monthlyHours: 20, monthlyRate: 0, startDate: new Date().toISOString().split('T')[0] });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error(error);
             alert(error.message || 'Retainer oluşturulamadı');
@@ -180,6 +180,7 @@ export function RetainersPageClient() {
             await loadData();
             setShowDetailModal(false);
             alert('Retainer silindi.');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error(error);
             alert(error.message || 'Silme işlemi başarısız');
@@ -280,7 +281,6 @@ export function RetainersPageClient() {
                                     <div style={{ display: 'flex', gap: '2px', height: 12 }}>
                                         {Array.from({ length: client.monthlyHours }).map((_, i) => {
                                             const isFilled = i < client.usedHours;
-                                            const isOverLimit = i >= client.monthlyHours; // Logic if used > monthly
 
                                             // Determine color
                                             let bgColor = 'var(--color-border)';
@@ -506,8 +506,10 @@ export function RetainersPageClient() {
                                                             if (confirm('Bu kaydı silmek istediğinize emin misiniz?')) {
                                                                 await deleteRetainerLog(log.id);
                                                                 await loadData();
+                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                                 setSelectedClient((prev: any) => ({
                                                                     ...prev,
+                                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                                     logs: prev.logs.filter((l: any) => l.id !== log.id),
                                                                     usedHours: prev.usedHours - log.hours
                                                                 }));

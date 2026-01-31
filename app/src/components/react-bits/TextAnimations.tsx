@@ -10,7 +10,15 @@ export const BlurText = ({ text = '', delay = 200, className = '' }: { text?: st
     );
 };
 
-export const GradientText = ({ children, className = "", colors = ["#40ffaa", "#4079ff", "#40ffaa"], animationSpeed = 8, showBorder = false }: any) => {
+interface GradientTextProps {
+    children: React.ReactNode;
+    className?: string;
+    colors?: string[];
+    animationSpeed?: number;
+    showBorder?: boolean;
+}
+
+export const GradientText = ({ children, className = "", colors = ["#40ffaa", "#4079ff", "#40ffaa"], animationSpeed = 8, showBorder = false }: GradientTextProps) => {
     const gradientStyle = {
         backgroundImage: `linear-gradient(to right, ${colors.join(", ")})`,
         animationDuration: `${animationSpeed}s`,

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { GlassSurface } from '@/components/ui/GlassSurface';
 import { getFinancialSummary, getTransactions, getFinanceChartData, type FinanceSummary, type FinanceTransaction } from '@/lib/actions/finance';
-import { Wallet, TrendingUp, TrendingDown, Clock, ArrowUpRight, ArrowDownLeft, Landmark, CreditCard, Banknote } from 'lucide-react';
+import { Wallet, TrendingUp, Clock, ArrowUpRight, ArrowDownLeft, Landmark, CreditCard, Banknote } from 'lucide-react';
 import { AddTransactionModal } from '@/components/finance/AddTransactionModal';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
@@ -26,6 +26,7 @@ export default function FinancePageClient() {
 function FinanceContent() {
     const [summary, setSummary] = useState<FinanceSummary | null>(null);
     const [recentTx, setRecentTx] = useState<FinanceTransaction[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [chartData, setChartData] = useState<{ cashFlow: any[], expenseBreakdown: any[] }>({ cashFlow: [], expenseBreakdown: [] });
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);

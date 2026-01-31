@@ -1,17 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Badge, Button, ProjectStatusBadge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, Button, ProjectStatusBadge, Modal, Input, Select, Textarea } from '@/components/ui';
 import { getProjects, createProject, getClients } from '@/lib/actions/projects';
 import {
     Plus,
     Briefcase,
     Clock,
     CheckCircle,
-    Archive,
     PieChart,
     Calendar,
     ArrowRight,
@@ -89,7 +87,9 @@ export function ProjectsPageClient() {
 
             // Mock usage stats for now since fetching real stats might be complex
             // In a real app, this would come from the API
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const mocks: Record<string, any> = {};
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data.forEach((p: any) => {
                 mocks[p.id] = {
                     video: Math.floor(Math.random() * (p.contract?.monthlyVideoQuota || 0)),
@@ -120,10 +120,12 @@ export function ProjectsPageClient() {
     useEffect(() => {
         loadProjects();
         loadClients();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         loadProjects();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter]);
 
     // Yeni proje oluştur

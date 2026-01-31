@@ -4,7 +4,7 @@
        * Böylece senkronize kalırlar
            */
 
-import { getBrandColor, getBrandName } from './data';
+
 
 // Task interface
 export interface SharedTask {

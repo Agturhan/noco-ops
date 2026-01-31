@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/content/icons';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,8 @@ interface ContentFilterBarProps {
     onFilterAssigneeChange: (val: string) => void;
     viewMode: 'list' | 'calendar' | 'team' | 'archive' | 'tasks' | 'studio';
     onViewModeChange: (mode: 'list' | 'calendar' | 'team' | 'archive' | 'tasks' | 'studio') => void;
-    activeTeam: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    activeTeam?: any[];
 }
 
 export function ContentFilterBar({
@@ -23,10 +24,8 @@ export function ContentFilterBar({
     filterBrand, onFilterBrandChange,
     filterStatus, onFilterStatusChange,
     filterAssignee, onFilterAssigneeChange,
-    viewMode, onViewModeChange,
-    activeTeam
+    viewMode, onViewModeChange
 }: ContentFilterBarProps) {
-    const [showFilters, setShowFilters] = useState(false);
     const router = useRouter(); // Navigation active
 
     const handleNavigation = (target: string) => {
@@ -44,6 +43,7 @@ export function ContentFilterBar({
             if (viewMode === 'tasks' || viewMode === 'calendar' || viewMode === 'studio') {
                 router.push('/dashboard/content-production');
             } else {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onViewModeChange(target as any);
             }
         }

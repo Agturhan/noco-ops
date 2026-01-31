@@ -30,7 +30,7 @@ export interface FileInfo {
 export async function uploadFile(
     file: File,
     folder: string = 'assets',
-    isProtected: boolean = false
+    _isProtected: boolean = false
 ): Promise<UploadResult> {
     try {
         // Dosya adını güvenli hale getir
@@ -66,9 +66,9 @@ export async function uploadFile(
             path: data.path,
             url: urlData.publicUrl,
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Dosya yükleme hatası:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
     }
 }
 
@@ -84,9 +84,9 @@ export async function getDownloadUrl(filePath: string, expiresIn: number = 3600)
         }
 
         return { success: true, url: data.signedUrl };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Download URL hatası:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
     }
 }
 
@@ -102,9 +102,9 @@ export async function deleteFile(filePath: string) {
         }
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Dosya silme hatası:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
     }
 }
 
@@ -140,7 +140,7 @@ export async function listFiles(folder: string = ''): Promise<FileInfo[]> {
             });
 
         return files;
-    } catch (error: any) {
+    } catch (error) {
         console.error('Dosya listeleme hatası:', error);
         return [];
     }

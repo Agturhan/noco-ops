@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal } from '@/components/ui';
 import { NewContentModal } from '@/components/content/NewContentModal';
-import { brands, getBrandById, getBrandColor, getBrandName, eventTypes } from '@/lib/data';
-import { getContentsAsCalendarEvents, createContent, updateContent as updateContentDB, deleteContent as deleteContentDB } from '@/lib/actions/content';
+import { brands, getBrandColor, getBrandName } from '@/lib/data';
+import { getContentsAsCalendarEvents, updateContent as updateContentDB } from '@/lib/actions/content';
 import { getMemberColors } from '@/lib/actions/userSettings';
 
 // ===== TİPLER =====
@@ -55,10 +55,12 @@ export function CalendarPageClient() {
 
     // Filtreler
     const [filterBrand, setFilterBrand] = useState<string>('all');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [filterType, setFilterType] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterAssignee, setFilterAssignee] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [activeTeam, setActiveTeam] = useState<any[]>([]);
 
     // Kişi renkleri (atanan kişiye göre renklendirme için)
@@ -173,44 +175,12 @@ export function CalendarPageClient() {
 
     const openEditEventModal = (event: CalendarEvent) => {
         setEditingEvent(event);
-        // Map CalendarEvent to ContentItem-like object for modal
-        const mappedContent = {
-            id: event.sourceId || (event.id.startsWith('content-') ? event.id.replace('content-', '') : event.id),
-            title: event.title,
-            brandId: event.brandId,
-            type: event.type,
-            status: event.status,
-            notes: event.description,
-            deliveryDate: event.date,
-            // time:? NewContentModal doesn't support time yet
-            assigneeIds: event.assigneeIds || (event.assigneeId ? [event.assigneeId] : [])
-        };
-        // Reuse NewContentModal via showModal
-        // But NewContentModal uses 'formDate' or 'initialContent'.
-        // We can pass 'initialContent' via a state?
-        // We haven't added 'initialContent' state to CalendarPage yet. 
-        // We currently use 'editingEvent' state. 
-        // I need to update the NewContentModal usage in JSX to pass 'initialContent'.
         setShowModal(true);
     };
 
     // saveEvent removed - handled by NewContentModal onSuccess
 
-    const deleteEvent = async () => {
-        if (editingEvent) {
-            try {
-                const dbId = editingEvent.sourceId || (editingEvent.id.startsWith('content-') ? editingEvent.id.replace('content-', '') : editingEvent.id);
-                if (dbId) {
-                    await deleteContentDB(dbId);
-                }
-                setEvents(events.filter(e => e.id !== editingEvent.id));
-                setShowModal(false);
-            } catch (error) {
-                console.error('Delete error', error);
-                alert('Silinirken hata oluştu');
-            }
-        }
-    };
+    // saveEvent removed - handled by NewContentModal onSuccess
 
     // Drag & Drop
     const handleDragStart = (event: CalendarEvent) => setDraggedEvent(event);
@@ -484,7 +454,7 @@ export function CalendarPageClient() {
                 <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title={selectedEvent?.title || ''} size="sm" footer={
                     <>
                         <Button variant="secondary" onClick={() => setShowEventModal(false)}>Kapat</Button>
-                        <Button variant="primary" onClick={() => { setShowEventModal(false); selectedEvent && openEditEventModal(selectedEvent); }}>Düzenle</Button>
+                        <Button variant="primary" onClick={() => { setShowEventModal(false); if (selectedEvent) openEditEventModal(selectedEvent); }}>Düzenle</Button>
                     </>
                 }>
                     {selectedEvent && (

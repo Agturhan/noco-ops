@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select } from '@/components/ui';
 import { getClientById, updateClient, createContract } from '@/lib/actions/projects';
 
 // Tipler
@@ -284,6 +284,7 @@ export default function ClientDetailPage() {
                                 key={tab.id}
                                 variant={activeTab === tab.id ? 'primary' : 'ghost'}
                                 size="sm"
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 onClick={() => setActiveTab(tab.id as any)}
                             >
                                 {tab.label}

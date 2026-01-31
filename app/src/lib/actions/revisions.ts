@@ -8,12 +8,12 @@ import { revalidatePath } from 'next/cache';
 
 type RevisionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
-interface RevisionRequest {
+export interface RevisionRequest {
     id: string;
     deliverableId: string;
     requestedBy?: string;
-    description: string;
-    items: string[];
+    feedback: string;
+    items?: string[];
     status: RevisionStatus;
     createdAt: string;
     completedAt?: string;
@@ -76,7 +76,7 @@ export async function getRevisionCount(deliverableId: string): Promise<{
         .eq('id', deliverableId)
         .single();
 
-    const maxRevisions = (deliverable as any)?.project?.contract?.maxRevisions || 2;
+    const maxRevisions = (deliverable as unknown as { project: { contract: { maxRevisions: number } } })?.project?.contract?.maxRevisions || 2;
 
     // Count completed revisions
     const { count } = await supabaseAdmin
@@ -103,7 +103,7 @@ export async function createRevisionRequest(data: {
     description: string;
     items?: string[];
     requestedBy?: string;
-}): Promise<{ success: boolean; error?: string; data?: any }> {
+}): Promise<{ success: boolean; error?: string; data?: RevisionRequest | null }> {
     // Check if revision limit is reached
     const { isLimitReached, max, used } = await getRevisionCount(data.deliverableId);
 
@@ -192,7 +192,7 @@ export async function approveExtraRevision(data: {
     description: string;
     approvedBy: string;
     extraCharge?: number;
-}): Promise<{ success: boolean; error?: string; data?: any }> {
+}): Promise<{ success: boolean; error?: string; data?: RevisionRequest | null }> {
     const { data: revision, error } = await supabaseAdmin
         .from('RevisionCycle')
         .insert([{
@@ -253,12 +253,18 @@ export async function getProjectRevisionSummary(projectId: string) {
         .eq('id', projectId)
         .single();
 
-    const maxRevisions = (project as any)?.contract?.maxRevisions || 2;
+    const projectData = project as unknown as { contract: { maxRevisions: number } };
+    const maxRevisions = projectData?.contract?.maxRevisions || 2;
 
-    const summary = deliverables.map((d: any) => {
+    const summary = (deliverables as unknown as {
+        id: string;
+        name: string;
+        status: string;
+        revisionCycles: { id: string; status: string }[];
+    }[]).map((d) => {
         const cycles = d.revisionCycles || [];
-        const completedRevisions = cycles.filter((c: any) => c.status === 'CLOSED').length;
-        const activeRevision = cycles.find((c: any) => c.status === 'OPEN' || c.status === 'IN_PROGRESS');
+        const completedRevisions = cycles.filter((c: { status: string }) => c.status === 'CLOSED').length;
+        const activeRevision = cycles.find((c: { status: string }) => c.status === 'OPEN' || c.status === 'IN_PROGRESS');
 
         return {
             id: d.id,

@@ -1,7 +1,7 @@
 'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+
 import { revalidatePath } from 'next/cache';
 import { logAction } from './audit';
 
@@ -168,25 +168,26 @@ export async function updateTask(id: string, data: {
     brandName?: string | null;
     notes?: string | null;
 }) {
-    const updateData: Record<string, any> = {};
+    // Explicitly typed update object
+    const updateData: Partial<Task> = {};
 
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.priority !== undefined) updateData.priority = data.priority;
-    if (data.projectId !== undefined) updateData.projectId = data.projectId;
-    if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
-    if (data.assigneeIds !== undefined) updateData.assigneeIds = data.assigneeIds;
-    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
-    if (data.estimatedHours !== undefined) updateData.estimatedHours = data.estimatedHours;
-    if (data.actualHours !== undefined) updateData.actualHours = data.actualHours;
-    if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
+    if (data.projectId !== undefined) updateData.projectId = data.projectId || undefined; // Handle null -> undefined for partial
+    if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId || undefined;
+    if (data.assigneeIds !== undefined) updateData.assigneeIds = data.assigneeIds || undefined;
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate || undefined;
+    if (data.estimatedHours !== undefined) updateData.estimatedHours = data.estimatedHours || undefined;
+    if (data.actualHours !== undefined) updateData.actualHours = data.actualHours || undefined;
+    if (data.completedAt !== undefined) updateData.completedAt = data.completedAt || undefined;
     // Content fields
-    if (data.contentType !== undefined) updateData.contentType = data.contentType;
-    if (data.publishDate !== undefined) updateData.publishDate = data.publishDate;
-    if (data.clientId !== undefined) updateData.clientId = data.clientId;
-    if (data.brandName !== undefined) updateData.brandName = data.brandName;
-    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.contentType !== undefined) updateData.contentType = data.contentType || undefined;
+    if (data.publishDate !== undefined) updateData.publishDate = data.publishDate || undefined;
+    if (data.clientId !== undefined) updateData.clientId = data.clientId || undefined;
+    if (data.brandName !== undefined) updateData.brandName = data.brandName || undefined;
+    if (data.notes !== undefined) updateData.notes = data.notes || undefined;
 
     // Auto-set completedAt when status changes to DONE
     if (data.status === 'DONE' && !data.completedAt) {
@@ -260,7 +261,7 @@ export async function getTasksByProject(projectId: string) {
 }
 
 // ===== Toggle Task Status (DONE <-> TODO) =====
-export async function toggleTaskStatus(id: string, userId?: string) {
+export async function toggleTaskStatus(id: string, _userId?: string) {
     // Mevcut görevi al
     const { data: task, error: fetchError } = await supabaseAdmin
         .from('Task')
@@ -313,7 +314,7 @@ export async function toggleTaskStatus(id: string, userId?: string) {
 }
 
 // ===== Get User's Today Tasks =====
-export async function getUserTodayTasks(userId: string) {
+export async function getUserTodayTasks(_userId: string) {
     const client = supabaseAdmin;
 
     console.log('[DEBUG] Querying SIMPLE tasks...');
@@ -332,7 +333,8 @@ export async function getUserTodayTasks(userId: string) {
 
     // DONE olanları sona koy
     // Sıralama: Önce tamamlanmamışlar, sonra tarihe göre artan
-    const sortedData = (data || []).sort((a: any, b: any) => {
+    const tasks = (data || []) as unknown as Task[];
+    const sortedData = tasks.sort((a, b) => {
         const isDoneA = a.status === 'DONE';
         const isDoneB = b.status === 'DONE';
 
@@ -345,11 +347,12 @@ export async function getUserTodayTasks(userId: string) {
         if (!a.dueDate) return 1;
         if (!b.dueDate) return -1;
 
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        // non-null assertion because we checked existence
+        return new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime();
     });
 
     // Map standard data
-    return sortedData.map((t: any) => ({
+    return sortedData.map((t) => ({
         id: t.id,
         title: t.title,
         description: t.description,
@@ -365,7 +368,7 @@ export async function getUserTodayTasks(userId: string) {
 }
 
 // ===== Get User's Week Deadlines =====
-export async function getUserWeekDeadlines(userId: string) {
+export async function getUserWeekDeadlines(_userId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const weekEnd = new Date(today);
@@ -391,19 +394,21 @@ export async function getUserWeekDeadlines(userId: string) {
         .limit(50);
 
     // Combine - Just upcoming
-    const allData = upcomingData || [];
+    const allData = (upcomingData || []) as unknown as Task[];
 
     // Sort: Date Ascending
-    const sortedData = allData.sort((a: any, b: any) => {
+    const sortedData = allData.sort((a, b) => {
         const isDoneA = a.status === 'DONE';
         const isDoneB = b.status === 'DONE';
         if (isDoneA && !isDoneB) return 1;
         if (!isDoneA && isDoneB) return -1;
+        // Due dates are filtered to not be null in query
+        if (!a.dueDate || !b.dueDate) return 0;
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     });
 
-    return sortedData.map((t: any) => {
-        const dueDate = new Date(t.dueDate);
+    return sortedData.map((t) => {
+        const dueDate = t.dueDate ? new Date(t.dueDate) : new Date();
         const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         return {
             id: t.id,

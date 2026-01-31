@@ -103,7 +103,7 @@ export async function getUserWeekDeadlines(userId: string) {
             take: 10
         });
 
-        return tasks.map((t: any) => {
+        return tasks.map((t) => {
             const dueDate = new Date(t.dueDate);
             const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
             return {
@@ -199,7 +199,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
 }
 
 // Rol bazlı izin kontrolü
-function hasPermission(userRole: UserRole, action: string): boolean {
+export function hasPermission(userRole: UserRole, action: string): boolean {
     const permissions: Record<UserRole, string[]> = {
         OWNER: ['*'], // Tüm yetkiler
         ADMIN: ['create', 'read', 'update', 'delete', 'approve', 'manage_users'],
@@ -220,7 +220,7 @@ export async function logUserActivity(
     action: string,
     entityType: string,
     entityId: string,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
 ) {
     try {
         await prisma.auditLog.create({
@@ -229,7 +229,8 @@ export async function logUserActivity(
                 action,
                 entityType,
                 entityId,
-                details: details || {},
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                details: (details || {}) as any,
                 isOverride: false,
             }
         });
@@ -285,7 +286,7 @@ export async function getRecentActivities(limit: number = 20) {
             action: a.action,
             entityType: a.entityType,
             entityId: a.entityId,
-            details: a.details as any,
+            details: a.details as Record<string, unknown>,
             createdAt: a.createdAt.toISOString(),
             user: a.user ? {
                 id: a.user.id,

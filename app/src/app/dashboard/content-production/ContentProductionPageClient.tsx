@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Button } from '@/components/ui'; // Keep basic UI
-import { contentStatuses, brands, ContentStatus, ContentType, getSimpleStatus } from '@/lib/data';
+import { ContentStatus, ContentType, getSimpleStatus } from '@/lib/data';
 import { ContentDetailPanel } from '@/components/content/ContentDetailPanel';
 import { NewContentModal } from '@/components/content/NewContentModal';
 import { ContentQueuePanel } from '@/components/content/ContentQueuePanel';
@@ -43,7 +43,6 @@ const initialContents: ContentItem[] = [];
 export function ContentProductionPageClient() {
     // 1. STATE
     const [contents, setContents] = useState<ContentItem[]>(initialContents);
-    const [isLoading, setIsLoading] = useState(true);
 
     // UI State
     const [showModal, setShowModal] = useState(false);
@@ -61,7 +60,6 @@ export function ContentProductionPageClient() {
     const [activeTeam, setActiveTeam] = useState<DBUser[]>([]);
     const [teamMemberColors, setTeamMemberColors] = useState<Record<string, string>>({});
     const [noteHistory, setNoteHistory] = useState<NoteHistoryEntry[]>([]);
-    const [editingNotes, setEditingNotes] = useState('');
 
     const searchParams = useSearchParams();
 
@@ -69,6 +67,7 @@ export function ContentProductionPageClient() {
     useEffect(() => {
         // Load User
         const userStr = localStorage.getItem('currentUser');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (userStr) setCurrentUser(JSON.parse(userStr));
 
         // Load Team
@@ -81,7 +80,6 @@ export function ContentProductionPageClient() {
 
         // Load Contents
         const loadContents = async () => {
-            setIsLoading(true);
             try {
                 const dbContents = await getContents();
                 if (dbContents) {
@@ -100,8 +98,6 @@ export function ContentProductionPageClient() {
                 }
             } catch (err) {
                 console.error(err);
-            } finally {
-                setIsLoading(false);
             }
         };
         loadContents();
@@ -109,13 +105,9 @@ export function ContentProductionPageClient() {
 
     // Open Modal from URL
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (searchParams.get('action') === 'new') setShowModal(true);
     }, [searchParams]);
-
-    // Update editing notes when selection changes
-    useEffect(() => {
-        if (selectedContent) setEditingNotes(selectedContent.notes || '');
-    }, [selectedContent]);
 
     // 3. FILTER LOGIC
     const archivedStatuses: ContentStatus[] = ['PAYLASILD', 'TESLIM'];
@@ -199,7 +191,8 @@ export function ContentProductionPageClient() {
                     <ContentFilterBar
                         searchQuery={searchQuery} onSearchChange={setSearchQuery}
                         filterBrand={filterBrand} onFilterBrandChange={setFilterBrand}
-                        filterStatus={filterStatus} onFilterStatusChange={(v: any) => setFilterStatus(v)}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        filterStatus={filterStatus} onFilterStatusChange={(v) => setFilterStatus(v as any)}
                         filterAssignee={filterAssignee} onFilterAssigneeChange={setFilterAssignee}
                         viewMode={viewMode} onViewModeChange={setViewMode}
                         activeTeam={activeTeam}

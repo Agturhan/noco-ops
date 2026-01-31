@@ -95,16 +95,14 @@ export async function createUser(data: { name: string; email: string; role: User
         }
 
         // 2. Create DB User Record
-        // If authId exists, use it as ID, otherwise generate one (or let DB do it if UUID)
-        const userPayload: any = {
+        const userPayload = {
             name: data.name,
             email: data.email,
             role: data.role,
             phone: data.phone,
             createdAt: new Date().toISOString(),
+            ...(authId ? { id: authId } : {})
         };
-
-        if (authId) userPayload.id = authId;
 
         const { error: dbError } = await supabaseAdmin
             .from('User')
@@ -118,9 +116,9 @@ export async function createUser(data: { name: string; email: string; role: User
 
         revalidatePath('/dashboard/system/users');
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Create user error:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
 

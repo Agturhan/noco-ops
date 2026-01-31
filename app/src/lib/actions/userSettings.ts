@@ -8,13 +8,13 @@ export interface UserSetting {
     id: string;
     user_id: string | null;
     setting_key: string;
-    setting_value: Record<string, any>;
+    setting_value: Record<string, unknown>;
     created_at: string;
     updated_at: string;
 }
 
 // Ayar getir
-export async function getSetting(key: string): Promise<Record<string, any> | null> {
+export async function getSetting(key: string): Promise<Record<string, unknown> | null> {
     try {
         const { data, error } = await supabaseAdmin
             .from('user_settings')
@@ -38,7 +38,7 @@ export async function getSetting(key: string): Promise<Record<string, any> | nul
 }
 
 // Ayar kaydet
-export async function saveSetting(key: string, value: Record<string, any>): Promise<boolean> {
+export async function saveSetting(key: string, value: Record<string, unknown>): Promise<boolean> {
     try {
         // Upsert - varsa güncelle, yoksa ekle
         const { error } = await supabaseAdmin

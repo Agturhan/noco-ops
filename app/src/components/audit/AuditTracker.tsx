@@ -19,7 +19,7 @@ export function AuditTracker() {
             try {
                 // Determine entity based on path
                 let entityType = 'Page';
-                let entityName = url;
+                const entityName = url;
 
                 if (pathname?.includes('/dashboard/system/clients/')) {
                     entityType = 'Brand Detail';
@@ -28,7 +28,7 @@ export function AuditTracker() {
                 }
 
                 await logAction('VIEW', entityType, url, { url }, entityName);
-            } catch (e) {
+            } catch {
                 // Ignore tracking errors
             }
         };

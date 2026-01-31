@@ -24,6 +24,7 @@ export function Drawer({
     title,
     children,
     footer,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     side = 'right',
     width = '420px'
 }: DrawerProps) {

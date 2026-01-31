@@ -7,7 +7,7 @@ import { UserRole } from '@/lib/types/auth';
 import { MagicBento } from '@/components/react-bits/MagicBento';
 import { GlassSurface } from '@/components/ui/GlassSurface';
 import ShinyText from '@/components/react-bits/ShinyText';
-import { Plus, Trash2, Edit2, Shield, Phone, Mail, User as UserIcon } from 'lucide-react';
+import { Plus, Trash2, Edit2, Phone } from 'lucide-react';
 
 const RoleColors: Record<UserRole, string> = {
     OWNER: '#FFD60A', // Gold
@@ -185,7 +185,7 @@ export function SystemUsersPageClient() {
 
                                     {user.notes && (
                                         <div className="text-xs text-white/50 bg-white/[0.02] p-2 rounded-lg border border-white/5 italic">
-                                            "{user.notes}"
+                                            &quot;{user.notes}&quot;
                                         </div>
                                     )}
                                 </div>

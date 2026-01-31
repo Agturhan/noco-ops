@@ -1,16 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardContent, Button, Badge } from '@/components/ui';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { GlassSurface } from '@/components/ui/GlassSurface';
-import { getBrandName, contentStatuses, contentTypes, ContentStatus, ContentType, getSimpleStatus, getStagesForType } from '@/lib/data';
+import { getBrandName, contentStatuses, ContentStatus, ContentType, getStagesForType } from '@/lib/data';
 import { StatusIcons, TypeIcons, Icons } from './icons';
-import {
-    Clock,
-    Trash2
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Clock, Trash2 } from 'lucide-react';
 
 interface ContentItem {
     id: string;
@@ -66,7 +60,6 @@ export function ContentDetailPanel({
 
     useEffect(() => {
         if (content) {
-            // eslint-disable-next-line
             setEditingNotes(content.notes || content.description || '');
             setOptimisticStatus(content.status);
         }
@@ -86,13 +79,10 @@ export function ContentDetailPanel({
         );
     }
 
-    const typeInfo = contentTypes[content.type] || { icon: '📋', label: 'Görev' };
-    const statusInfo = contentStatuses[content.status] || { icon: '○', label: content.status, color: '#999' };
     const brandName = getBrandName(content.brandId) || content.project || 'Genel';
 
     // Icon resolve
     const TypeIcon = TypeIcons[content.type as ContentType] || TypeIcons['TEKLIF'];
-    const StatusIcon = StatusIcons[content.status as ContentStatus] || <Clock size={18} />;
 
     return (
         <div className="h-full flex flex-col bg-[var(--surface-bg)] border-l border-white/5 shadow-2xl relative z-40">
@@ -314,7 +304,7 @@ function TotalDurationDisplay({ taskId }: { taskId: string }) {
         import('@/lib/actions/timelogs').then(async ({ getTaskLogs }) => {
             const res = await getTaskLogs(taskId);
             if (mounted && res.success) {
-                const total = res.data.reduce((acc: number, log: any) => acc + (log.durationMinutes || 0), 0);
+                const total = res.data.reduce((acc: number, log: { durationMinutes?: number }) => acc + (log.durationMinutes || 0), 0);
                 setTotalMinutes(total);
             }
         });
