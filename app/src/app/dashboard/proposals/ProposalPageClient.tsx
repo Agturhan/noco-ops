@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
-import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Badge, Modal, Input, Select, Textarea, Drawer } from '@/components/ui';
 import { getProposals, createProposal, updateProposalStatus, sendProposal, approveProposal, deleteProposal } from '@/lib/actions/proposals';
 import { SERVICES, SM_PACKAGES, STUDIO_REELS_PACKAGES, formatCurrency, VAT_RATE, MAX_DISCOUNT_RATE } from '@/lib/constants/pricing';
 import { Printer, Calculator } from 'lucide-react';
@@ -695,131 +695,178 @@ export function ProposalPageClient() {
                 </div>
             </Modal>
 
-            {/* Teklif Detay Modal */}
-            <Modal
+            {/* Teklif Detay Drawer */}
+            <Drawer
                 isOpen={showDetailModal}
                 onClose={() => setShowDetailModal(false)}
-                title={selectedProposal ? `📄 ${selectedProposal.number}` : 'Teklif Detayı'}
-                size="lg"
+                title={selectedProposal ? selectedProposal.number : 'Teklif Detayı'}
                 footer={
                     <>
-                        <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
-                        <Button variant="secondary" onClick={() => window.print()}>
-                            <Printer size={16} style={{ marginRight: '6px' }} />
-                            Yazdır / PDF
-                        </Button>
                         {selectedProposal?.status === 'DRAFT' && (
-                            <Button variant="primary" onClick={() => updateProposalStatus(selectedProposal.id, 'SENT')}>
+                            <Button variant="primary" onClick={() => updateProposalStatus(selectedProposal.id, 'SENT')} style={{ flex: 1 }}>
                                 📤 Müşteriye Gönder
                             </Button>
                         )}
                         {selectedProposal?.status === 'SENT' && (
                             <>
-                                <Button variant="danger" onClick={() => updateProposalStatus(selectedProposal.id, 'REJECTED')}>
+                                <Button variant="danger" onClick={() => updateProposalStatus(selectedProposal.id, 'REJECTED')} style={{ flex: 1 }}>
                                     ❌ Reddedildi
                                 </Button>
-                                <Button variant="success" onClick={() => updateProposalStatus(selectedProposal.id, 'APPROVED')}>
-                                    ✅ Onaylandı → Proje Oluştur
+                                <Button variant="success" onClick={() => updateProposalStatus(selectedProposal.id, 'APPROVED')} style={{ flex: 1 }}>
+                                    ✅ Onaylandı
                                 </Button>
                             </>
                         )}
+                        <Button variant="secondary" onClick={() => window.print()}>
+                            <Printer size={16} />
+                        </Button>
                     </>
                 }
             >
                 {selectedProposal && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                        {/* Başlık Bilgileri */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                            <div>
-                                <p style={{ fontSize: 'var(--text-h3)', fontWeight: 700 }}>{selectedProposal.clientName}</p>
-                                <p style={{ color: 'var(--color-muted)' }}>
-                                    Tarih: {new Date(selectedProposal.date).toLocaleDateString('tr-TR')} •
-                                    Geçerlilik: {new Date(selectedProposal.validUntil).toLocaleDateString('tr-TR')}
-                                </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                        {/* Başlık ve Durum */}
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <Badge style={{
+                                    backgroundColor: statusConfig[selectedProposal.status]?.bgColor,
+                                    color: statusConfig[selectedProposal.status]?.color,
+                                    fontSize: 'var(--text-body-sm)'
+                                }}>
+                                    {statusConfig[selectedProposal.status]?.label}
+                                </Badge>
+                                <span style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>
+                                    {new Date(selectedProposal.date).toLocaleDateString('tr-TR')}
+                                </span>
                             </div>
-                            <Badge style={{
-                                backgroundColor: statusConfig[selectedProposal.status]?.bgColor,
-                                color: statusConfig[selectedProposal.status]?.color,
-                                fontSize: 'var(--text-body-sm)'
-                            }}>
-                                {statusConfig[selectedProposal.status]?.label}
-                            </Badge>
-                        </div>
-
-                        {/* Kalemler */}
-                        <div className="table-container">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Hizmet</th>
-                                        <th style={{ textAlign: 'right' }}>Miktar</th>
-                                        <th style={{ textAlign: 'right' }}>Birim Fiyat</th>
-                                        <th style={{ textAlign: 'right' }}>Toplam</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {selectedProposal.lineItems.map(item => (
-                                        <tr key={item.id}>
-                                            <td>
-                                                {item.serviceName}
-                                                <Badge
-                                                    variant={item.incomeType === 'RECURRING' ? 'success' : 'info'}
-                                                    style={{ marginLeft: '8px', fontSize: '10px' }}
-                                                >
-                                                    {item.incomeType === 'RECURRING' ? '🔄 Düzenli' : '📦 Proje'}
-                                                </Badge>
-                                            </td>
-                                            <td style={{ textAlign: 'right' }}>{item.quantity} {item.unit}</td>
-                                            <td style={{ textAlign: 'right' }}>{formatCurrency(item.unitPrice)}</td>
-                                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(item.total)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colSpan={3} style={{ textAlign: 'right' }}>Ara Toplam</td>
-                                        <td style={{ textAlign: 'right' }}>{formatCurrency(selectedProposal.subtotal)}</td>
-                                    </tr>
-                                    <tr>
-                                        <td colSpan={3} style={{ textAlign: 'right' }}>KDV (%20)</td>
-                                        <td style={{ textAlign: 'right' }}>{formatCurrency(selectedProposal.kdv)}</td>
-                                    </tr>
-                                    <tr style={{ backgroundColor: 'var(--color-surface)' }}>
-                                        <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700 }}>GENEL TOPLAM</td>
-                                        <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primary)', fontSize: 'var(--text-body)' }}>
-                                            {formatCurrency(selectedProposal.total)}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-
-                        {/* Ek Bilgiler */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                            <div>
-                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Ödeme Şartları</p>
-                                <p style={{ fontWeight: 600 }}>{selectedProposal.paymentTerms}</p>
-                            </div>
-                            {selectedProposal.notes && (
-                                <div>
-                                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Notlar</p>
-                                    <p>{selectedProposal.notes}</p>
-                                </div>
-                            )}
+                            <h3 style={{ fontSize: 'var(--text-h2)', fontWeight: 700, margin: 0 }}>
+                                {selectedProposal.clientName}
+                            </h3>
+                            <p style={{ color: 'var(--color-muted)', fontSize: 'var(--text-body-sm)' }}>
+                                Geçerlilik: {new Date(selectedProposal.validUntil).toLocaleDateString('tr-TR')}
+                            </p>
                         </div>
 
                         {/* Onay Sonrası Bilgi */}
                         {selectedProposal.status === 'APPROVED' && (
-                            <div style={{ padding: 'var(--space-2)', backgroundColor: '#E8F5E9', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid #4CAF50' }}>
-                                <p style={{ fontWeight: 600, color: '#2E7D32' }}>✅ Bu teklif onaylandı</p>
+                            <div style={{
+                                padding: 'var(--space-2)',
+                                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                borderLeft: '3px solid #4CAF50'
+                            }}>
+                                <p style={{ fontWeight: 600, color: '#2E7D32', fontSize: 'var(--text-body-sm)' }}>✅ Bu teklif onaylandı</p>
                                 <p style={{ fontSize: 'var(--text-caption)', color: '#388E3C' }}>
                                     Proje oluşturuldu ve çalışmaya başlanabilir.
                                 </p>
                             </div>
                         )}
+
+                        {/* Özet Kartlar */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                            <div style={{
+                                background: 'var(--color-surface-2)',
+                                padding: '12px',
+                                borderRadius: 'var(--radius-md)'
+                            }}>
+                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Toplam Tutar</p>
+                                <p style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                    {formatCurrency(selectedProposal.total)}
+                                </p>
+                            </div>
+                            <div style={{
+                                background: 'var(--color-surface-2)',
+                                padding: '12px',
+                                borderRadius: 'var(--radius-md)'
+                            }}>
+                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>Hizmet Sayısı</p>
+                                <p style={{ fontSize: '20px', fontWeight: 700 }}>
+                                    {selectedProposal.lineItems.length}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Kalemler */}
+                        <div>
+                            <p style={{
+                                fontSize: 'var(--text-body-sm)',
+                                fontWeight: 600,
+                                color: 'var(--color-muted)',
+                                marginBottom: '8px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                Hizmet Detayları
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {selectedProposal.lineItems.map(item => (
+                                    <div key={item.id} style={{
+                                        background: 'var(--color-surface)',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: 'var(--radius-md)',
+                                        padding: '12px'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <span style={{ fontWeight: 500 }}>{item.serviceName}</span>
+                                            <span style={{ fontWeight: 600 }}>{formatCurrency(item.total)}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>
+                                            <span>
+                                                {item.quantity} {item.unit} x {formatCurrency(item.unitPrice)}
+                                            </span>
+                                            <span style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                color: item.incomeType === 'RECURRING' ? 'var(--color-success)' : 'inherit'
+                                            }}>
+                                                {item.incomeType === 'RECURRING' ? '🔄 Aylık' : '📦 Proje'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Alt Bilgiler */}
+                        <div style={{
+                            background: 'var(--color-surface-3)',
+                            padding: '16px',
+                            borderRadius: 'var(--radius-lg)',
+                            fontSize: 'var(--text-body-sm)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ color: 'var(--color-muted)' }}>Ara Toplam</span>
+                                <span>{formatCurrency(selectedProposal.subtotal)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--color-divider)' }}>
+                                <span style={{ color: 'var(--color-muted)' }}>KDV (%20)</span>
+                                <span>{formatCurrency(selectedProposal.kdv)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 600 }}>GENEL TOPLAM</span>
+                                <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(selectedProposal.total)}</span>
+                            </div>
+                        </div>
+
+                        {/* Notlar ve Ödeme Şartları */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div>
+                                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '4px' }}>Ödeme Şartları</p>
+                                <p style={{ fontSize: 'var(--text-body-sm)', padding: '8px', background: 'var(--color-surface-2)', borderRadius: 'var(--radius-sm)' }}>
+                                    {selectedProposal.paymentTerms}
+                                </p>
+                            </div>
+                            {selectedProposal.notes && (
+                                <div>
+                                    <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)', marginBottom: '4px' }}>Notlar</p>
+                                    <p style={{ fontSize: 'var(--text-body-sm)', whiteSpace: 'pre-line' }}>{selectedProposal.notes}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
-            </Modal>
+            </Drawer>
 
             {/* Akıllı Teklif Hesaplayıcı Modal */}
             <SmartProposalModal

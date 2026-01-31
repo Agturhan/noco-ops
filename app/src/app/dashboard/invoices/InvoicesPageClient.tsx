@@ -3,15 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout';
 import {
-    Card, CardHeader, CardContent,
+    Card,
     Badge, Button,
     InvoiceStatusBadge,
     Modal
 } from '@/components/ui';
-import { Input } from '@/components/ui/Input';
-import { brands, getBrandColor } from '@/lib/data';
 import { exportToPDF, generateInvoiceHTML } from '@/lib/utils/pdfExport';
 import { getInvoices, markInvoicePaid } from '@/lib/actions/projects';
+import {
+    FileText,
+    CreditCard,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    XCircle,
+    Download,
+    MoreHorizontal,
+    ArrowRight
+} from 'lucide-react';
 
 // Invoice interface
 interface Invoice {
@@ -26,6 +35,14 @@ interface Invoice {
     paidAt?: string;
     createdAt?: string;
 }
+
+// Kanban column config
+const KANBAN_COLUMNS = [
+    { id: 'PENDING', label: 'Bekleyen', color: 'var(--color-warning)', icon: Clock },
+    { id: 'OVERDUE', label: 'Vadesi Geçmiş', color: 'var(--color-error)', icon: AlertCircle },
+    { id: 'PAID', label: 'Ödendi', color: 'var(--color-success)', icon: CheckCircle },
+    { id: 'REFUNDED', label: 'İade', color: 'var(--color-muted)', icon: XCircle },
+] as const;
 
 // Mock invoices for fallback when DB is empty
 const mockInvoices: Invoice[] = [
@@ -47,7 +64,6 @@ export function InvoicesPageClient() {
             try {
                 setLoading(true);
                 const data = await getInvoices();
-                // Transform DB data to local Invoice format
                 const formatted: Invoice[] = data.map((inv: any) => ({
                     id: inv.id,
                     project: inv.project?.name || 'Bilinmeyen Proje',
@@ -60,11 +76,9 @@ export function InvoicesPageClient() {
                     paidAt: inv.paidAt?.split('T')[0] || '',
                     createdAt: inv.createdAt?.split('T')[0] || '',
                 }));
-                // Fallback to mock data if DB is empty
                 setInvoices(formatted.length > 0 ? formatted : mockInvoices);
             } catch (error) {
                 console.error('Faturalar yüklenirken hata:', error);
-                // Use mock data on error
                 setInvoices(mockInvoices);
             } finally {
                 setLoading(false);
@@ -82,7 +96,6 @@ export function InvoicesPageClient() {
         if (!selectedInvoice) return;
         try {
             await markInvoicePaid(selectedInvoice.id);
-            // Optimistic update
             setInvoices(invoices.map(inv =>
                 inv.id === selectedInvoice.id
                     ? { ...inv, status: 'PAID' as const, paidAt: new Date().toISOString().split('T')[0] }
@@ -103,7 +116,7 @@ export function InvoicesPageClient() {
         }).format(amount);
     };
 
-    const handleExportPDF = (invoice: typeof invoices[0]) => {
+    const handleExportPDF = (invoice: Invoice) => {
         const content = generateInvoiceHTML(invoice);
         exportToPDF(content, {
             title: `Fatura - ${invoice.project}`,
@@ -111,21 +124,20 @@ export function InvoicesPageClient() {
         });
     };
 
-    // Dinamik metrik hesaplamaları
+    // Get invoices by status
+    const getInvoicesByStatus = (status: string) =>
+        invoices.filter(inv => inv.status === status);
+
+    // Calculate totals per column
+    const getColumnTotal = (status: string) =>
+        getInvoicesByStatus(status).reduce((sum, inv) => sum + inv.amount, 0);
+
+    // Summary metrics
     const totalPending = invoices
         .filter(inv => inv.status === 'PENDING' || inv.status === 'OVERDUE')
         .reduce((sum, inv) => sum + inv.amount, 0);
 
     const overdueCount = invoices.filter(inv => inv.status === 'OVERDUE').length;
-
-    const thisMonthPaid = invoices
-        .filter(inv => {
-            if (inv.status !== 'PAID' || !inv.paidAt) return false;
-            const paidDate = new Date(inv.paidAt);
-            const now = new Date();
-            return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
-        })
-        .reduce((sum, inv) => sum + inv.amount, 0);
 
     return (
         <>
@@ -134,159 +146,298 @@ export function InvoicesPageClient() {
                 subtitle="Ödeme durumu ve fatura yönetimi"
                 actions={
                     <Button variant="primary">
-                        + Yeni Fatura
+                        <FileText size={16} />
+                        Yeni Fatura
                     </Button>
                 }
             />
 
             <div style={{ padding: 'var(--space-3)' }}>
-                {/* Summary Cards */}
+                {/* Summary Bar */}
                 <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: 'var(--space-2)',
-                    marginBottom: 'var(--space-3)'
-                }}>
-                    <Card>
-                        <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
-                            Bekleyen Ödemeler
-                        </p>
-                        <p style={{
-                            fontSize: 'var(--text-h3)',
-                            fontWeight: 700,
-                            fontFamily: 'var(--font-heading)',
-                            color: 'var(--color-warning)'
-                        }}>
-                            {formatCurrency(totalPending, 'TRY')}
-                        </p>
-                    </Card>
-                    <Card>
-                        <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
-                            Gecikmiş Faturalar
-                        </p>
-                        <p style={{
-                            fontSize: 'var(--text-h3)',
-                            fontWeight: 700,
-                            fontFamily: 'var(--font-heading)',
-                            color: 'var(--color-error)'
-                        }}>
-                            {overdueCount}
-                        </p>
-                    </Card>
-                    <Card>
-                        <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
-                            Bu Ay Ödenen
-                        </p>
-                        <p style={{
-                            fontSize: 'var(--text-h3)',
-                            fontWeight: 700,
-                            fontFamily: 'var(--font-heading)',
-                            color: 'var(--color-success)'
-                        }}>
-                            {formatCurrency(thisMonthPaid, 'TRY')}
-                        </p>
-                    </Card>
-                </div>
-
-                {/* Info Banner */}
-                <Card style={{
-                    marginBottom: 'var(--space-2)',
-                    backgroundColor: 'rgba(245, 158, 11, 0.05)',
-                    borderLeft: '3px solid var(--color-warning)'
+                    display: 'flex',
+                    gap: 'var(--space-3)',
+                    marginBottom: 'var(--space-3)',
+                    flexWrap: 'wrap'
                 }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 'var(--space-1)',
-                        fontSize: 'var(--text-body-sm)'
+                        padding: '8px 16px',
+                        background: 'var(--color-surface)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--color-border)'
                     }}>
-                        <span>⚠️</span>
-                        <span>
-                            <strong>Hatırlatma:</strong> Ödenmemiş faturalar olan projelerin teslimatları engellenmiştir.
-                        </span>
+                        <Clock size={16} style={{ color: 'var(--color-warning)' }} />
+                        <span style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>Bekleyen:</span>
+                        <strong style={{ color: 'var(--color-warning)' }}>{formatCurrency(totalPending, 'TRY')}</strong>
                     </div>
-                </Card>
+                    {overdueCount > 0 && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-1)',
+                            padding: '8px 16px',
+                            background: 'rgba(255, 67, 66, 0.1)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--color-error)'
+                        }}>
+                            <AlertCircle size={16} style={{ color: 'var(--color-error)' }} />
+                            <span style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-error)' }}>
+                                {overdueCount} vadesi geçmiş fatura
+                            </span>
+                        </div>
+                    )}
+                </div>
 
-                {/* Invoices Table */}
+                {/* Kanban Board */}
                 {loading ? (
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ color: 'var(--color-muted)' }}>Faturalar yükleniyor...</p>
-                        </div>
-                    </Card>
-                ) : invoices.length === 0 ? (
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>💰</p>
-                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)' }}>Henüz fatura yok</p>
-                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>
-                                Bir proje için ilk faturanızı oluşturun
-                            </p>
-                            <Button variant="primary">+ Yeni Fatura</Button>
-                        </div>
-                    </Card>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(4, 1fr)',
+                        gap: 'var(--space-2)'
+                    }}>
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} style={{
+                                height: '200px',
+                                background: 'var(--color-surface)',
+                                borderRadius: 'var(--radius-md)',
+                                animation: 'pulse 1.5s infinite'
+                            }} />
+                        ))}
+                    </div>
                 ) : (
-                    <Card>
-                        <div className="table-container">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Proje</th>
-                                        <th>Müşteri</th>
-                                        <th style={{ textAlign: 'right' }}>Tutar</th>
-                                        <th>Vade</th>
-                                        <th>Durum</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {invoices.map((invoice) => (
-                                        <tr key={invoice.id}>
-                                            <td style={{ fontWeight: 500 }}>{invoice.project}</td>
-                                            <td style={{ color: 'var(--color-muted)' }}>{invoice.client}</td>
-                                            <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                                {formatCurrency(invoice.amount, invoice.currency)}
-                                            </td>
-                                            <td>
-                                                {invoice.status === 'PAID' ? (
-                                                    <span style={{ color: 'var(--color-success)' }}>
-                                                        ✓ {invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                                                    </span>
-                                                ) : (
-                                                    <span style={{
-                                                        color: invoice.status === 'OVERDUE' ? 'var(--color-error)' : 'inherit'
+                    <div
+                        className="kanban-board"
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: 'var(--space-2)',
+                            minHeight: '400px'
+                        }}
+                    >
+                        {KANBAN_COLUMNS.map(column => {
+                            const columnInvoices = getInvoicesByStatus(column.id);
+                            const columnTotal = getColumnTotal(column.id);
+                            const Icon = column.icon;
+
+                            return (
+                                <div
+                                    key={column.id}
+                                    className="kanban-column"
+                                    style={{
+                                        background: 'var(--color-surface)',
+                                        borderRadius: 'var(--radius-lg)',
+                                        padding: 'var(--space-2)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 'var(--space-2)'
+                                    }}
+                                >
+                                    {/* Column Header */}
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '8px 12px',
+                                        borderBottom: '1px solid var(--color-divider)'
+                                    }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}>
+                                            <Icon size={16} style={{ color: column.color }} />
+                                            <span style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
+                                                {column.label}
+                                            </span>
+                                            <span style={{
+                                                background: 'var(--color-surface-2)',
+                                                padding: '2px 8px',
+                                                borderRadius: 'var(--radius-pill)',
+                                                fontSize: 'var(--text-caption)',
+                                                color: 'var(--color-muted)'
+                                            }}>
+                                                {columnInvoices.length}
+                                            </span>
+                                        </div>
+                                        {columnTotal > 0 && (
+                                            <span style={{
+                                                fontSize: 'var(--text-caption)',
+                                                color: column.color,
+                                                fontWeight: 600
+                                            }}>
+                                                {formatCurrency(columnTotal, 'TRY')}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Invoice Cards */}
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 'var(--space-1)',
+                                        flex: 1,
+                                        overflowY: 'auto'
+                                    }}>
+                                        {columnInvoices.length === 0 ? (
+                                            <div style={{
+                                                padding: 'var(--space-3)',
+                                                textAlign: 'center',
+                                                color: 'var(--color-muted)',
+                                                fontSize: 'var(--text-body-sm)'
+                                            }}>
+                                                Fatura yok
+                                            </div>
+                                        ) : (
+                                            columnInvoices.map(invoice => (
+                                                <div
+                                                    key={invoice.id}
+                                                    className="invoice-card"
+                                                    style={{
+                                                        background: 'var(--color-surface-3)',
+                                                        borderRadius: 'var(--radius-row)',
+                                                        padding: '12px 16px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s ease',
+                                                        border: '1px solid transparent'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.background = 'var(--color-surface-hover)';
+                                                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.background = 'var(--color-surface-3)';
+                                                        e.currentTarget.style.borderColor = 'transparent';
+                                                    }}
+                                                >
+                                                    {/* Client & Project */}
+                                                    <div style={{ marginBottom: '8px' }}>
+                                                        <p style={{
+                                                            fontWeight: 600,
+                                                            fontSize: 'var(--text-body)',
+                                                            marginBottom: '2px',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {invoice.client}
+                                                        </p>
+                                                        <p style={{
+                                                            fontSize: 'var(--text-caption)',
+                                                            color: 'var(--color-muted)',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {invoice.project}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Amount */}
+                                                    <div style={{
+                                                        fontSize: 'var(--text-h3)',
+                                                        fontWeight: 700,
+                                                        marginBottom: '8px',
+                                                        fontVariantNumeric: 'tabular-nums'
                                                     }}>
-                                                        {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                <InvoiceStatusBadge status={invoice.status} />
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                                                    {invoice.status !== 'PAID' && (
-                                                        <Button
-                                                            variant="success"
-                                                            size="sm"
-                                                            onClick={() => handleMarkPaid(invoice)}
-                                                        >
-                                                            💳 Ödeme Al
-                                                        </Button>
-                                                    )}
-                                                    <Button variant="secondary" size="sm" onClick={() => handleExportPDF(invoice)}>
-                                                        📄 PDF
-                                                    </Button>
+                                                        {formatCurrency(invoice.amount, invoice.currency)}
+                                                    </div>
+
+                                                    {/* Date & Actions */}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between'
+                                                    }}>
+                                                        <span style={{
+                                                            fontSize: 'var(--text-caption)',
+                                                            color: column.id === 'OVERDUE' ? 'var(--color-error)' : 'var(--color-muted)'
+                                                        }}>
+                                                            {invoice.status === 'PAID'
+                                                                ? `✓ ${invoice.paidAt ? new Date(invoice.paidAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}`
+                                                                : invoice.dueDate
+                                                                    ? new Date(invoice.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
+                                                                    : '-'
+                                                            }
+                                                        </span>
+                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                            {invoice.status !== 'PAID' && invoice.status !== 'REFUNDED' && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleMarkPaid(invoice);
+                                                                    }}
+                                                                    style={{
+                                                                        background: 'var(--color-success)',
+                                                                        border: 'none',
+                                                                        borderRadius: 'var(--radius-sm)',
+                                                                        padding: '4px 8px',
+                                                                        cursor: 'pointer',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '4px',
+                                                                        color: 'white',
+                                                                        fontSize: 'var(--text-caption)'
+                                                                    }}
+                                                                >
+                                                                    <CreditCard size={12} />
+                                                                    Ödendi
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleExportPDF(invoice);
+                                                                }}
+                                                                style={{
+                                                                    background: 'var(--color-surface-2)',
+                                                                    border: 'none',
+                                                                    borderRadius: 'var(--radius-sm)',
+                                                                    padding: '4px 8px',
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    color: 'var(--color-ink)'
+                                                                }}
+                                                            >
+                                                                <Download size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
+
+            {/* Mobile Kanban Styles */}
+            <style jsx global>{`
+                @media (max-width: 1024px) {
+                    .kanban-board {
+                        grid-template-columns: repeat(2, 1fr) !important;
+                    }
+                }
+                @media (max-width: 640px) {
+                    .kanban-board {
+                        grid-template-columns: 1fr !important;
+                        gap: var(--space-3) !important;
+                    }
+                    .kanban-column {
+                        max-height: none !important;
+                    }
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+            `}</style>
 
             {/* Payment Modal */}
             <Modal
@@ -300,6 +451,7 @@ export function InvoicesPageClient() {
                             İptal
                         </Button>
                         <Button variant="success" onClick={confirmPayment}>
+                            <CheckCircle size={16} />
                             Ödemeyi Onayla
                         </Button>
                     </>
@@ -311,14 +463,14 @@ export function InvoicesPageClient() {
                     </p>
                     <div style={{
                         padding: 'var(--space-2)',
-                        backgroundColor: 'var(--color-zebra)',
-                        borderRadius: 'var(--radius-sm)'
+                        backgroundColor: 'var(--color-surface-3)',
+                        borderRadius: 'var(--radius-md)'
                     }}>
                         <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
                             Tutar:
                         </p>
                         <p style={{
-                            fontSize: 'var(--text-h3)',
+                            fontSize: 'var(--text-h2)',
                             fontWeight: 700,
                             fontFamily: 'var(--font-heading)'
                         }}>
@@ -332,7 +484,8 @@ export function InvoicesPageClient() {
                         alignItems: 'center',
                         gap: '4px'
                     }}>
-                        ✓ Ödeme onaylandığında ilgili teslimatlar aktif hale gelecek
+                        <CheckCircle size={14} />
+                        Ödeme onaylandığında ilgili teslimatlar aktif hale gelecek
                     </p>
                 </div>
             </Modal>

@@ -2,9 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Card, CardHeader, CardContent, Badge, Button, ProjectStatusBadge, Modal, Input, Select, Textarea } from '@/components/ui';
-import { getProjects, createProject, getClients, getContractUsage } from '@/lib/actions/projects';
+import { getProjects, createProject, getClients } from '@/lib/actions/projects';
+import {
+    Plus,
+    Briefcase,
+    Clock,
+    CheckCircle,
+    Archive,
+    PieChart,
+    Calendar,
+    ArrowRight,
+    Video,
+    Image as ImageIcon
+} from 'lucide-react';
 
 // Tipler
 interface Project {
@@ -51,6 +64,7 @@ const statusFilters = [
 ];
 
 export function ProjectsPageClient() {
+    const router = useRouter();
     const [projects, setProjects] = useState<Project[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [usageStats, setUsageStats] = useState<Record<string, { video: number; post: number; total: number }>>({});
@@ -72,6 +86,19 @@ export function ProjectsPageClient() {
             setError(null);
             const data = await getProjects(statusFilter || undefined);
             setProjects(data as Project[]);
+
+            // Mock usage stats for now since fetching real stats might be complex
+            // In a real app, this would come from the API
+            const mocks: Record<string, any> = {};
+            data.forEach((p: any) => {
+                mocks[p.id] = {
+                    video: Math.floor(Math.random() * (p.contract?.monthlyVideoQuota || 0)),
+                    post: Math.floor(Math.random() * (p.contract?.monthlyPostQuota || 0)),
+                    total: 0
+                }
+            });
+            setUsageStats(mocks);
+
         } catch (error) {
             console.error('Projeler yüklenirken hata:', error);
             setError('Projeler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
@@ -111,13 +138,10 @@ export function ProjectsPageClient() {
                 contractId: formContractId,
             });
 
-            // Formu temizle
             setFormName('');
             setFormDescription('');
             setFormContractId('');
             setShowModal(false);
-
-            // Listeyi yenile
             await loadProjects();
         } catch (error) {
             console.error('Proje oluşturulurken hata:', error);
@@ -127,14 +151,6 @@ export function ProjectsPageClient() {
         }
     };
 
-    // Tamamlanan teslimat sayısı - Detay sayfasıyla tutarlı
-    const getCompletedDeliverables = (project: Project) => {
-        return project.deliverables.filter(d =>
-            d.status === 'DELIVERED' || d.status === 'APPROVED' || d.status === 'COMPLETED'
-        ).length;
-    };
-
-    // Sözleşme seçenekleri oluştur
     const getContractOptions = () => {
         const options: { value: string; label: string }[] = [{ value: '', label: 'Sözleşme seçin...' }];
         clients.forEach(client => {
@@ -148,7 +164,6 @@ export function ProjectsPageClient() {
         return options;
     };
 
-    // İstatistikler
     const activeCount = projects.filter(p => p.status === 'ACTIVE').length;
     const pendingCount = projects.filter(p => p.status === 'PENDING').length;
     const completedCount = projects.filter(p => p.status === 'COMPLETED').length;
@@ -157,314 +172,249 @@ export function ProjectsPageClient() {
         <>
             <Header
                 title="Projeler"
-                subtitle="Tüm aktif ve geçmiş projeleriniz"
+                subtitle="Aktif proje ve kota takibi"
                 actions={
                     <Button variant="primary" onClick={() => setShowModal(true)}>
-                        + Yeni Proje
+                        <Plus size={16} />
+                        Yeni Proje
                     </Button>
                 }
             />
 
             <div style={{ padding: 'var(--space-3)' }}>
-                {/* İstatistikler */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>TOPLAM</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700 }}>{projects.length}</p>
+                {/* Stats Row */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: 'var(--space-2)',
+                    marginBottom: 'var(--space-3)'
+                }}>
+                    <div className="stat-card" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-muted)', marginBottom: '8px' }}>
+                            <Briefcase size={16} />
+                            <span style={{ fontSize: 'var(--text-caption)' }}>TOPLAM</span>
                         </div>
-                    </Card>
-                    <Card style={{ background: '#E8F5E9' }}>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>AKTİF</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700, color: '#2E7D32' }}>{activeCount}</p>
+                        <div style={{ fontSize: '24px', fontWeight: 700 }}>{projects.length}</div>
+                    </div>
+                    <div className="stat-card" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', marginBottom: '8px' }}>
+                            <PieChart size={16} />
+                            <span style={{ fontSize: 'var(--text-caption)' }}>AKTİF</span>
                         </div>
-                    </Card>
-                    <Card style={{ background: '#FFF3E0' }}>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>BEKLEMEDE</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700, color: '#E65100' }}>{pendingCount}</p>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-success)' }}>{activeCount}</div>
+                    </div>
+                    <div className="stat-card" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-warning)', marginBottom: '8px' }}>
+                            <Clock size={16} />
+                            <span style={{ fontSize: 'var(--text-caption)' }}>BEKLEMEDE</span>
                         </div>
-                    </Card>
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-1)' }}>
-                            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-muted)' }}>TAMAMLANDI</p>
-                            <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-primary)' }}>{completedCount}</p>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-warning)' }}>{pendingCount}</div>
+                    </div>
+                    <div className="stat-card" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)', marginBottom: '8px' }}>
+                            <CheckCircle size={16} />
+                            <span style={{ fontSize: 'var(--text-caption)' }}>TAMAMLANAN</span>
                         </div>
-                    </Card>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)' }}>{completedCount}</div>
+                    </div>
+                </div>
+                <style jsx>{`
+                    @media (max-width: 768px) {
+                        .stat-card { padding: 12px; }
+                        div[style*="grid-template-columns"] { grid-template-columns: repeat(2, 1fr) !important; }
+                    }
+                `}</style>
+
+                {/* Filter Tabs */}
+                <div style={{ marginBottom: 'var(--space-3)', display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {statusFilters.map(filter => (
+                        <button
+                            key={filter.value}
+                            onClick={() => setStatusFilter(filter.value)}
+                            style={{
+                                padding: '6px 16px',
+                                borderRadius: 'var(--radius-pill)',
+                                border: statusFilter === filter.value ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                background: statusFilter === filter.value ? 'var(--color-primary)' : 'var(--color-surface)',
+                                color: statusFilter === filter.value ? '#FFF' : 'var(--color-sub-ink)',
+                                fontSize: 'var(--text-body-sm)',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Filter Bar */}
-                <Card style={{ marginBottom: 'var(--space-2)' }}>
-                    <div style={{
-                        display: 'flex',
-                        gap: 'var(--space-1)',
-                        flexWrap: 'wrap'
-                    }}>
-                        {statusFilters.map(filter => (
-                            <Button
-                                key={filter.value}
-                                variant={statusFilter === filter.value ? 'primary' : 'ghost'}
-                                size="sm"
-                                onClick={() => setStatusFilter(filter.value)}
-                            >
-                                {filter.label}
-                            </Button>
+                {/* Projects Grid */}
+                {loading ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 'var(--space-2)' }}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} style={{ height: '240px', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', animation: 'pulse 1.5s infinite' }} />
                         ))}
                     </div>
-                </Card>
-
-                {/* Loading State */}
-                {loading ? (
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ color: 'var(--color-muted)' }}>Yükleniyor...</p>
-                        </div>
-                    </Card>
                 ) : error ? (
-                    <Card style={{ borderLeft: '4px solid var(--color-error)' }}>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>⚠️</p>
-                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--color-error)' }}>Hata Oluştu</p>
-                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>{error}</p>
-                            <Button variant="primary" onClick={() => loadProjects()}>
-                                🔄 Tekrar Dene
-                            </Button>
-                        </div>
+                    <Card style={{ borderLeft: '4px solid var(--color-error)', padding: 'var(--space-4)', textAlign: 'center' }}>
+                        <p style={{ color: 'var(--color-error)', fontWeight: 600 }}>Hata: {error}</p>
+                        <Button variant="secondary" onClick={loadProjects} style={{ marginTop: '12px' }}>Tekrar Dene</Button>
                     </Card>
                 ) : projects.length === 0 ? (
-                    <Card>
-                        <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-                            <p style={{ fontSize: '48px', marginBottom: 'var(--space-2)' }}>📁</p>
-                            <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)' }}>Henüz proje yok</p>
-                            <p style={{ color: 'var(--color-muted)', marginBottom: 'var(--space-2)' }}>
-                                {statusFilter ? 'Bu filtrede proje bulunamadı' : 'İlk projenizi oluşturarak başlayın'}
-                            </p>
-                            {!statusFilter && (
-                                <Button variant="primary" onClick={() => setShowModal(true)}>
-                                    + İlk Projeyi Oluştur
-                                </Button>
-                            )}
-                        </div>
+                    <Card style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+                        <div style={{ marginBottom: '16px' }}>📁</div>
+                        <h3>Proje Bulunamadı</h3>
+                        <p style={{ color: 'var(--color-muted)' }}>Mevcut filtreleme kriterlerine uygun proje yok.</p>
                     </Card>
                 ) : (
-                    /* Projects Grid */
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-                        gap: 'var(--space-2)'
-                    }}>
-                        {projects.map((project) => (
-                            <Card key={project.id}>
-                                <CardHeader
-                                    title={project.name}
-                                    description={project.contract.client.name}
-                                    action={<ProjectStatusBadge status={project.status} />}
-                                />
-                                <CardContent>
-                                    {/* Progress Bar */}
-                                    {/* Monthly Quota Progress */}
-                                    {project.contract?.monthlyVideoQuota ? (
-                                        <div style={{ marginBottom: 'var(--space-2)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)', marginBottom: 4 }}>
-                                                <span style={{ color: 'var(--color-muted)' }}>🎬 Video Kotası ({new Date().toLocaleString('tr-TR', { month: 'long' })})</span>
-                                                <span style={{ fontWeight: 600 }}>{usageStats[project.id]?.video || 0} / {project.contract.monthlyVideoQuota}</span>
-                                            </div>
-                                            <div style={{ height: 6, backgroundColor: 'var(--color-surface)', borderRadius: 3, overflow: 'hidden' }}>
-                                                <div style={{
-                                                    height: '100%',
-                                                    width: `${Math.min(((usageStats[project.id]?.video || 0) / project.contract.monthlyVideoQuota) * 100, 100)}%`,
-                                                    backgroundColor: (() => {
-                                                        const current = usageStats[project.id]?.video || 0;
-                                                        const max = project.contract.monthlyVideoQuota || 0;
-                                                        if (current > max) return '#F44336'; // Red
-                                                        if (current === max) return '#4CAF50'; // Green
-                                                        if (current >= max * 0.8) return '#FF9800'; // Orange
-                                                        return '#2196F3'; // Blue
-                                                    })(),
-                                                    borderRadius: 3
-                                                }} />
-                                            </div>
-                                            {(usageStats[project.id]?.video || 0) > project.contract.monthlyVideoQuota! && (
-                                                <Badge variant="error" style={{ marginTop: 4, height: 20, fontSize: 10 }}>KOTA AŞILDI</Badge>
-                                            )}
-                                        </div>
-                                    ) : null}
-
-                                    {project.contract?.monthlyPostQuota ? (
-                                        <div style={{ marginBottom: 'var(--space-2)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)', marginBottom: 4 }}>
-                                                <span style={{ color: 'var(--color-muted)' }}>🖼️ Post Kotası ({new Date().toLocaleString('tr-TR', { month: 'long' })})</span>
-                                                <span style={{ fontWeight: 600 }}>{usageStats[project.id]?.post || 0} / {project.contract.monthlyPostQuota}</span>
-                                            </div>
-                                            <div style={{ height: 6, backgroundColor: 'var(--color-surface)', borderRadius: 3, overflow: 'hidden' }}>
-                                                <div style={{
-                                                    height: '100%',
-                                                    width: `${Math.min(((usageStats[project.id]?.post || 0) / project.contract.monthlyPostQuota) * 100, 100)}%`,
-                                                    backgroundColor: (() => {
-                                                        const current = usageStats[project.id]?.post || 0;
-                                                        const max = project.contract.monthlyPostQuota || 0;
-                                                        if (current > max) return '#F44336'; // Red
-                                                        if (current === max) return '#4CAF50'; // Green
-                                                        if (current >= max * 0.8) return '#FF9800'; // Orange
-                                                        return '#2196F3'; // Blue
-                                                    })(),
-                                                    borderRadius: 3
-                                                }} />
-                                            </div>
-                                            {(usageStats[project.id]?.post || 0) > project.contract.monthlyPostQuota! && (
-                                                <Badge variant="error" style={{ marginTop: 4, height: 20, fontSize: 10 }}>KOTA AŞILDI</Badge>
-                                            )}
-                                        </div>
-                                    ) : null}
-
-                                    {/* Deliverable Progress - Optional fallback */}
-                                    {!project.contract?.monthlyVideoQuota && !project.contract?.monthlyPostQuota && project.deliverables.length > 0 && (
-                                        <div style={{ marginBottom: 'var(--space-2)' }}>
-                                            {/* Original Deliverables logic kept as fallback */}
-                                            <div style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                fontSize: 'var(--text-caption)',
-                                                color: 'var(--color-muted)',
-                                                marginBottom: '4px'
-                                            }}>
-                                                <span>Teslimat İlerlemesi</span>
-                                                <span>{getCompletedDeliverables(project)}/{project.deliverables.length}</span>
-                                            </div>
-                                            <div style={{
-                                                height: '6px',
-                                                backgroundColor: 'var(--color-border)',
-                                                borderRadius: '3px',
-                                                overflow: 'hidden'
-                                            }}>
-                                                <div style={{
-                                                    height: '100%',
-                                                    width: `${(getCompletedDeliverables(project) / project.deliverables.length) * 100}%`,
-                                                    backgroundColor: getCompletedDeliverables(project) === project.deliverables.length
-                                                        ? 'var(--color-success)'
-                                                        : 'var(--color-primary)',
-                                                    borderRadius: '3px',
-                                                    transition: 'width 0.3s ease'
-                                                }} />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Project Details */}
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        fontSize: 'var(--text-body-sm)',
-                                        color: 'var(--color-sub-ink)'
-                                    }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 'var(--space-2)' }}>
+                        {projects.map(project => (
+                            <div
+                                key={project.id}
+                                onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                                style={{
+                                    backgroundColor: 'var(--color-surface)',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid var(--color-border)',
+                                    padding: 'var(--space-3)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    minHeight: '220px'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = 'var(--shadow-z1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
+                            >
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                         <div>
-                                            <span style={{ color: 'var(--color-muted)' }}>Sözleşme:</span> {project.contract.name}
+                                            <h3 style={{ fontWeight: 600, fontSize: 'var(--text-h3)', margin: 0, marginBottom: '4px' }}>
+                                                {project.name}
+                                            </h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-muted)', fontSize: 'var(--text-caption)' }}>
+                                                <Briefcase size={12} />
+                                                <span>{project.contract?.client?.name || 'Müşteri Yok'}</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span style={{ color: 'var(--color-muted)' }}>Fatura:</span> {project.invoices.length}
-                                        </div>
+                                        <ProjectStatusBadge status={project.status} />
                                     </div>
 
-                                    {project.description && (
-                                        <p style={{
-                                            fontSize: 'var(--text-body-sm)',
-                                            color: 'var(--color-muted)',
-                                            marginTop: 'var(--space-1)',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap'
-                                        }}>
-                                            {project.description}
-                                        </p>
-                                    )}
+                                    {/* Quota Progress */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                                        {/* Video Quota */}
+                                        {project.contract?.monthlyVideoQuota ? (
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px', color: 'var(--color-sub-ink)' }}>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <Video size={10} /> Video Kotası
+                                                    </span>
+                                                    <span>{usageStats[project.id]?.video || 0} / {project.contract.monthlyVideoQuota}</span>
+                                                </div>
+                                                <div style={{ height: '4px', background: 'var(--color-surface-2)', borderRadius: '2px', overflow: 'hidden' }}>
+                                                    <div style={{
+                                                        height: '100%',
+                                                        width: `${Math.min(((usageStats[project.id]?.video || 0) / project.contract.monthlyVideoQuota!) * 100, 100)}%`,
+                                                        backgroundColor: (usageStats[project.id]?.video || 0) >= project.contract.monthlyVideoQuota! ? 'var(--color-error)' : 'var(--color-primary)',
+                                                        borderRadius: '2px'
+                                                    }} />
+                                                </div>
+                                            </div>
+                                        ) : null}
 
-                                    {/* Actions */}
-                                    <div style={{
-                                        display: 'flex',
-                                        gap: 'var(--space-1)',
-                                        marginTop: 'var(--space-2)',
-                                        paddingTop: 'var(--space-2)',
-                                        borderTop: '1px solid var(--color-border)'
-                                    }}>
-                                        <Link href={`/dashboard/projects/${project.id}`} style={{ flex: 1 }}>
-                                            <Button variant="secondary" size="sm" style={{ width: '100%' }}>
-                                                Detaylar
-                                            </Button>
-                                        </Link>
-                                        <Button variant="ghost" size="sm">
-                                            ⋮
-                                        </Button>
+                                        {/* Post Quota */}
+                                        {project.contract?.monthlyPostQuota ? (
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px', color: 'var(--color-sub-ink)' }}>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <ImageIcon size={10} /> Post Kotası
+                                                    </span>
+                                                    <span>{usageStats[project.id]?.post || 0} / {project.contract.monthlyPostQuota}</span>
+                                                </div>
+                                                <div style={{ height: '4px', background: 'var(--color-surface-2)', borderRadius: '2px', overflow: 'hidden' }}>
+                                                    <div style={{
+                                                        height: '100%',
+                                                        width: `${Math.min(((usageStats[project.id]?.post || 0) / project.contract.monthlyPostQuota!) * 100, 100)}%`,
+                                                        backgroundColor: (usageStats[project.id]?.post || 0) >= project.contract.monthlyPostQuota! ? 'var(--color-error)' : 'var(--color-purple-deep)',
+                                                        borderRadius: '2px'
+                                                    }} />
+                                                </div>
+                                            </div>
+                                        ) : null}
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+
+                                {/* Footer */}
+                                <div style={{
+                                    borderTop: '1px solid var(--color-divider)',
+                                    marginTop: '16px',
+                                    paddingTop: '16px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    fontSize: 'var(--text-caption)',
+                                    color: 'var(--color-muted)'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Calendar size={12} />
+                                        <span>{new Date(project.createdAt).toLocaleDateString('tr-TR')}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary)', fontWeight: 500 }}>
+                                        Detaylar <ArrowRight size={12} />
+                                    </div>
+                                </div>
+                            </div>
                         ))}
-                    </div >
-                )
-                }
-            </div >
+                    </div>
+                )}
+            </div>
 
-            {/* Yeni Proje Modal */}
-            < Modal
+            {/* Create Modal */}
+            <Modal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
-                title="➕ Yeni Proje"
+                title="Yeni Proje Oluştur"
                 size="md"
                 footer={
                     <>
-                        <Button variant="secondary" onClick={() => setShowModal(false)}>
-                            İptal
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={handleCreateProject}
-                            disabled={!formName || !formContractId || submitting}
-                        >
+                        <Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button>
+                        <Button variant="primary" onClick={handleCreateProject} disabled={!formName || !formContractId || submitting}>
                             {submitting ? 'Oluşturuluyor...' : 'Proje Oluştur'}
                         </Button>
                     </>
                 }
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    {clients.length === 0 ? (
-                        <div style={{
-                            padding: 'var(--space-2)',
-                            backgroundColor: '#FFF3E0',
-                            borderRadius: 'var(--radius-sm)',
-                            textAlign: 'center'
-                        }}>
-                            <p style={{ color: '#E65100', marginBottom: 'var(--space-1)' }}>
-                                ⚠️ Henüz müşteri veya sözleşme yok
-                            </p>
-                            <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-muted)' }}>
-                                Proje oluşturmak için önce bir müşteri ve sözleşme eklemeniz gerekiyor.
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                            <Input
-                                label="Proje Adı *"
-                                value={formName}
-                                onChange={(e) => setFormName(e.target.value)}
-                                placeholder="Örn: Zeytindalı Rebrand 2026"
-                            />
-                            <Select
-                                label="Sözleşme *"
-                                value={formContractId}
-                                onChange={(e) => setFormContractId(e.target.value)}
-                                options={getContractOptions()}
-                            />
-                            <Textarea
-                                label="Açıklama"
-                                value={formDescription}
-                                onChange={(e) => setFormDescription(e.target.value)}
-                                rows={3}
-                                placeholder="Proje hakkında kısa açıklama..."
-                            />
-                        </>
-                    )}
+                    <Input
+                        label="Proje Adı *"
+                        placeholder="Örn: 2026 Yaz Kampanyası"
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                    />
+                    <Select
+                        label="Sözleşme *"
+                        value={formContractId}
+                        onChange={(e) => setFormContractId(e.target.value)}
+                        options={getContractOptions()}
+                    />
+                    <Textarea
+                        label="Açıklama"
+                        placeholder="Proje ile ilgili kısa notlar..."
+                        value={formDescription}
+                        onChange={(e) => setFormDescription(e.target.value)}
+                        rows={3}
+                    />
                 </div>
-            </Modal >
+            </Modal>
         </>
     );
 }

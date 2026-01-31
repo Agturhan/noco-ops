@@ -21,8 +21,14 @@
   /* Hover states */
   --color-border: #333333;
   /* Subtle dark borders */
+  --color-divider: #2A2A2A;
+  /* Liste ayraçları */
   --color-zebra: #202020;
   /* Stripes */
+  --color-surface-3: #252525;
+  /* List row bg */
+  --color-surface-hover: #2C2C2C;
+  --color-surface-active: #353535;
 
   /* Text: White/Grey on Dark */
   --color-ink: #FFFFFF;
@@ -50,17 +56,18 @@
   --font-heading: 'inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
   --font-body: 'inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
 
-  /* Font Sizes */
-  --text-h1: 24px;
-  --text-h2: 20px;
-  --text-h3: 16px;
+  /* Font Sizes (Responsive) */
+  --text-h1: 36px;
+  /* Desktop: 36px, Tablet: 30px, Mobile: 26px */
+  --text-h2: 24px;
+  --text-h3: 18px;
   --text-body: 14px;
   --text-body-sm: 13px;
   --text-caption: 12px;
 
   /* Line Heights */
-  --leading-h1: 1.3;
-  --leading-h2: 1.3;
+  --leading-h1: 1.2;
+  --leading-h2: 1.25;
   --leading-h3: 1.3;
   --leading-body: 1.5;
   --leading-body-sm: 1.5;
@@ -75,12 +82,19 @@
   --space-6: 64px;
   --space-8: 96px;
 
-  /* Border Radius (Slightly sharper in Notion) */
-  --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* Border Radius (Softer, Premium feel) */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  /* Cards */
+  --radius-lg: 16px;
+  /* Large cards */
+  --radius-xl: 20px;
+  /* Modals */
+  --radius-row: 12px;
+  /* List rows */
+  --radius-pill: 999px;
+  /* Pills, badges */
 
   /* Shadows (Removed/Flat for Notion Dark) */
   --shadow-z1: none;
@@ -112,7 +126,12 @@
   --color-surface-2: #1A1F29;
   --color-border: rgba(255, 255, 255, 0.08);
   /* Soft border */
+  --color-divider: rgba(255, 255, 255, 0.05);
   --color-zebra: rgba(255, 255, 255, 0.02);
+  --color-surface-3: #1A1F29;
+  /* List row bg */
+  --color-surface-hover: rgba(255, 255, 255, 0.06);
+  --color-surface-active: rgba(255, 255, 255, 0.10);
 
   /* Text — koyu temada okunur */
   --color-ink: #F5F5F7;
@@ -134,17 +153,28 @@
   --color-warning: #FFD60A;
   --color-error: #FF453A;
 
-  /* Border Radius (Rounder in Dark/Premium) */
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
+  /* Border Radius (Premium - softer) */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  /* Cards */
+  --radius-lg: 20px;
+  /* Large cards */
   --radius-xl: 24px;
+  /* Modals */
+  --radius-row: 14px;
+  /* List rows - pill style */
+  --radius-pill: 999px;
+  /* Pills, badges */
 
-  /* Glass Tokens (Enabled in Dark Mode) */
-  --glass-bg: rgba(30, 30, 35, 0.45);
+  /* Glass Tokens (Soft glass - not aggressive) */
+  --glass-bg: rgba(25, 25, 30, 0.65);
+  /* More opaque */
+  --glass-bg-heavy: rgba(20, 20, 25, 0.85);
+  /* For cards */
   --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-  --glass-blur: 25px;
+  --glass-blur: 14px;
+  /* Reduced from 25px */
 
   /* Shadows (Glows allowed) */
   --shadow-z1: 0 4px 8px rgba(0, 0, 0, 0.2);
