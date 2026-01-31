@@ -11,4 +11,4 @@ export { FileUpload } from './FileUpload';
 export { MiniCalendar } from './MiniCalendar';
 export { MultiSelect } from './MultiSelect';
 export { ColorPicker } from './ColorPicker';
-export { Drawer } from './Drawer';
+export { Drawer } from './DrawerComponent';
