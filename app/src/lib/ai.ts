@@ -299,6 +299,22 @@ export function getDefaultServicesForProjectType(
                     reasoning: `${totalPhotos} kare için ~${studioHours} saat stüdyo`,
                 });
             }
+
+            // Add Operator (with daily limit logic)
+            // 1 Operator can shoot max 100 products/day
+            const dailyLimit = 100;
+            const operatorDays = Math.ceil(products / dailyLimit);
+            const operatorService = SERVICES.find(s => s.id === 'foto-operator')!;
+
+            items.push({
+                serviceId: 'foto-operator',
+                serviceName: operatorService.name,
+                quantity: operatorDays,
+                unitPrice: operatorService.unitPrice,
+                total: operatorService.unitPrice * operatorDays,
+                unit: operatorService.unit,
+                reasoning: `${products} ürün / ${dailyLimit} (günlük limit) = ${operatorDays} gün operatör`,
+            });
             break;
 
         case 'SOCIAL':

@@ -321,6 +321,14 @@ export function getCapacityContext(): string {
             `- ${d.label} = ₺${Math.round(PRODUCTION_CAPACITY.baseKurguPrice * d.multiplier).toLocaleString('tr-TR')}`
         ),
         '- 2dk+ = Özel fiyatlandırma (2x)',
+        '',
+        '### Operasyonel Limitler (MÜFREDAT)',
+        '1. Fotoğraf Çekimi: 1 Operatör günde MAKSİMUM 100 ürün çekebilir.',
+        '   - Örnek: 10,000 ürün için 10000/100 = 100 GÜN operatör gerekir (veya 100 operatör).',
+        '2. Retouch: 1 kişi günde 500 kare (Basic) / 200 kare (Detaylı) işleyebilir.',
+        '3. Video Kurgu: 1 kurgucu günde 5 video tamamlayabilir.',
+        '4. Podcast: Stüdyo ve operatör saatlik kiralanır.',
+        'ÖNEMLİ: 10.000 adet gibi büyük hacimli işlerde LÜTFEN "GÜN" bazında hesapla. 1 günde bitmez.',
     ];
     return lines.join('\n');
 }
