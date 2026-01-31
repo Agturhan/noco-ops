@@ -1,0 +1,251 @@
+import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+    console.log('🌱 Seeding database...');
+
+    // Kullanıcılar
+    const adminPassword = await hash('demo123', 12);
+    const clientPassword = await hash('client123', 12);
+
+    const admin = await prisma.user.upsert({
+        where: { email: 'admin@noco.digital' },
+        update: {},
+        create: {
+            email: 'admin@noco.digital',
+            name: 'NOCO Admin',
+            passwordHash: adminPassword,
+            role: 'OWNER',
+        },
+    });
+
+    const ops = await prisma.user.upsert({
+        where: { email: 'ops@noco.digital' },
+        update: {},
+        create: {
+            email: 'ops@noco.digital',
+            name: 'Ayşe Yılmaz',
+            passwordHash: adminPassword,
+            role: 'OPS',
+        },
+    });
+
+    const designer = await prisma.user.upsert({
+        where: { email: 'design@noco.digital' },
+        update: {},
+        create: {
+            email: 'design@noco.digital',
+            name: 'Mehmet Kaya',
+            passwordHash: adminPassword,
+            role: 'DIGITAL',
+        },
+    });
+
+    const clientUser = await prisma.user.upsert({
+        where: { email: 'client@abc.com' },
+        update: {},
+        create: {
+            email: 'client@abc.com',
+            name: 'Ali Veli',
+            passwordHash: clientPassword,
+            role: 'CLIENT',
+        },
+    });
+
+    console.log('✓ Users created');
+
+    // Müşteriler
+    const client1 = await prisma.client.upsert({
+        where: { id: 'client-abc' },
+        update: {},
+        create: {
+            id: 'client-abc',
+            name: 'ABC Şirketi',
+            email: 'info@abc.com',
+            phone: '+90 212 555 0101',
+            company: 'ABC Holding A.Ş.',
+        },
+    });
+
+    const client2 = await prisma.client.upsert({
+        where: { id: 'client-xyz' },
+        update: {},
+        create: {
+            id: 'client-xyz',
+            name: 'XYZ Ltd.',
+            email: 'contact@xyz.com',
+            phone: '+90 216 555 0202',
+            company: 'XYZ Limited Şirketi',
+        },
+    });
+
+    console.log('✓ Clients created');
+
+    // Sözleşmeler
+    const contract1 = await prisma.contract.upsert({
+        where: { id: 'contract-abc-1' },
+        update: {},
+        create: {
+            id: 'contract-abc-1',
+            clientId: client1.id,
+            name: 'ABC Rebranding Sözleşmesi',
+            maxRevisions: 2,
+            paymentTerms: 'UPFRONT',
+            rawAssetsIncluded: false,
+        },
+    });
+
+    const contract2 = await prisma.contract.upsert({
+        where: { id: 'contract-xyz-1' },
+        update: {},
+        create: {
+            id: 'contract-xyz-1',
+            clientId: client2.id,
+            name: 'XYZ Sosyal Medya Paketi',
+            maxRevisions: 3,
+            paymentTerms: 'NET_15',
+            rawAssetsIncluded: true,
+        },
+    });
+
+    console.log('✓ Contracts created');
+
+    // Projeler
+    const project1 = await prisma.project.upsert({
+        where: { id: 'project-abc-rebrand' },
+        update: {},
+        create: {
+            id: 'project-abc-rebrand',
+            name: 'ABC Markası Rebranding',
+            description: 'Kurumsal kimlik ve logo yenileme projesi',
+            status: 'ACTIVE',
+            contractId: contract1.id,
+            assigneeId: designer.id,
+        },
+    });
+
+    const project2 = await prisma.project.upsert({
+        where: { id: 'project-xyz-social' },
+        update: {},
+        create: {
+            id: 'project-xyz-social',
+            name: 'XYZ Sosyal Medya Kampanyası',
+            description: 'Q1 2026 sosyal medya içerik kampanyası',
+            status: 'PENDING',
+            contractId: contract2.id,
+        },
+    });
+
+    console.log('✓ Projects created');
+
+    // Teslimatlar
+    const deliverable1 = await prisma.deliverable.upsert({
+        where: { id: 'del-logo' },
+        update: {},
+        create: {
+            id: 'del-logo',
+            name: 'Logo Tasarımı (Ana)',
+            description: 'Ana logo ve varyasyonlar',
+            status: 'APPROVED',
+            projectId: project1.id,
+            revisionCount: 2,
+        },
+    });
+
+    const deliverable2 = await prisma.deliverable.upsert({
+        where: { id: 'del-banners' },
+        update: {},
+        create: {
+            id: 'del-banners',
+            name: 'Sosyal Medya Bannerları',
+            description: 'Instagram ve Facebook görselleri',
+            status: 'IN_REVIEW',
+            projectId: project2.id,
+            revisionCount: 1,
+        },
+    });
+
+    const deliverable3 = await prisma.deliverable.upsert({
+        where: { id: 'del-guideline' },
+        update: {},
+        create: {
+            id: 'del-guideline',
+            name: 'Kurumsal Kimlik Kılavuzu',
+            description: 'Logo kullanım kılavuzu ve renk paleti',
+            status: 'IN_PROGRESS',
+            projectId: project1.id,
+            revisionCount: 0,
+        },
+    });
+
+    console.log('✓ Deliverables created');
+
+    // Faturalar
+    const invoice1 = await prisma.invoice.upsert({
+        where: { id: 'inv-abc-1' },
+        update: {},
+        create: {
+            id: 'inv-abc-1',
+            projectId: project1.id,
+            amount: 45000,
+            currency: 'TRY',
+            status: 'PENDING',
+            dueDate: new Date('2026-02-01'),
+        },
+    });
+
+    const invoice2 = await prisma.invoice.upsert({
+        where: { id: 'inv-xyz-1' },
+        update: {},
+        create: {
+            id: 'inv-xyz-1',
+            projectId: project2.id,
+            amount: 28000,
+            currency: 'TRY',
+            status: 'PAID',
+            dueDate: new Date('2026-01-15'),
+            paidAt: new Date('2026-01-14'),
+        },
+    });
+
+    console.log('✓ Invoices created');
+
+    // Audit Logs
+    await prisma.auditLog.createMany({
+        data: [
+            {
+                action: 'CREATE',
+                entityType: 'PROJECT',
+                entityId: project1.id,
+                details: { name: 'ABC Markası Rebranding' },
+            },
+            {
+                action: 'TRANSITION',
+                entityType: 'DELIVERABLE',
+                entityId: deliverable1.id,
+                details: { from: 'IN_REVIEW', to: 'APPROVED' },
+            },
+            {
+                action: 'PAYMENT_RECEIVED',
+                entityType: 'INVOICE',
+                entityId: invoice2.id,
+                details: { amount: 28000 },
+            },
+        ],
+        skipDuplicates: true,
+    });
+
+    console.log('✓ Audit logs created');
+    console.log('✅ Database seeded successfully!');
+}
+
+main()
+    .catch((e) => {
+        console.error('❌ Seed error:', e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });
